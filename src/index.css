@@ -5,32 +5,7 @@
  * Edge Blast — ported 1:1 from the live Lovable project's
  * index.css so the landing hero matches exactly.
  * ============================================================ */
-:root, .light {
-  --background: 200 11% 97%;
-  --foreground: 215 28% 17%;
-  --card: 210 20% 98%;
-  --card-foreground: 215 28% 17%;
-  --popover: 210 20% 98%;
-  --popover-foreground: 215 28% 17%;
-  --primary: 186 22% 48%;
-  --primary-foreground: 210 20% 98%;
-  --secondary: 197 19% 94%;
-  --secondary-foreground: 215 28% 17%;
-  --muted: 197 19% 94%;
-  --muted-foreground: 218 13% 46%;
-  --accent: 186 22% 48%;
-  --accent-foreground: 210 20% 98%;
-  --destructive: 1 77% 55%;
-  --destructive-foreground: 210 20% 98%;
-  --bull: 211 71% 59%;
-  --bear: 1 77% 55%;
-  --gold: 40 55% 55%;
-  --border: 204 14% 88%;
-  --input: 204 14% 88%;
-  --ring: 186 22% 48%;
-}
-
-.dark {
+:root, .dark {
   --background: 210 12% 9%;
   --foreground: 204 15% 94%;
   --card: 213 12% 17%;
@@ -53,6 +28,31 @@
   --border: 213 11% 26%;
   --input: 213 11% 22%;
   --ring: 187 21% 53%;
+}
+
+.light {
+  --background: 200 11% 97%;
+  --foreground: 215 28% 17%;
+  --card: 210 20% 98%;
+  --card-foreground: 215 28% 17%;
+  --popover: 210 20% 98%;
+  --popover-foreground: 215 28% 17%;
+  --primary: 186 22% 48%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 197 19% 94%;
+  --secondary-foreground: 215 28% 17%;
+  --muted: 197 19% 94%;
+  --muted-foreground: 218 13% 46%;
+  --accent: 186 22% 48%;
+  --accent-foreground: 210 20% 98%;
+  --destructive: 1 77% 55%;
+  --destructive-foreground: 210 20% 98%;
+  --bull: 211 71% 59%;
+  --bear: 1 77% 55%;
+  --gold: 40 55% 55%;
+  --border: 204 14% 88%;
+  --input: 204 14% 88%;
+  --ring: 186 22% 48%;
 }
 
 @theme {
@@ -115,6 +115,25 @@ body {
 .font-mono, .tabular { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 
 :focus-visible { outline: 2px solid var(--color-teal); outline-offset: 2px; }
+
+.luxe-card {
+  border-radius: 20px;
+  background: hsl(var(--card) / 0.9);
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 30px 80px -30px rgba(0,0,0,0.5);
+  backdrop-filter: blur(16px);
+}
+.hairline { height: 1px; background: hsl(var(--border)); }
+.bg-gradient-luxe {
+  background:
+    radial-gradient(800px circle at 20% 20%, hsl(187 60% 30% / 0.5), transparent 60%),
+    radial-gradient(700px circle at 80% 80%, hsl(217 60% 40% / 0.4), transparent 60%),
+    linear-gradient(160deg, hsl(210 22% 10%), hsl(210 24% 6%));
+}
+.bg-gradient-glow {
+  background: radial-gradient(600px circle at 50% 0%, hsl(var(--primary) / 0.12), transparent 65%);
+}
+.tap:active { transform: scale(0.98); }
 
 @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .animate-fade-up { animation: fade-up 0.35s cubic-bezier(0.22,1,0.36,1) both; }

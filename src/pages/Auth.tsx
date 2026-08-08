@@ -1,190 +1,291 @@
-import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, type FormEvent, type ReactNode } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { toast, Toaster } from 'sonner'
 import { useAuth } from '../hooks/useAuth'
-
-type Mode = 'password' | 'otp-request' | 'otp-verify'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Checkbox } from '../components/ui/checkbox'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { Logo } from '../components/Logo'
+import { GoogleIcon } from '../components/GoogleIcon'
+import { ThemeToggle } from '../components/ThemeToggle'
+import { TrendingUp, BarChart3, Calendar as CalendarIcon, ShieldCheck } from 'lucide-react'
 
 export default function Auth() {
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
-  const [mode, setMode] = useState<Mode>('password')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [otpCode, setOtpCode] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const { signIn, signUp, signInWithGoogle, sendOtp, verifyOtp } = useAuth()
+  const { user, signIn, signUp, signInWithGoogle, resetPassword, sendOtp, verifyOtp } = useAuth()
   const navigate = useNavigate()
 
-  const inputStyle = {
-    backgroundColor: 'var(--color-elevated-2)',
-    border: '1px solid var(--color-border)',
-    color: 'var(--color-text)',
+  const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
+  const [remember, setRemember] = useState(true)
+  const [forgotOpen, setForgotOpen] = useState(false)
+  const [otpOpen, setOtpOpen] = useState(false)
+  const [otpStage, setOtpStage] = useState<'request' | 'verify'>('request')
+  const [otpCode, setOtpCode] = useState('')
+
+  if (user) return <Navigate to="/dashboard" replace />
+
+  const applyRemember = () => {
+    localStorage.setItem('eb-remember', remember ? '1' : '0')
   }
 
-  const handlePasswordSubmit = async (e: FormEvent) => {
+  const handleSignIn = async (e: FormEvent) => {
     e.preventDefault()
-    setError(null)
-    setSubmitting(true)
-    const result = authMode === 'signin' ? await signIn(email, password) : await signUp(email, password)
-    setSubmitting(false)
-    if (result.error) {
-      setError(result.error)
-      return
-    }
+    setLoading(true)
+    const { error } = await signIn(email, password)
+    setLoading(false)
+    if (error) return toast.error(error)
+    applyRemember()
+    toast.success('Welcome back')
+    navigate('/dashboard')
+  }
+
+  const handleSignUp = async (e: FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    const { error } = await signUp(email, password)
+    setLoading(false)
+    if (error) return toast.error(error)
+    applyRemember()
+    toast.success('Account created — you are signed in')
     navigate('/dashboard')
   }
 
   const handleGoogle = async () => {
-    setError(null)
-    const result = await signInWithGoogle()
-    if (result.error) setError(result.error)
-    // On success, Supabase redirects the browser to Google — no further action here.
+    setGoogleLoading(true)
+    applyRemember()
+    const { error } = await signInWithGoogle()
+    if (error) {
+      setGoogleLoading(false)
+      toast.error('Could not sign in with Google')
+    }
+    // On success, Supabase redirects the browser away — no further action here.
   }
 
-  const handleSendOtp = async (e: FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSubmitting(true)
-    const result = await sendOtp(email)
-    setSubmitting(false)
-    if (result.error) {
-      setError(result.error)
-      return
-    }
-    setInfo(`Code sent to ${email}`)
-    setMode('otp-verify')
+  const handleForgot = async () => {
+    if (!email) return toast.error('Enter your email above first')
+    const { error } = await resetPassword(email)
+    if (error) return toast.error(error)
+    toast.success('Password reset link sent — check your inbox')
+    setForgotOpen(false)
+  }
+
+  const handleSendOtp = async () => {
+    if (!email) return toast.error('Enter your email first')
+    setLoading(true)
+    const { error } = await sendOtp(email)
+    setLoading(false)
+    if (error) return toast.error(error)
+    toast.success(`Code sent to ${email}`)
+    setOtpStage('verify')
   }
 
   const handleVerifyOtp = async (e: FormEvent) => {
     e.preventDefault()
-    setError(null)
-    setSubmitting(true)
-    const result = await verifyOtp(email, otpCode)
-    setSubmitting(false)
-    if (result.error) {
-      setError(result.error)
-      return
-    }
+    setLoading(true)
+    const { error } = await verifyOtp(email, otpCode)
+    setLoading(false)
+    if (error) return toast.error(error)
     navigate('/dashboard')
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: 'var(--color-bg)' }}>
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-            Edge Blast
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            {mode === 'otp-verify' ? 'Enter the code we sent you' : authMode === 'signin' ? 'Sign in to your journal' : 'Create your account'}
+    <div className="min-h-screen flex relative overflow-hidden bg-background">
+      <Toaster theme="dark" position="top-center" />
+      <div className="absolute top-4 right-4 z-20"><ThemeToggle /></div>
+
+      {/* Left brand panel (desktop only) */}
+      <aside className="hidden lg:flex lg:w-[46%] xl:w-1/2 relative flex-col justify-between p-12 bg-gradient-luxe text-white overflow-hidden">
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-3">
+            <Logo size={44} />
+            <div>
+              <div className="font-display font-bold text-xl leading-none">Edge Blast</div>
+              <div className="text-[10px] uppercase tracking-widest text-white/60 mt-1">Trading Journal</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 space-y-8 max-w-md">
+          <div>
+            <h2 className="font-display text-4xl font-semibold leading-tight">Refine your edge.<br />Trade with clarity.</h2>
+            <p className="text-white/70 mt-4 text-base leading-relaxed">
+              A premium journal for serious traders. Log every trade, review with screenshots, and uncover the patterns that grow your edge.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Feature icon={<TrendingUp className="size-4" />} label="Performance analytics" />
+            <Feature icon={<BarChart3 className="size-4" />} label="Edge discovery" />
+            <Feature icon={<CalendarIcon className="size-4" />} label="Daily P&L calendar" />
+            <Feature icon={<ShieldCheck className="size-4" />} label="Private & secure" />
+          </div>
+        </div>
+
+        <div className="relative z-10 text-xs text-white/50">
+          © {new Date().getFullYear()} Edge Blast — Built for disciplined traders.
+        </div>
+      </aside>
+
+      {/* Right auth panel */}
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-8 relative">
+        <div className="absolute inset-0 bg-gradient-glow pointer-events-none lg:hidden" />
+        <div className="relative w-full max-w-md">
+          <div className="lg:hidden text-center mb-6">
+            <div className="inline-flex items-center gap-3">
+              <Logo size={40} />
+              <div className="text-left">
+                <div className="font-display font-bold text-lg leading-none">Edge Blast</div>
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">Trading Journal</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mb-6">
+            <h1 className="font-display text-2xl md:text-3xl font-semibold">Welcome</h1>
+            <p className="text-sm text-muted-foreground mt-1.5">Sign in to continue to your journal</p>
+          </div>
+
+          <div className="luxe-card p-6 md:p-7 space-y-5">
+            <Button
+              type="button"
+              onClick={handleGoogle}
+              disabled={googleLoading}
+              variant="outline"
+              className="w-full h-11 bg-card hover:bg-secondary/60 border-border font-medium text-foreground gap-3 tap"
+            >
+              <GoogleIcon />
+              {googleLoading ? 'Connecting…' : 'Continue with Google'}
+            </Button>
+
+            <div className="relative flex items-center">
+              <div className="flex-1 hairline" />
+              <span className="px-3 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">or</span>
+              <div className="flex-1 hairline" />
+            </div>
+
+            {!otpOpen ? (
+              <Tabs defaultValue="signin">
+                <TabsList className="grid w-full grid-cols-2 mb-5">
+                  <TabsTrigger value="signin">Sign in</TabsTrigger>
+                  <TabsTrigger value="signup">Create account</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="signin" className="space-y-0">
+                  {forgotOpen ? (
+                    <div className="space-y-4 animate-fade-up">
+                      <div className="space-y-1.5">
+                        <Label>Email</Label>
+                        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@trader.com" />
+                        <p className="text-xs text-muted-foreground">We'll send a secure reset link.</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="ghost" className="flex-1" onClick={() => setForgotOpen(false)}>Back</Button>
+                        <Button type="button" className="flex-1" onClick={handleForgot}>Send reset link</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSignIn} className="space-y-4">
+                      <div className="space-y-1.5">
+                        <Label>Email</Label>
+                        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@trader.com" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label>Password</Label>
+                          <button type="button" onClick={() => setForgotOpen(true)} className="text-xs text-primary hover:underline">Forgot?</button>
+                        </div>
+                        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
+                      </div>
+                      <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                        <Checkbox checked={remember} onCheckedChange={setRemember} />
+                        Remember me on this device
+                      </label>
+                      <Button type="submit" disabled={loading} className="w-full h-11">
+                        {loading ? 'Signing in…' : 'Sign in'}
+                      </Button>
+                      <button type="button" onClick={() => setOtpOpen(true)} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition">
+                        Sign in with an email code instead
+                      </button>
+                    </form>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="signup">
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label>Display name</Label>
+                      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Trader" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Email</Label>
+                      <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@trader.com" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Password</Label>
+                      <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} placeholder="At least 8 characters" />
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                      <Checkbox checked={remember} onCheckedChange={setRemember} />
+                      Keep me signed in
+                    </label>
+                    <Button type="submit" disabled={loading} className="w-full h-11">
+                      {loading ? 'Creating…' : 'Create account'}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            ) : otpStage === 'request' ? (
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Email</Label>
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@trader.com" />
+                </div>
+                <Button type="button" disabled={loading} onClick={handleSendOtp} className="w-full h-11">
+                  {loading ? 'Sending…' : 'Send code'}
+                </Button>
+                <button type="button" onClick={() => setOtpOpen(false)} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition">
+                  Back to password sign in
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>6-digit code</Label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    className="text-center tracking-widest font-mono"
+                  />
+                </div>
+                <Button type="submit" disabled={loading} className="w-full h-11">
+                  {loading ? 'Verifying…' : 'Verify & sign in'}
+                </Button>
+                <button type="button" onClick={() => setOtpStage('request')} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition">
+                  Use a different email
+                </button>
+              </form>
+            )}
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-6 px-4">
+            By continuing you agree to journal responsibly. Edge Blast does not execute trades or connect to brokers.
           </p>
         </div>
-
-        <div className="rounded-xl p-6 space-y-4" style={{ backgroundColor: 'var(--color-elevated)', border: '1px solid var(--color-border)' }}>
-          {/* Google OAuth — always available, one tap */}
-          {mode !== 'otp-verify' && (
-            <>
-              <button
-                type="button"
-                onClick={handleGoogle}
-                className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium"
-                style={{ backgroundColor: 'var(--color-elevated-2)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
-              >
-                <svg width="16" height="16" viewBox="0 0 48 48">
-                  <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
-                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
-                  <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.6 35.4 27 36 24 36c-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.6 39.6 16.2 44 24 44z" />
-                  <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.6 5.6C41.5 35.6 44 30.2 44 24c0-1.3-.1-2.7-.4-3.5z" />
-                </svg>
-                Continue with Google
-              </button>
-
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border)' }} />
-                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>or</span>
-                <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border)' }} />
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMode('password')}
-                  className="flex-1 py-1.5 rounded-lg text-xs"
-                  style={{
-                    backgroundColor: mode === 'password' ? 'var(--color-teal)' : 'var(--color-elevated-2)',
-                    color: mode === 'password' ? '#0A0A0C' : 'var(--color-text-muted)',
-                  }}
-                >
-                  Password
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('otp-request')}
-                  className="flex-1 py-1.5 rounded-lg text-xs"
-                  style={{
-                    backgroundColor: mode === 'otp-request' ? 'var(--color-teal)' : 'var(--color-elevated-2)',
-                    color: mode === 'otp-request' ? '#0A0A0C' : 'var(--color-text-muted)',
-                  }}
-                >
-                  Email code
-                </button>
-              </div>
-            </>
-          )}
-
-          {mode === 'password' && (
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-xs mb-1.5" style={{ color: 'var(--color-text-muted)' }}>Email</label>
-                <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-              </div>
-              <div>
-                <label htmlFor="password" className="block text-xs mb-1.5" style={{ color: 'var(--color-text-muted)' }}>Password</label>
-                <input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-              </div>
-              {error && <p role="alert" className="text-sm" style={{ color: 'var(--color-danger)' }}>{error}</p>}
-              <button type="submit" disabled={submitting} className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--color-teal), var(--color-blue))', color: '#0A0A0C' }}>
-                {submitting ? 'Please wait…' : authMode === 'signin' ? 'Sign in' : 'Create account'}
-              </button>
-              <button type="button" onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')} className="w-full text-center text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                {authMode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-                <span style={{ color: 'var(--color-teal)' }}>{authMode === 'signin' ? 'Sign up' : 'Sign in'}</span>
-              </button>
-            </form>
-          )}
-
-          {mode === 'otp-request' && (
-            <form onSubmit={handleSendOtp} className="space-y-4">
-              <div>
-                <label htmlFor="otp-email" className="block text-xs mb-1.5" style={{ color: 'var(--color-text-muted)' }}>Email</label>
-                <input id="otp-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-              </div>
-              {error && <p role="alert" className="text-sm" style={{ color: 'var(--color-danger)' }}>{error}</p>}
-              <button type="submit" disabled={submitting} className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--color-teal), var(--color-blue))', color: '#0A0A0C' }}>
-                {submitting ? 'Sending…' : 'Send code'}
-              </button>
-            </form>
-          )}
-
-          {mode === 'otp-verify' && (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              {info && <p className="text-sm" style={{ color: 'var(--color-teal)' }}>{info}</p>}
-              <div>
-                <label htmlFor="otp-code" className="block text-xs mb-1.5" style={{ color: 'var(--color-text-muted)' }}>6-digit code</label>
-                <input id="otp-code" type="text" inputMode="numeric" required value={otpCode} onChange={(e) => setOtpCode(e.target.value)} className="w-full rounded-lg px-3 py-2 text-sm outline-none font-mono tracking-widest text-center" style={inputStyle} />
-              </div>
-              {error && <p role="alert" className="text-sm" style={{ color: 'var(--color-danger)' }}>{error}</p>}
-              <button type="submit" disabled={submitting} className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60" style={{ background: 'linear-gradient(135deg, var(--color-teal), var(--color-blue))', color: '#0A0A0C' }}>
-                {submitting ? 'Verifying…' : 'Verify & sign in'}
-              </button>
-              <button type="button" onClick={() => { setMode('otp-request'); setError(null); setInfo(null) }} className="w-full text-center text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                Use a different email
-              </button>
-            </form>
-          )}
-        </div>
-      </div>
+      </main>
     </div>
   )
 }
+
+const Feature = ({ icon, label }: { icon: ReactNode; label: string }) => (
+  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+    <div className="size-7 rounded-lg bg-white/10 flex items-center justify-center text-white/80">{icon}</div>
+    <span className="text-sm text-white/85 font-medium">{label}</span>
+  </div>
+)
