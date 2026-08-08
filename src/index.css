@@ -1,0 +1,128 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ============================================================
+ * Edge Blast — ported 1:1 from the live Lovable project's
+ * index.css so the landing hero matches exactly.
+ * ============================================================ */
+:root, .light {
+  --background: 200 11% 97%;
+  --foreground: 215 28% 17%;
+  --card: 210 20% 98%;
+  --card-foreground: 215 28% 17%;
+  --popover: 210 20% 98%;
+  --popover-foreground: 215 28% 17%;
+  --primary: 186 22% 48%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 197 19% 94%;
+  --secondary-foreground: 215 28% 17%;
+  --muted: 197 19% 94%;
+  --muted-foreground: 218 13% 46%;
+  --accent: 186 22% 48%;
+  --accent-foreground: 210 20% 98%;
+  --destructive: 1 77% 55%;
+  --destructive-foreground: 210 20% 98%;
+  --bull: 211 71% 59%;
+  --bear: 1 77% 55%;
+  --gold: 40 55% 55%;
+  --border: 204 14% 88%;
+  --input: 204 14% 88%;
+  --ring: 186 22% 48%;
+}
+
+.dark {
+  --background: 210 12% 9%;
+  --foreground: 204 15% 94%;
+  --card: 213 12% 17%;
+  --card-foreground: 204 15% 94%;
+  --popover: 213 12% 17%;
+  --popover-foreground: 204 15% 94%;
+  --primary: 187 21% 53%;
+  --primary-foreground: 210 12% 9%;
+  --secondary: 213 12% 13%;
+  --secondary-foreground: 204 15% 94%;
+  --muted: 213 12% 15%;
+  --muted-foreground: 210 8% 69%;
+  --accent: 187 21% 53%;
+  --accent-foreground: 210 12% 9%;
+  --destructive: 1 70% 58%;
+  --destructive-foreground: 204 15% 94%;
+  --bull: 211 71% 59%;
+  --bear: 1 70% 58%;
+  --gold: 40 55% 60%;
+  --border: 213 11% 26%;
+  --input: 213 11% 22%;
+  --ring: 187 21% 53%;
+}
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* App-shell tokens (dashboard/sidebar/etc — separate from landing) */
+  --color-bg: #0A0A0C;
+  --color-elevated: #131316;
+  --color-elevated-2: #1A1A1F;
+  --color-teal: #14C9AE;
+  --color-blue: #3D6FE5;
+  --color-rose: #C98A93;
+  --color-text: #F2F2F0;
+  --color-text-muted: #8A8A93;
+  --color-danger: #E2585F;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+html.light {
+  --color-bg: #FAFAF9;
+  --color-elevated: #FFFFFF;
+  --color-elevated-2: #F2F2F0;
+  --color-teal: #098070;
+  --color-blue: #2F5FD1;
+  --color-rose: #A85864;
+  --color-text: #16161A;
+  --color-text-muted: #6B6B72;
+  --color-danger: #C7333A;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display { font-family: 'Fraunces', 'Times New Roman', serif !important; letter-spacing: -0.022em; font-weight: 600; }
+.font-mono, .tabular { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+:focus-visible { outline: 2px solid var(--color-teal); outline-offset: 2px; }
+
+@keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-up { animation: fade-up 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
