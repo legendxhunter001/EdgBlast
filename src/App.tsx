@@ -14,6 +14,8 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Trades from "./pages/Trades";
+import NewTrade from "./pages/NewTrade";
+import TradeDetail from "./pages/TradeDetail";
 import Calendar from "./pages/Calendar";
 import Analytics from "./pages/Analytics";
 import Reviews from "./pages/Reviews";
@@ -50,6 +52,8 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/" element={<RootRoute />} />
               <Route path="/trades" element={<Shell><Trades /></Shell>} />
+              <Route path="/trades/new" element={<Shell><NewTrade /></Shell>} />
+              <Route path="/trades/:id" element={<Shell><TradeDetail /></Shell>} />
               <Route path="/calendar" element={<Shell><Calendar /></Shell>} />
               <Route path="/analytics" element={<Shell><Analytics /></Shell>} />
               <Route path="/reviews" element={<Shell><Reviews /></Shell>} />
