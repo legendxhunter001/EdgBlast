@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import ErrorBoundary from './components/ErrorBoundary.tsx'
-import { supabaseConfigError } from './lib/supabase.ts'
+import { supabaseConfigError } from './integrations/supabase/client.ts'
 
 function ConfigError({ message }: { message: string }) {
   return (

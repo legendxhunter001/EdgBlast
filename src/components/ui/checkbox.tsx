@@ -1,21 +1,26 @@
-import * as RadixCheckbox from '@radix-ui/react-checkbox'
-import { Check } from 'lucide-react'
+import * as React from "react";
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
+import { Check } from "lucide-react";
 
-interface CheckboxProps {
-  checked: boolean
-  onCheckedChange: (checked: boolean) => void
-}
+import { cn } from "@/lib/utils";
 
-export function Checkbox({ checked, onCheckedChange }: CheckboxProps) {
-  return (
-    <RadixCheckbox.Root
-      checked={checked}
-      onCheckedChange={(c) => onCheckedChange(c === true)}
-      className="w-4 h-4 rounded border border-border bg-card flex items-center justify-center data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-    >
-      <RadixCheckbox.Indicator>
-        <Check className="w-3 h-3" style={{ color: 'hsl(var(--primary-foreground))' }} />
-      </RadixCheckbox.Indicator>
-    </RadixCheckbox.Root>
-  )
-}
+const Checkbox = React.forwardRef<
+  React.ElementRef<typeof CheckboxPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
+>(({ className, ...props }, ref) => (
+  <CheckboxPrimitive.Root
+    ref={ref}
+    className={cn(
+      "peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+      className,
+    )}
+    {...props}
+  >
+    <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center text-current")}>
+      <Check className="h-4 w-4" />
+    </CheckboxPrimitive.Indicator>
+  </CheckboxPrimitive.Root>
+));
+Checkbox.displayName = CheckboxPrimitive.Root.displayName;
+
+export { Checkbox };

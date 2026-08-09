@@ -821,7 +821,27 @@ const ScreenshotSlots = () => (
 
 const ScopedStyles = () => (
   <style>{`
-    .eb-landing { color: hsl(var(--foreground)); background: hsl(210 20% 6%); }
+    .eb-landing {
+  color-scheme: dark;
+  --background: 210 12% 9%;
+  --foreground: 204 15% 94%;
+  --card: 213 12% 17%;
+  --card-foreground: 204 15% 94%;
+  --popover: 213 12% 17%;
+  --popover-foreground: 204 15% 94%;
+  --primary: 187 21% 53%;
+  --primary-foreground: 210 12% 9%;
+  --secondary: 213 12% 13%;
+  --secondary-foreground: 204 15% 94%;
+  --muted: 213 12% 15%;
+  --muted-foreground: 210 8% 69%;
+  --accent: 187 21% 53%;
+  --accent-foreground: 210 12% 9%;
+  --border: 213 11% 26%;
+  --bull: 211 71% 59%;
+  --bear: 1 70% 58%;
+}
+.eb-landing { color: hsl(var(--foreground)); background: hsl(210 20% 6%); }
     .eb-landing .eb-bg-grad {
       position:absolute; inset:0;
       background:
