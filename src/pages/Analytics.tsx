@@ -1,98 +1,124 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../hooks/useAuth'
+import { useMemo } from 'react';
+import { useTrades } from '@/hooks/useTrades';
+import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
+import { format, parseISO, getDay, differenceInMinutes } from 'date-fns';
+import { formatCurrency } from '@/lib/format';
 
-interface Trade {
-  pnl: number | null
-  direction: string
-  asset: string
-}
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-export default function Analytics() {
-  const { user } = useAuth()
-  const [trades, setTrades] = useState<Trade[]>([])
-  const [loading, setLoading] = useState(true)
+const Analytics = () => {
+  const { data: trades } = useTrades();
+  const closed = (trades ?? []).filter(t => t.status === 'closed' && t.pnl !== null);
 
-  useEffect(() => {
-    if (!user) return
-    supabase
-      .from('trades')
-      .select('pnl, direction, asset')
-      .eq('status', 'closed')
-      .then(({ data }) => {
-        setTrades((data ?? []) as Trade[])
-        setLoading(false)
-      })
-  }, [user])
+  const byDow = useMemo(() => {
+    const m = new Array(7).fill(0).map((_, i) => ({ day: DAYS[i], pnl: 0, count: 0 }));
+    closed.forEach(t => {
+      if (!t.exit_at) return;
+      const d = getDay(parseISO(t.exit_at));
+      m[d].pnl += Number(t.pnl ?? 0);
+      m[d].count += 1;
+    });
+    return m;
+  }, [closed]);
 
-  const closed = trades.filter((t) => t.pnl != null)
-  const wins = closed.filter((t) => (t.pnl ?? 0) > 0)
-  const losses = closed.filter((t) => (t.pnl ?? 0) < 0)
-  const winRate = closed.length ? (wins.length / closed.length) * 100 : 0
-  const avgWin = wins.length ? wins.reduce((s, t) => s + (t.pnl ?? 0), 0) / wins.length : 0
-  const avgLoss = losses.length ? losses.reduce((s, t) => s + (t.pnl ?? 0), 0) / losses.length : 0
-  const profitFactor = avgLoss !== 0 ? Math.abs((avgWin * wins.length) / (avgLoss * losses.length)) : 0
+  const winLoss = useMemo(() => {
+    const w = closed.filter(t => Number(t.pnl) > 0).length;
+    const l = closed.filter(t => Number(t.pnl) < 0).length;
+    const be = closed.filter(t => Number(t.pnl) === 0).length;
+    return [
+      { name: 'Wins', value: w, color: 'hsl(var(--bull))' },
+      { name: 'Losses', value: l, color: 'hsl(var(--bear))' },
+      { name: 'Breakeven', value: be, color: 'hsl(var(--muted-foreground))' },
+    ];
+  }, [closed]);
 
-  const byAsset = new Map<string, number>()
-  for (const t of closed) byAsset.set(t.asset, (byAsset.get(t.asset) ?? 0) + (t.pnl ?? 0))
-  const topAssets = [...byAsset.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const byEmotion = useMemo(() => {
+    const m = new Map<string, { pnl: number; count: number }>();
+    closed.forEach(t => {
+      const k = t.emotional_state ?? 'unknown';
+      const cur = m.get(k) ?? { pnl: 0, count: 0 };
+      cur.pnl += Number(t.pnl ?? 0); cur.count += 1;
+      m.set(k, cur);
+    });
+    return Array.from(m.entries()).map(([emotion, v]) => ({ emotion, pnl: v.pnl, avg: v.pnl / v.count, count: v.count }));
+  }, [closed]);
 
-  const stats = [
-    { label: 'Win rate', value: `${winRate.toFixed(1)}%` },
-    { label: 'Avg win', value: avgWin.toFixed(2), accent: 'var(--color-teal)' },
-    { label: 'Avg loss', value: avgLoss.toFixed(2), accent: 'var(--color-danger)' },
-    { label: 'Profit factor', value: profitFactor ? profitFactor.toFixed(2) : '—' },
-  ]
+  const avgHoldMin = useMemo(() => {
+    const holds = closed.filter(t => t.entry_at && t.exit_at).map(t => differenceInMinutes(parseISO(t.exit_at!), parseISO(t.entry_at!)));
+    if (!holds.length) return 0;
+    return holds.reduce((a, b) => a + b, 0) / holds.length;
+  }, [closed]);
 
   return (
-    <div>
-      <h1 className="text-2xl mb-6" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}>
-        Analytics
-      </h1>
+    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+      <header>
+        <h1 className="font-display text-3xl font-semibold">Analytics</h1>
+        <p className="text-sm text-muted-foreground mt-1">Patterns, edges, and blind spots.</p>
+      </header>
 
-      {loading ? (
-        <p style={{ color: 'var(--color-text-muted)' }}>Loading…</p>
-      ) : closed.length === 0 ? (
-        <p style={{ color: 'var(--color-text-muted)' }}>No closed trades yet — analytics will populate once you have trade history.</p>
-      ) : (
-        <>
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            {stats.map((s) => (
-              <div
-                key={s.label}
-                className="rounded-xl p-5"
-                style={{ backgroundColor: 'var(--color-elevated)', border: '1px solid var(--color-border)' }}
-              >
-                <p className="text-xs mb-2" style={{ color: 'var(--color-text-muted)' }}>
-                  {s.label}
-                </p>
-                <p className="text-xl font-mono" style={{ color: s.accent ?? 'var(--color-text)' }}>
-                  {s.value}
-                </p>
-              </div>
-            ))}
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="glass rounded-xl p-5 lg:col-span-2">
+          <h3 className="font-display font-semibold mb-4">P&L by day of week</h3>
+          <div className="h-64">
+            <ResponsiveContainer>
+              <BarChart data={byDow}>
+                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
+                <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
+                  {byDow.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? 'hsl(var(--bull))' : 'hsl(var(--bear))'} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
+        </div>
 
-          <h2 className="text-sm mb-3" style={{ color: 'var(--color-text-muted)' }}>
-            Top pairs by net P&L
-          </h2>
-          <div className="space-y-2">
-            {topAssets.map(([asset, pnl]) => (
-              <div
-                key={asset}
-                className="flex items-center justify-between rounded-lg px-4 py-3"
-                style={{ backgroundColor: 'var(--color-elevated)', border: '1px solid var(--color-border)' }}
-              >
-                <span style={{ color: 'var(--color-text)' }}>{asset}</span>
-                <span className="font-mono text-sm" style={{ color: pnl >= 0 ? 'var(--color-teal)' : 'var(--color-danger)' }}>
-                  {pnl >= 0 ? '+' : ''}
-                  {pnl.toFixed(2)}
-                </span>
-              </div>
-            ))}
+        <div className="glass rounded-xl p-5">
+          <h3 className="font-display font-semibold mb-4">Win / Loss</h3>
+          <div className="h-64">
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={winLoss} dataKey="value" innerRadius={50} outerRadius={80} paddingAngle={2}>
+                  {winLoss.map((e, i) => <Cell key={i} fill={e.color} />)}
+                </Pie>
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-        </>
-      )}
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-4">
+        <Metric label="Avg hold time" value={avgHoldMin >= 60 ? `${(avgHoldMin/60).toFixed(1)}h` : `${Math.round(avgHoldMin)}m`} />
+        <Metric label="Best day" value={byDow.reduce((a, b) => a.pnl > b.pnl ? a : b).day} />
+        <Metric label="Total trades" value={String(closed.length)} />
+      </div>
+
+      <div className="glass rounded-xl p-5">
+        <h3 className="font-display font-semibold mb-4">Emotional correlation</h3>
+        <div className="space-y-2">
+          {byEmotion.length === 0 && <div className="text-sm text-muted-foreground">No data yet.</div>}
+          {byEmotion.map(e => (
+            <div key={e.emotion} className="flex items-center justify-between p-2 rounded hover:bg-secondary/40">
+              <div className="capitalize text-sm">{e.emotion}</div>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="text-muted-foreground text-xs">{e.count} trades</div>
+                <div className={`font-mono font-semibold w-28 text-right ${e.pnl >= 0 ? 'text-bull' : 'text-bear'}`}>{formatCurrency(e.pnl, { sign: true })}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
+
+const Metric = ({ label, value }: { label: string; value: string }) => (
+  <div className="glass rounded-xl p-5">
+    <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div className="font-mono text-2xl font-semibold mt-2">{value}</div>
+  </div>
+);
+
+export default Analytics;
