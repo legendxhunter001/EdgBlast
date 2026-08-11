@@ -30,6 +30,10 @@ const FIELD_DEFS: { key: string; label: string; required?: boolean; aliases: str
   { key: 'entry_at', label: 'Entry date/time', aliases: ['entry_at', 'entry_time', 'open_time', 'opentime', 'date_open', 'entry_date', 'date'] },
   { key: 'exit_at', label: 'Exit date/time', aliases: ['exit_at', 'exit_time', 'close_time', 'closetime', 'date_close', 'exit_date'] },
   { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comment', 'comments', 'remarks'] },
+  { key: 'emotional_state', label: 'Emotional state', aliases: ['emotional_state', 'emotion', 'mood', 'feeling', 'psychology'] },
+  { key: 'confidence_rating', label: 'Confidence (1-10)', aliases: ['confidence_rating', 'confidence', 'conviction'] },
+  { key: 'thesis', label: 'Trade thesis', aliases: ['thesis', 'setup', 'idea', 'rationale', 'reason'] },
+  { key: 'lessons_learned', label: 'Lessons learned', aliases: ['lessons_learned', 'lessons', 'takeaway', 'takeaways'] },
 ];
 
 const normalize = (s: string) => s.toLowerCase().trim().replace(/[\s_-]+/g, '');
@@ -139,6 +143,13 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
       const exit_at = parseDate(get('exit_at'));
       const notes = get('notes')?.trim() || null;
       const direction = parseDirection(directionRaw);
+      const emoRaw = get('emotional_state')?.trim().toLowerCase();
+      const validEmotions = ['calm','confident','anxious','fearful','greedy','frustrated','excited','neutral'];
+      const emotional_state = emoRaw && validEmotions.includes(emoRaw) ? emoRaw : null;
+      const confRaw = parseNum(get('confidence_rating'));
+      const confidence_rating = confRaw !== null ? Math.min(10, Math.max(1, Math.round(confRaw))) : null;
+      const thesis = get('thesis')?.trim() || null;
+      const lessons_learned = get('lessons_learned')?.trim() || null;
 
       if (pnl === null && entry_price !== null && exit_price !== null && position_size !== null) {
         const dir = direction === 'long' ? 1 : -1;
@@ -160,6 +171,10 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
         entry_at,
         exit_at,
         notes,
+        emotional_state: emotional_state as any,
+        confidence_rating,
+        thesis,
+        lessons_learned,
       };
     });
 
