@@ -15,6 +15,48 @@
     <title>Edge Blast — Trading Journal</title>
   </head>
   <body>
+    <div id="boot-splash" aria-hidden="true">
+      <style>
+        #boot-splash {
+          position: fixed; inset: 0; z-index: 9999;
+          display: flex; align-items: center; justify-content: center;
+          background: #0A0A0C;
+          transition: opacity 320ms ease, visibility 320ms ease;
+        }
+        #boot-splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+        #boot-splash svg { width: 96px; height: 96px; overflow: visible; }
+        #boot-splash .bs-piece {
+          opacity: 0;
+          transform-origin: center;
+          animation: bs-flash 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          filter: drop-shadow(0 0 0 transparent);
+        }
+        #boot-splash .bs-bar   { animation-delay: 0ms;   fill: #14C9AE; }
+        #boot-splash .bs-f1    { animation-delay: 90ms;  fill: #14C9AE; }
+        #boot-splash .bs-f2    { animation-delay: 180ms; fill: #29A2CA; }
+        #boot-splash .bs-f3    { animation-delay: 270ms; fill: #3D6FE5; }
+        #boot-splash .bs-mark  { animation: bs-settle 900ms cubic-bezier(0.22, 1, 0.36, 1) 520ms both; }
+        @keyframes bs-flash {
+          0%   { opacity: 0; transform: scale(0.6); filter: drop-shadow(0 0 0 transparent); }
+          55%  { opacity: 1; transform: scale(1.12); filter: drop-shadow(0 0 10px rgba(20,201,174,0.55)); }
+          100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
+        }
+        @keyframes bs-settle {
+          0%   { transform: scale(1); }
+          50%  { transform: scale(1.045); }
+          100% { transform: scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          #boot-splash .bs-piece, #boot-splash .bs-mark { animation: none !important; opacity: 1 !important; }
+        }
+      </style>
+      <svg viewBox="0 0 512 512" class="bs-mark">
+        <rect class="bs-piece bs-bar" x="132" y="96" width="54" height="320" rx="10" />
+        <polygon class="bs-piece bs-f1" points="132,96 391,125 132,154" />
+        <polygon class="bs-piece bs-f2" points="132,227 351,256 132,285" />
+        <polygon class="bs-piece bs-f3" points="132,358 316,387 132,416" />
+      </svg>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

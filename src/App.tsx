@@ -8,6 +8,7 @@ import { ThemeProvider } from "./hooks/useTheme";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppLayout } from "./components/AppLayout";
 import { AccountScopeProvider } from "./contexts/AccountScopeContext";
+import { BrandLoading } from "./components/BrandLoading";
 
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
@@ -35,7 +36,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 
 const RootRoute = () => {
   const { session, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <BrandLoading />;
   return session ? <Shell><Dashboard /></Shell> : <Landing />;
 };
 

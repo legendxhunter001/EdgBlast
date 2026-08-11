@@ -36,3 +36,13 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
     })
   })
 }
+
+// Let the boot splash's flash-in animation finish (~1.4s) before removing it,
+// so a fast connection doesn't cut the animation short.
+const splash = document.getElementById('boot-splash')
+if (splash) {
+  window.setTimeout(() => {
+    splash.classList.add('hide')
+    window.setTimeout(() => splash.remove(), 350)
+  }, 1200)
+}
