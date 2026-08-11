@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
+import { toast } from 'sonner';
 
 /* ---------------- TradingView embeds ---------------- */
 
@@ -262,12 +264,187 @@ const LivePositions = () => {
   );
 };
 
+/* ---------------- Price alerts ---------------- */
+
+type PriceAlert = {
+  id: string;
+  symbol: string;
+  condition: 'above' | 'below';
+  target_price: number;
+  notify_inapp: boolean;
+  notify_email: boolean;
+  triggered: boolean;
+  triggered_at: string | null;
+};
+
+const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
+  const { user } = useAuth();
+  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+  const [symbol, setSymbol] = useState(chartSymbol.split(':')[1] ?? 'EURUSD');
+  const [condition, setCondition] = useState<'above' | 'below'>('above');
+  const [targetPrice, setTargetPrice] = useState('');
+  const [notifyEmail, setNotifyEmail] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('price_alerts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setAlerts((data ?? []) as PriceAlert[]);
+  }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Check active alerts against real MT5 quotes while this page is open.
+  useEffect(() => {
+    if (!user) return;
+    const check = async () => {
+      const { data, error: fnErr } = await supabase.functions.invoke('check-price-alerts', { body: {} });
+      if (fnErr || !data?.success) return;
+      const triggered = data.triggered ?? [];
+      for (const t of triggered) {
+        toast.success(`${t.symbol} ${t.condition === 'above' ? 'reached' : 'dropped to'} ${t.price.toFixed(5)}`, {
+          description: `Alert target was ${t.condition} ${t.target_price}`,
+        });
+      }
+      if (triggered.length > 0) load();
+    };
+    check();
+    const id = setInterval(check, 60_000);
+    return () => clearInterval(id);
+  }, [user, load]);
+
+  const activeCount = alerts.filter((a) => !a.triggered).length;
+
+  const handleCreate = async () => {
+    if (!user) return;
+    setError('');
+    const price = Number(targetPrice);
+    if (!symbol.trim() || !price || price <= 0) {
+      setError('Enter a symbol and a valid target price.');
+      return;
+    }
+    if (activeCount >= 5) {
+      setError('You can have at most 5 active alerts — remove one first.');
+      return;
+    }
+    setSaving(true);
+    const { error: insertErr } = await supabase.from('price_alerts').insert({
+      user_id: user.id,
+      symbol: symbol.trim().toUpperCase(),
+      condition,
+      target_price: price,
+      notify_inapp: true,
+      notify_email: notifyEmail,
+    });
+    setSaving(false);
+    if (insertErr) { setError(insertErr.message); return; }
+    setTargetPrice('');
+    load();
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from('price_alerts').delete().eq('id', id);
+    load();
+  };
+
+  return (
+    <div className="tt-card">
+      <div className="tt-card-head">
+        <h2>Price alerts</h2>
+        <span className="tt-hint mono">{activeCount}/5 active</span>
+      </div>
+
+      <div className="tt-alert-form">
+        <input
+          className="tt-alert-input"
+          value={symbol}
+          onChange={(e) => setSymbol(e.target.value)}
+          placeholder="EURUSD"
+          style={{ textTransform: 'uppercase' }}
+        />
+        <select className="tt-alert-select" value={condition} onChange={(e) => setCondition(e.target.value as 'above' | 'below')}>
+          <option value="above">Goes above</option>
+          <option value="below">Drops below</option>
+        </select>
+        <input
+          className="tt-alert-input"
+          type="number"
+          step="any"
+          value={targetPrice}
+          onChange={(e) => setTargetPrice(e.target.value)}
+          placeholder="Target price"
+        />
+        <button type="button" className="tt-chip on" onClick={handleCreate} disabled={saving} style={{ whiteSpace: 'nowrap' }}>
+          {saving ? 'Adding…' : '+ Add alert'}
+        </button>
+      </div>
+
+      <label className="tt-alert-email-toggle">
+        <input type="checkbox" checked={notifyEmail} onChange={(e) => setNotifyEmail(e.target.checked)} />
+        Also email me
+      </label>
+
+      {error && <div className="tt-alert" style={{ marginTop: '.6rem' }}>{error}</div>}
+
+      {alerts.length === 0 ? (
+        <div className="tt-empty" style={{ marginTop: '.9rem' }}>No alerts yet — add one above.</div>
+      ) : (
+        <div className="tt-alert-list">
+          {alerts.map((a) => (
+            <div key={a.id} className={`tt-alert-row ${a.triggered ? 'triggered' : ''}`}>
+              <span className="mono strong">{a.symbol}</span>
+              <span className="dim">{a.condition === 'above' ? '≥' : '≤'}</span>
+              <span className="mono">{a.target_price}</span>
+              {a.triggered && <span className="tt-alert-badge">Triggered</span>}
+              {a.notify_email && <span className="tt-alert-badge-mail" title="Email notification enabled">✉</span>}
+              <button type="button" className="tt-alert-remove" onClick={() => handleDelete(a.id)} aria-label="Remove alert">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ---------------- Page ---------------- */
 
 export default function TradingTools() {
+  const { user } = useAuth();
   const { scope } = useAccountScope();
   const [equity, setEquity] = useState<number | null>(null);
   const [chartSymbol, setChartSymbol] = useState('FX:EURUSD');
+  const [chartTheme, setChartTheme] = useState<'dark' | 'light'>('dark');
+  const [themeLoaded, setThemeLoaded] = useState(false);
+
+  // Chart theme is intentionally independent of the app's own light/dark mode —
+  // a trader might run the app in light mode but always want a dark chart, or vice versa.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from('trading_tool_preferences')
+        .select('chart_theme')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data?.chart_theme === 'light' || data?.chart_theme === 'dark') {
+        setChartTheme(data.chart_theme);
+      }
+      setThemeLoaded(true);
+    })();
+  }, [user?.id]);
+
+  const handleThemeChange = async (next: 'dark' | 'light') => {
+    setChartTheme(next);
+    if (!user) return;
+    await supabase
+      .from('trading_tool_preferences')
+      .upsert({ user_id: user.id, chart_theme: next }, { onConflict: 'user_id' });
+  };
 
   useEffect(() => {
     (async () => {
@@ -285,16 +462,16 @@ export default function TradingTools() {
       symbol: chartSymbol,
       interval: '60',
       timezone: 'Etc/UTC',
-      theme: 'dark',
+      theme: chartTheme,
       style: '1',
       locale: 'en',
-      backgroundColor: 'rgba(19,19,22,1)',
-      gridColor: 'rgba(255,255,255,0.06)',
+      backgroundColor: chartTheme === 'dark' ? 'rgba(19,19,22,1)' : 'rgba(255,255,255,1)',
+      gridColor: chartTheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
       hide_side_toolbar: false,
       allow_symbol_change: true,
       support_host: 'https://www.tradingview.com',
     }),
-    [chartSymbol]
+    [chartSymbol, chartTheme]
   );
 
   return (
@@ -325,10 +502,19 @@ export default function TradingTools() {
                   {s.split(':')[1]}
                 </button>
               ))}
+              <span className="tt-chart-theme-divider" />
+              <button
+                type="button"
+                className="tt-chip"
+                onClick={() => handleThemeChange(chartTheme === 'dark' ? 'light' : 'dark')}
+                title="Chart theme is independent of your app theme"
+              >
+                {chartTheme === 'dark' ? '🌙 Dark chart' : '☀️ Light chart'}
+              </button>
             </div>
           </div>
           <div className="tt-chart">
-            <TVWidget script="advanced-chart" config={chartConfig} height="100%" />
+            {themeLoaded && <TVWidget script="advanced-chart" config={chartConfig} height="100%" />}
           </div>
         </div>
 
@@ -336,6 +522,8 @@ export default function TradingTools() {
           <LotCalculator suggestedBalance={equity !== null ? Math.max(equity, 0) + 10000 : null} />
           <LivePositions />
         </div>
+
+        <PriceAlerts chartSymbol={chartSymbol} />
 
         <div className="tt-card">
           <div className="tt-card-head">
@@ -405,7 +593,8 @@ const styles = `
 .tt-spin{ display:inline-block; animation:tt-rot .9s linear infinite; }
 @keyframes tt-rot{ to{ transform:rotate(360deg);} }
 
-.tt-symbols{ display:flex; gap:.4rem; flex-wrap:wrap; }
+.tt-symbols{ display:flex; gap:.4rem; flex-wrap:wrap; align-items:center; }
+.tt-chart-theme-divider{ width:1px; height:18px; background:var(--line2); margin:0 .2rem; }
 .tt-chip{
   border:1px solid var(--line2); background:rgba(255,255,255,.02); color:var(--dim);
   border-radius:999px; padding:.3rem .75rem; font-size:.76rem; cursor:pointer; font-family:inherit;
@@ -470,4 +659,24 @@ const styles = `
 .tt-total b{ font-size:1.05rem; }
 .tt-total .pos{ color:var(--teal); }
 .tt-total .neg{ color:var(--rose); }
+
+.tt-alert-form{ display:grid; grid-template-columns:1.2fr 1.3fr 1fr auto; gap:.5rem; }
+@media (max-width:640px){ .tt-alert-form{ grid-template-columns:1fr 1fr; } }
+.tt-alert-input, .tt-alert-select{
+  background:rgba(255,255,255,.03); border:1px solid var(--line2); border-radius:9px;
+  padding:.55rem .7rem; color:var(--text); font-size:.85rem; font-family:inherit;
+}
+.tt-alert-input:focus, .tt-alert-select:focus{ outline:none; border-color:var(--teal); }
+.tt-alert-select option{ background:#131316; }
+.tt-alert-email-toggle{ display:flex; align-items:center; gap:.4rem; font-size:.76rem; color:var(--dim); margin-top:.6rem; cursor:pointer; }
+.tt-alert-list{ margin-top:.9rem; display:flex; flex-direction:column; gap:.4rem; }
+.tt-alert-row{
+  display:flex; align-items:center; gap:.5rem; padding:.5rem .7rem; border-radius:8px;
+  background:rgba(255,255,255,.02); border:1px solid var(--line); font-size:.82rem;
+}
+.tt-alert-row.triggered{ border-color:rgba(20,201,174,.35); background:rgba(20,201,174,.06); }
+.tt-alert-badge{ font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.15rem .4rem; border-radius:5px; background:rgba(20,201,174,.18); color:var(--teal); }
+.tt-alert-badge-mail{ font-size:.75rem; opacity:.7; }
+.tt-alert-remove{ margin-left:auto; background:none; border:none; color:var(--dim2); cursor:pointer; font-size:.85rem; padding:.2rem; }
+.tt-alert-remove:hover{ color:var(--rose); }
 `;

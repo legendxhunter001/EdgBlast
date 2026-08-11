@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { functionErrorMessage } from "@/lib/functionError";
+import { BROKERS, OTHER_BROKER } from "@/data/brokers";
 
 type FormState = "idle" | "connecting" | "syncing" | "success" | "error";
 
@@ -12,7 +13,12 @@ interface ConnectMT5Props {
 export default function ConnectMT5({ onConnected, compact = false }: ConnectMT5Props) {
   const [state, setState] = useState<FormState>("idle");
   const [accountNumber, setAccountNumber] = useState("");
+  const [brokerQuery, setBrokerQuery] = useState("");
+  const [selectedBroker, setSelectedBroker] = useState<string | null>(null);
   const [brokerServer, setBrokerServer] = useState("");
+  const [serverQuery, setServerQuery] = useState("");
+  const [brokerDropdownOpen, setBrokerDropdownOpen] = useState(false);
+  const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
   const [investorPassword, setInvestorPassword] = useState("");
   const [label, setLabel] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -20,7 +26,10 @@ export default function ConnectMT5({ onConnected, compact = false }: ConnectMT5P
 
   const resetForm = () => {
     setAccountNumber("");
+    setBrokerQuery("");
+    setSelectedBroker(null);
     setBrokerServer("");
+    setServerQuery("");
     setInvestorPassword("");
     setLabel("");
   };
@@ -157,6 +166,19 @@ export default function ConnectMT5({ onConnected, compact = false }: ConnectMT5P
         .eb-field input::placeholder{ color:var(--eb-text-dim2); }
         .eb-field-optional{ color:var(--eb-text-dim2); font-weight:400; font-size:.72rem; margin-left:.35rem; }
 
+        .eb-combo{ position:relative; }
+        .eb-combo-list{
+          position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:20;
+          background:var(--eb-bg-elev); border:1px solid var(--eb-line-strong); border-radius:9px;
+          max-height:220px; overflow-y:auto; box-shadow:0 12px 32px rgba(0,0,0,0.35);
+        }
+        .eb-combo-item{
+          display:block; width:100%; text-align:left; padding:.6rem .8rem; font-size:.88rem;
+          background:transparent; border:none; color:var(--eb-text); cursor:pointer; font-family:inherit;
+        }
+        .eb-combo-item:hover{ background:rgba(20,201,174,.10); }
+        .eb-combo-item-custom{ color:var(--eb-teal-text); border-top:1px solid var(--eb-line); font-size:.8rem; }
+
         .eb-security-note{ font-size:.78rem; color:var(--eb-text-dim2); line-height:1.5; }
         .eb-error-text{ font-size:.82rem; color:var(--eb-rose-text); }
         .eb-success-text{ font-size:.82rem; color:var(--eb-teal-text); }
@@ -248,16 +270,115 @@ export default function ConnectMT5({ onConnected, compact = false }: ConnectMT5P
               />
             </label>
             <label className="eb-field">
-              <span>Broker Server</span>
-              <input
-                type="text"
-                value={brokerServer}
-                onChange={(e) => setBrokerServer(e.target.value)}
-                placeholder="e.g. ICMarketsSC-Live01"
-                disabled={state === "connecting" || state === "syncing"}
-                required
-              />
+              <span>Broker</span>
+              <div className="eb-combo">
+                <input
+                  type="text"
+                  value={selectedBroker ?? brokerQuery}
+                  onChange={(e) => {
+                    setSelectedBroker(null);
+                    setBrokerQuery(e.target.value);
+                    setBrokerServer("");
+                    setServerQuery("");
+                    setBrokerDropdownOpen(true);
+                  }}
+                  onFocus={() => setBrokerDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setBrokerDropdownOpen(false), 150)}
+                  placeholder="Search for your broker…"
+                  disabled={state === "connecting" || state === "syncing"}
+                  required
+                />
+                {brokerDropdownOpen && (
+                  <div className="eb-combo-list">
+                    {[...BROKERS.filter((b) => b.name.toLowerCase().includes(brokerQuery.toLowerCase())), { name: OTHER_BROKER, servers: [] }]
+                      .slice(0, 8)
+                      .map((b) => (
+                        <button
+                          type="button"
+                          key={b.name}
+                          className="eb-combo-item"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setSelectedBroker(b.name);
+                            setBrokerQuery("");
+                            setBrokerServer("");
+                            setServerQuery("");
+                            setBrokerDropdownOpen(false);
+                          }}
+                        >
+                          {b.name}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
             </label>
+
+            {selectedBroker === OTHER_BROKER ? (
+              <label className="eb-field">
+                <span>Broker Server</span>
+                <input
+                  type="text"
+                  value={brokerServer}
+                  onChange={(e) => setBrokerServer(e.target.value)}
+                  placeholder="e.g. YourBroker-Live01"
+                  disabled={state === "connecting" || state === "syncing"}
+                  required
+                />
+              </label>
+            ) : selectedBroker ? (
+              <label className="eb-field">
+                <span>Server</span>
+                <div className="eb-combo">
+                  <input
+                    type="text"
+                    value={brokerServer || serverQuery}
+                    onChange={(e) => {
+                      setBrokerServer("");
+                      setServerQuery(e.target.value);
+                      setServerDropdownOpen(true);
+                    }}
+                    onFocus={() => setServerDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setServerDropdownOpen(false), 150)}
+                    placeholder="Search for your server…"
+                    disabled={state === "connecting" || state === "syncing"}
+                    required
+                  />
+                  {serverDropdownOpen && (
+                    <div className="eb-combo-list">
+                      {(BROKERS.find((b) => b.name === selectedBroker)?.servers ?? [])
+                        .filter((s) => s.toLowerCase().includes(serverQuery.toLowerCase()))
+                        .map((s) => (
+                          <button
+                            type="button"
+                            key={s}
+                            className="eb-combo-item"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setBrokerServer(s);
+                              setServerQuery("");
+                              setServerDropdownOpen(false);
+                            }}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      <button
+                        type="button"
+                        className="eb-combo-item eb-combo-item-custom"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setBrokerServer(serverQuery);
+                          setServerDropdownOpen(false);
+                        }}
+                      >
+                        Use "{serverQuery || '…'}" as typed
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </label>
+            ) : null}
             <label className="eb-field">
               <span>Investor Password</span>
               <input
