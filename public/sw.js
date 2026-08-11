@@ -1,14 +1,17 @@
 // Edge Blast service worker.
-// Strategy: cache the app shell (HTML/JS/CSS/icons) so the app opens instantly
-// and works offline for navigation. Never cache Supabase API/auth/storage
-// calls — trade data must always be fresh and network-first.
+// Strategy: the HTML shell is network-first — an installed PWA should always
+// show the latest deploy when online, falling back to the cached shell only
+// when offline. Hashed build assets (JS/CSS under /assets/, fingerprinted by
+// Vite) are cache-first since a content change always produces a new URL, so
+// there's no staleness risk there. Supabase (API/auth/storage) is never
+// cached — trade data must always be fresh.
 
-const CACHE_VERSION = 'edge-blast-v1';
-const APP_SHELL = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+const CACHE_VERSION = 'edge-blast-v2';
+const SHELL_URL = '/';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(APP_SHELL)).catch(() => {}),
+    caches.open(CACHE_VERSION).then((cache) => cache.add(SHELL_URL)).catch(() => {}),
   );
   self.skipWaiting();
 });
@@ -34,8 +37,26 @@ self.addEventListener('fetch', (event) => {
   // Cross-origin requests (fonts, TradingView widgets, etc.) — just pass through.
   if (url.origin !== self.location.origin) return;
 
-  // App shell / static assets: cache-first, falling back to network,
-  // and refreshing the cache in the background.
+  const isNavigation = request.mode === 'navigate' || request.destination === 'document';
+
+  if (isNavigation) {
+    // Network-first: always try to get the latest deploy. Only fall back to
+    // the cached shell if the network is unavailable (offline).
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(SHELL_URL, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(SHELL_URL).then((cached) => cached || caches.match(request))),
+    );
+    return;
+  }
+
+  // Static assets: cache-first, refreshing the cache in the background.
   event.respondWith(
     caches.match(request).then((cached) => {
       const fetchPromise = fetch(request)
