@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
 import { toast } from 'sonner';
-import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell } from 'lucide-react';
+import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell, Palette, RotateCcw } from 'lucide-react';
 
 /* ---------------- TradingView embeds ---------------- */
 
@@ -422,8 +422,34 @@ export default function TradingTools() {
   const [equity, setEquity] = useState<number | null>(null);
   const [chartSymbol, setChartSymbol] = useState('FX:EURUSD');
   const [chartTheme, setChartTheme] = useState<'dark' | 'light'>('dark');
+  const [upColor, setUpColor] = useState('#14C9AE');
+  const [downColor, setDownColor] = useState('#C98A93');
   const [themeLoaded, setThemeLoaded] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!colorPickerOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
+        setColorPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [colorPickerOpen]);
+
+  // Distinguish phone from desktop so the chart gets a toolbar suited to each —
+  // a lighter, decluttered config on phone (like a mobile app), full toolbar on desktop.
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Distraction-free fullscreen chart — exit via the button or Escape.
   useEffect(() => {
@@ -437,19 +463,21 @@ export default function TradingTools() {
     };
   }, [focusMode]);
 
-  // Chart theme is intentionally independent of the app's own light/dark mode —
-  // a trader might run the app in light mode but always want a dark chart, or vice versa.
+  // Chart theme and colors are intentionally independent of the app's own light/dark
+  // mode — a trader might run the app in light mode but always want a dark chart.
   useEffect(() => {
     if (!user) return;
     (async () => {
       const { data } = await supabase
         .from('trading_tool_preferences')
-        .select('chart_theme')
+        .select('chart_theme, chart_up_color, chart_down_color')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data?.chart_theme === 'light' || data?.chart_theme === 'dark') {
         setChartTheme(data.chart_theme);
       }
+      if (data?.chart_up_color) setUpColor(data.chart_up_color);
+      if (data?.chart_down_color) setDownColor(data.chart_down_color);
       setThemeLoaded(true);
     })();
   }, [user?.id]);
@@ -461,6 +489,22 @@ export default function TradingTools() {
       .from('trading_tool_preferences')
       .upsert({ user_id: user.id, chart_theme: next }, { onConflict: 'user_id' });
   };
+
+  const handleColorChange = async (next: { up?: string; down?: string }) => {
+    if (next.up) setUpColor(next.up);
+    if (next.down) setDownColor(next.down);
+    if (!user) return;
+    await supabase.from('trading_tool_preferences').upsert(
+      {
+        user_id: user.id,
+        ...(next.up ? { chart_up_color: next.up } : {}),
+        ...(next.down ? { chart_down_color: next.down } : {}),
+      },
+      { onConflict: 'user_id' }
+    );
+  };
+
+  const resetColors = () => handleColorChange({ up: '#14C9AE', down: '#C98A93' });
 
   useEffect(() => {
     (async () => {
@@ -483,11 +527,26 @@ export default function TradingTools() {
       locale: 'en',
       backgroundColor: chartTheme === 'dark' ? 'rgba(19,19,22,1)' : 'rgba(255,255,255,1)',
       gridColor: chartTheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-      hide_side_toolbar: false,
+      // Mobile gets a lighter, app-like toolbar (like TradingView's mobile app);
+      // desktop gets the fuller toolset (like TradingView's desktop app).
+      hide_side_toolbar: isMobile,
+      hide_top_toolbar: false,
+      details: !isMobile,
+      hotlist: false,
+      calendar: false,
+      withdateranges: !isMobile,
       allow_symbol_change: true,
       support_host: 'https://www.tradingview.com',
+      overrides: {
+        'mainSeriesProperties.candleStyle.upColor': upColor,
+        'mainSeriesProperties.candleStyle.downColor': downColor,
+        'mainSeriesProperties.candleStyle.borderUpColor': upColor,
+        'mainSeriesProperties.candleStyle.borderDownColor': downColor,
+        'mainSeriesProperties.candleStyle.wickUpColor': upColor,
+        'mainSeriesProperties.candleStyle.wickDownColor': downColor,
+      },
     }),
-    [chartSymbol, chartTheme]
+    [chartSymbol, chartTheme, upColor, downColor, isMobile]
   );
 
   return (
@@ -519,6 +578,42 @@ export default function TradingTools() {
                 ))}
               </select>
               <div className="tt-icon-group">
+                <div className="tt-color-wrap" ref={colorPickerRef}>
+                  <button
+                    type="button"
+                    className="tt-icon-btn"
+                    onClick={() => setColorPickerOpen((v) => !v)}
+                    aria-label="Customize candle colors"
+                    title="Customize candle colors"
+                  >
+                    <Palette size={15} />
+                  </button>
+                  {colorPickerOpen && (
+                    <div className="tt-color-popover">
+                      <div className="tt-color-row">
+                        <label htmlFor="tt-up-color">Bullish</label>
+                        <input
+                          id="tt-up-color"
+                          type="color"
+                          value={upColor}
+                          onChange={(e) => handleColorChange({ up: e.target.value })}
+                        />
+                      </div>
+                      <div className="tt-color-row">
+                        <label htmlFor="tt-down-color">Bearish</label>
+                        <input
+                          id="tt-down-color"
+                          type="color"
+                          value={downColor}
+                          onChange={(e) => handleColorChange({ down: e.target.value })}
+                        />
+                      </div>
+                      <button type="button" className="tt-color-reset" onClick={resetColors}>
+                        <RotateCcw size={12} /> Reset to default
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
                   className="tt-icon-btn"
@@ -664,8 +759,27 @@ const styles = `
 .tt-chip:hover{ color:var(--text); transform:translateY(-1px); }
 .tt-chip.on{ color:#06110E; background:linear-gradient(135deg,var(--teal),var(--blue)); border-color:transparent; font-weight:650; }
 
-.tt-chart{ height:clamp(320px, 52vh, 620px); border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+.tt-chart{ height:clamp(360px, 58vh, 620px); border-radius:12px; overflow:hidden; border:1px solid var(--line); }
 .tt-cal{ height:clamp(360px, 55vh, 560px); border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+
+.tt-color-wrap{ position:relative; }
+.tt-color-popover{
+  position:absolute; top:calc(100% + 6px); right:0; z-index:30;
+  background:var(--elev); border:1px solid var(--line2); border-radius:10px;
+  padding:.7rem; min-width:150px; box-shadow:0 12px 32px rgba(0,0,0,0.35);
+  display:flex; flex-direction:column; gap:.55rem;
+}
+.tt-color-row{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; font-size:.78rem; color:var(--dim); }
+.tt-color-row input[type="color"]{
+  width:30px; height:24px; border:1px solid var(--line2); border-radius:5px;
+  background:none; cursor:pointer; padding:0;
+}
+.tt-color-reset{
+  display:flex; align-items:center; gap:.35rem; justify-content:center;
+  background:none; border:1px solid var(--line2); border-radius:7px; padding:.35rem;
+  color:var(--dim); font-size:.72rem; cursor:pointer; font-family:inherit;
+}
+.tt-color-reset:hover{ color:var(--teal); border-color:var(--teal); }
 
 .tt-two{ display:grid; gap:1.15rem; grid-template-columns:1fr; }
 @media (min-width: 980px){ .tt-two{ grid-template-columns:minmax(340px,.85fr) 1.15fr; } }

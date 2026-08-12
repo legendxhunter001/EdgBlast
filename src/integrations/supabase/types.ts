@@ -566,7 +566,9 @@ export type Database = {
       }
       trading_tool_preferences: {
         Row: {
+          chart_down_color: string | null
           chart_theme: string
+          chart_up_color: string | null
           favorite_symbols: string[]
           last_interval: string
           last_symbol: string
@@ -574,7 +576,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          chart_down_color?: string | null
           chart_theme?: string
+          chart_up_color?: string | null
           favorite_symbols?: string[]
           last_interval?: string
           last_symbol?: string
@@ -582,7 +586,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          chart_down_color?: string | null
           chart_theme?: string
+          chart_up_color?: string | null
           favorite_symbols?: string[]
           last_interval?: string
           last_symbol?: string
