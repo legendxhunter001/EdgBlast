@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
 import { toast } from 'sonner';
+import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell } from 'lucide-react';
 
 /* ---------------- TradingView embeds ---------------- */
 
@@ -206,7 +207,7 @@ const LivePositions = () => {
             {updatedAt ? `Updated ${updatedAt.toLocaleTimeString()}` : 'Loading…'}
           </span>
           <button type="button" className="tt-refresh" onClick={load} disabled={loading} aria-label="Refresh positions">
-            <span className={loading ? 'tt-spin' : ''}>⟳</span>
+            <RefreshCw className={loading ? 'tt-spin' : ''} style={{ width: 14, height: 14 }} />
           </button>
         </div>
       </div>
@@ -355,7 +356,7 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
   return (
     <div className="tt-card">
       <div className="tt-card-head">
-        <h2>Price alerts</h2>
+        <h2><Bell className="tt-chip-icon" style={{ marginRight: 2 }} /> Price alerts</h2>
         <span className="tt-hint mono">{activeCount}/5 active</span>
       </div>
 
@@ -401,8 +402,10 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
               <span className="dim">{a.condition === 'above' ? '≥' : '≤'}</span>
               <span className="mono">{a.target_price}</span>
               {a.triggered && <span className="tt-alert-badge">Triggered</span>}
-              {a.notify_email && <span className="tt-alert-badge-mail" title="Email notification enabled">✉</span>}
-              <button type="button" className="tt-alert-remove" onClick={() => handleDelete(a.id)} aria-label="Remove alert">✕</button>
+              {a.notify_email && <Mail className="tt-alert-badge-mail" aria-label="Email notification enabled" />}
+              <button type="button" className="tt-alert-remove" onClick={() => handleDelete(a.id)} aria-label="Remove alert">
+                <X className="tt-chip-icon" />
+              </button>
             </div>
           ))}
         </div>
@@ -522,7 +525,8 @@ export default function TradingTools() {
                 onClick={() => handleThemeChange(chartTheme === 'dark' ? 'light' : 'dark')}
                 title="Chart theme is independent of your app theme"
               >
-                {chartTheme === 'dark' ? '🌙 Dark chart' : '☀️ Light chart'}
+                {chartTheme === 'dark' ? <Moon className="tt-chip-icon" /> : <Sun className="tt-chip-icon" />}
+                {chartTheme === 'dark' ? 'Dark chart' : 'Light chart'}
               </button>
               <button
                 type="button"
@@ -530,7 +534,7 @@ export default function TradingTools() {
                 onClick={() => setFocusMode(true)}
                 title="Distraction-free fullscreen chart"
               >
-                ⛶ Focus
+                <Maximize2 className="tt-chip-icon" /> Focus
               </button>
             </div>
           </div>
@@ -544,7 +548,7 @@ export default function TradingTools() {
             <div className="tt-focus-bar">
               <span className="mono">{chartSymbol}</span>
               <button type="button" className="tt-chip on" onClick={() => setFocusMode(false)}>
-                ✕ Exit focus (Esc)
+                <X className="tt-chip-icon" /> Exit focus (Esc)
               </button>
             </div>
             <div className="tt-focus-chart">
@@ -611,7 +615,7 @@ const styles = `
 @keyframes tt-in{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;} }
 
 .tt-card-head{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap; margin-bottom:.9rem; }
-.tt-card-head h2{ font-size:1rem; font-weight:650; display:flex; align-items:center; gap:.5rem; }
+.tt-card-head h2{ font-size:1rem; font-weight:650; display:flex; align-items:center; gap:.4rem; }
 .tt-hint{ color:var(--dim2); font-size:.72rem; }
 .tt-head-right{ display:flex; align-items:center; gap:.6rem; }
 .tt-tag{
@@ -634,7 +638,9 @@ const styles = `
   border:1px solid var(--line2); background:rgba(255,255,255,.02); color:var(--dim);
   border-radius:999px; padding:.3rem .75rem; font-size:.76rem; cursor:pointer; font-family:inherit;
   transition:color .2s ease, background .2s ease, border-color .2s ease, transform .15s ease;
+  display:inline-flex; align-items:center; gap:.35rem;
 }
+.tt-chip-icon{ width:13px; height:13px; flex-shrink:0; }
 .tt-chip:hover{ color:var(--text); transform:translateY(-1px); }
 .tt-chip.on{ color:#06110E; background:linear-gradient(135deg,var(--teal),var(--blue)); border-color:transparent; font-weight:650; }
 
@@ -711,7 +717,7 @@ const styles = `
 }
 .tt-alert-row.triggered{ border-color:rgba(20,201,174,.35); background:rgba(20,201,174,.06); }
 .tt-alert-badge{ font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.15rem .4rem; border-radius:5px; background:rgba(20,201,174,.18); color:var(--teal); }
-.tt-alert-badge-mail{ font-size:.75rem; opacity:.7; }
+.tt-alert-badge-mail{ width:13px; height:13px; opacity:.7; color:var(--dim); flex-shrink:0; }
 .tt-alert-remove{ margin-left:auto; background:none; border:none; color:var(--dim2); cursor:pointer; font-size:.85rem; padding:.2rem; }
 .tt-alert-remove:hover{ color:var(--rose); }
 
