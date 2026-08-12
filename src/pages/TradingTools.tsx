@@ -420,6 +420,19 @@ export default function TradingTools() {
   const [chartSymbol, setChartSymbol] = useState('FX:EURUSD');
   const [chartTheme, setChartTheme] = useState<'dark' | 'light'>('dark');
   const [themeLoaded, setThemeLoaded] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+
+  // Distraction-free fullscreen chart — exit via the button or Escape.
+  useEffect(() => {
+    if (!focusMode) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFocusMode(false); };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [focusMode]);
 
   // Chart theme is intentionally independent of the app's own light/dark mode —
   // a trader might run the app in light mode but always want a dark chart, or vice versa.
@@ -511,12 +524,34 @@ export default function TradingTools() {
               >
                 {chartTheme === 'dark' ? '🌙 Dark chart' : '☀️ Light chart'}
               </button>
+              <button
+                type="button"
+                className="tt-chip"
+                onClick={() => setFocusMode(true)}
+                title="Distraction-free fullscreen chart"
+              >
+                ⛶ Focus
+              </button>
             </div>
           </div>
           <div className="tt-chart">
-            {themeLoaded && <TVWidget script="advanced-chart" config={chartConfig} height="100%" />}
+            {themeLoaded && !focusMode && <TVWidget script="advanced-chart" config={chartConfig} height="100%" />}
           </div>
         </div>
+
+        {focusMode && (
+          <div className="tt-focus-overlay">
+            <div className="tt-focus-bar">
+              <span className="mono">{chartSymbol}</span>
+              <button type="button" className="tt-chip on" onClick={() => setFocusMode(false)}>
+                ✕ Exit focus (Esc)
+              </button>
+            </div>
+            <div className="tt-focus-chart">
+              {themeLoaded && <TVWidget script="advanced-chart" config={chartConfig} height="100%" />}
+            </div>
+          </div>
+        )}
 
         <div className="tt-two">
           <LotCalculator suggestedBalance={equity !== null ? Math.max(equity, 0) + 10000 : null} />
@@ -679,4 +714,15 @@ const styles = `
 .tt-alert-badge-mail{ font-size:.75rem; opacity:.7; }
 .tt-alert-remove{ margin-left:auto; background:none; border:none; color:var(--dim2); cursor:pointer; font-size:.85rem; padding:.2rem; }
 .tt-alert-remove:hover{ color:var(--rose); }
+
+.tt-focus-overlay{
+  position:fixed; inset:0; z-index:200; background:var(--bg);
+  display:flex; flex-direction:column; animation:tt-focus-in 200ms ease both;
+}
+@keyframes tt-focus-in{ from{ opacity:0; } to{ opacity:1; } }
+.tt-focus-bar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:.85rem 1.1rem; border-bottom:1px solid var(--line); flex-shrink:0;
+}
+.tt-focus-chart{ flex:1; min-height:0; }
 `;
