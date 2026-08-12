@@ -507,35 +507,37 @@ export default function TradingTools() {
         <div className="tt-card tt-chart-card">
           <div className="tt-card-head">
             <h2>Chart</h2>
-            <div className="tt-symbols">
-              {['FX:EURUSD', 'FX:GBPUSD', 'OANDA:XAUUSD', 'FX:USDJPY'].map((s) => (
+            <div className="tt-toolbar">
+              <select
+                className="tt-symbol-select"
+                value={chartSymbol}
+                onChange={(e) => setChartSymbol(e.target.value)}
+                aria-label="Select symbol"
+              >
+                {['FX:EURUSD', 'FX:GBPUSD', 'OANDA:XAUUSD', 'FX:USDJPY'].map((s) => (
+                  <option key={s} value={s}>{s.split(':')[1]}</option>
+                ))}
+              </select>
+              <div className="tt-icon-group">
                 <button
-                  key={s}
                   type="button"
-                  className={`tt-chip ${chartSymbol === s ? 'on' : ''}`}
-                  onClick={() => setChartSymbol(s)}
+                  className="tt-icon-btn"
+                  onClick={() => handleThemeChange(chartTheme === 'dark' ? 'light' : 'dark')}
+                  aria-label={chartTheme === 'dark' ? 'Switch to light chart' : 'Switch to dark chart'}
+                  title="Chart theme is independent of your app theme"
                 >
-                  {s.split(':')[1]}
+                  {chartTheme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
                 </button>
-              ))}
-              <span className="tt-chart-theme-divider" />
-              <button
-                type="button"
-                className="tt-chip"
-                onClick={() => handleThemeChange(chartTheme === 'dark' ? 'light' : 'dark')}
-                title="Chart theme is independent of your app theme"
-              >
-                {chartTheme === 'dark' ? <Moon className="tt-chip-icon" /> : <Sun className="tt-chip-icon" />}
-                {chartTheme === 'dark' ? 'Dark chart' : 'Light chart'}
-              </button>
-              <button
-                type="button"
-                className="tt-chip"
-                onClick={() => setFocusMode(true)}
-                title="Distraction-free fullscreen chart"
-              >
-                <Maximize2 className="tt-chip-icon" /> Focus
-              </button>
+                <button
+                  type="button"
+                  className="tt-icon-btn"
+                  onClick={() => setFocusMode(true)}
+                  aria-label="Enter focus mode"
+                  title="Distraction-free fullscreen chart"
+                >
+                  <Maximize2 size={15} />
+                </button>
+              </div>
             </div>
           </div>
           <div className="tt-chart">
@@ -547,8 +549,8 @@ export default function TradingTools() {
           <div className="tt-focus-overlay">
             <div className="tt-focus-bar">
               <span className="mono">{chartSymbol}</span>
-              <button type="button" className="tt-chip on" onClick={() => setFocusMode(false)}>
-                <X className="tt-chip-icon" /> Exit focus (Esc)
+              <button type="button" className="tt-icon-btn" onClick={() => setFocusMode(false)} aria-label="Exit focus mode" title="Exit focus (Esc)">
+                <X size={15} />
               </button>
             </div>
             <div className="tt-focus-chart">
@@ -632,8 +634,26 @@ const styles = `
 .tt-spin{ display:inline-block; animation:tt-rot .9s linear infinite; }
 @keyframes tt-rot{ to{ transform:rotate(360deg);} }
 
-.tt-symbols{ display:flex; gap:.4rem; flex-wrap:wrap; align-items:center; }
-.tt-chart-theme-divider{ width:1px; height:18px; background:var(--line2); margin:0 .2rem; }
+.tt-toolbar{ display:flex; align-items:center; gap:.5rem; }
+.tt-symbol-select{
+  border:1px solid var(--line2); background:rgba(255,255,255,.02); color:var(--text);
+  border-radius:8px; padding:.4rem .6rem; font-size:.8rem; font-family:inherit; cursor:pointer;
+  min-width:96px;
+}
+.tt-symbol-select:focus{ outline:none; border-color:var(--teal); }
+.tt-symbol-select option{ background:#131316; color:#fff; }
+.tt-icon-group{ display:flex; align-items:center; gap:.3rem; padding-left:.4rem; border-left:1px solid var(--line); }
+.tt-icon-btn{
+  width:30px; height:30px; border-radius:8px; border:1px solid var(--line2);
+  background:rgba(255,255,255,.02); color:var(--dim); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:color .2s ease, border-color .2s ease, background .2s ease;
+}
+.tt-icon-btn:hover{ color:var(--teal); border-color:var(--teal); }
+@media (min-width: 720px){
+  .tt-symbol-select{ min-width:130px; padding:.5rem .75rem; }
+  .tt-icon-btn{ width:34px; height:34px; }
+}
 .tt-chip{
   border:1px solid var(--line2); background:rgba(255,255,255,.02); color:var(--dim);
   border-radius:999px; padding:.3rem .75rem; font-size:.76rem; cursor:pointer; font-family:inherit;
