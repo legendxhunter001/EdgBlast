@@ -42,6 +42,54 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_snapshots: {
+        Row: {
+          avg_rr: number | null
+          created_at: string
+          id: string
+          is_final: boolean
+          losses: number
+          period_end: string
+          period_start: string
+          period_type: string
+          total_pnl: number
+          total_trades: number
+          user_id: string
+          win_rate: number | null
+          wins: number
+        }
+        Insert: {
+          avg_rr?: number | null
+          created_at?: string
+          id?: string
+          is_final?: boolean
+          losses?: number
+          period_end: string
+          period_start: string
+          period_type: string
+          total_pnl?: number
+          total_trades?: number
+          user_id: string
+          win_rate?: number | null
+          wins?: number
+        }
+        Update: {
+          avg_rr?: number | null
+          created_at?: string
+          id?: string
+          is_final?: boolean
+          losses?: number
+          period_end?: string
+          period_start?: string
+          period_type?: string
+          total_pnl?: number
+          total_trades?: number
+          user_id?: string
+          win_rate?: number | null
+          wins?: number
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string

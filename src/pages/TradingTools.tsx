@@ -414,6 +414,95 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
   );
 };
 
+/* ---------------- Watchlist ---------------- */
+
+const Watchlist = ({ activeSymbol, onSelect }: { activeSymbol: string; onSelect: (s: string) => void }) => {
+  const { user } = useAuth();
+  const [symbols, setSymbols] = useState<string[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from('trading_tool_preferences')
+        .select('favorite_symbols')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setSymbols(data?.favorite_symbols ?? []);
+      setLoading(false);
+    })();
+  }, [user?.id]);
+
+  const persist = async (next: string[]) => {
+    setSymbols(next);
+    if (!user) return;
+    await supabase
+      .from('trading_tool_preferences')
+      .upsert({ user_id: user.id, favorite_symbols: next }, { onConflict: 'user_id' });
+  };
+
+  const add = () => {
+    const clean = input.trim().toUpperCase();
+    if (!clean || symbols.includes(clean)) { setInput(''); return; }
+    persist([...symbols, clean]);
+    setInput('');
+  };
+
+  const remove = (s: string) => persist(symbols.filter((x) => x !== s));
+
+  return (
+    <div className="tt-card">
+      <div className="tt-card-head">
+        <h2>Watchlist</h2>
+        <span className="tt-hint mono">{symbols.length} saved</span>
+      </div>
+      <div className="tt-alert-form" style={{ gridTemplateColumns: '1fr auto' }}>
+        <input
+          className="tt-alert-input"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add()}
+          placeholder="Add symbol, e.g. GBPJPY"
+          style={{ textTransform: 'uppercase' }}
+        />
+        <button type="button" className="tt-chip on" onClick={add} style={{ whiteSpace: 'nowrap' }}>
+          + Add
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="tt-empty" style={{ marginTop: '.9rem' }}>Loading…</div>
+      ) : symbols.length === 0 ? (
+        <div className="tt-empty" style={{ marginTop: '.9rem' }}>No symbols saved yet.</div>
+      ) : (
+        <div className="tt-alert-list">
+          {symbols.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={`tt-alert-row tt-watchlist-row ${activeSymbol.includes(s) ? 'triggered' : ''}`}
+              onClick={() => onSelect(`FX:${s}`)}
+            >
+              <span className="mono strong">{s}</span>
+              <span
+                className="tt-alert-remove"
+                role="button"
+                tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); remove(s); }}
+                aria-label={`Remove ${s} from watchlist`}
+              >
+                <X size={13} />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ---------------- Page ---------------- */
 
 export default function TradingTools() {
@@ -426,6 +515,19 @@ export default function TradingTools() {
   const [downColor, setDownColor] = useState('#C98A93');
   const [themeLoaded, setThemeLoaded] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [focusBarVisible, setFocusBarVisible] = useState(true);
+  const focusBarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const wakeFocusBar = useCallback(() => {
+    setFocusBarVisible(true);
+    if (focusBarTimer.current) clearTimeout(focusBarTimer.current);
+    focusBarTimer.current = setTimeout(() => setFocusBarVisible(false), 3000);
+  }, []);
+
+  useEffect(() => {
+    if (focusMode) wakeFocusBar();
+    else if (focusBarTimer.current) clearTimeout(focusBarTimer.current);
+  }, [focusMode, wakeFocusBar]);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const colorPickerRef = useRef<HTMLDivElement>(null);
 
@@ -452,14 +554,17 @@ export default function TradingTools() {
   }, []);
 
   // Distraction-free fullscreen chart — exit via the button or Escape.
+  // The body class lets AppLayout hide its floating "+" button globally.
   useEffect(() => {
     if (!focusMode) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFocusMode(false); };
     window.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('eb-focus-mode');
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
+      document.body.classList.remove('eb-focus-mode');
     };
   }, [focusMode]);
 
@@ -641,8 +746,8 @@ export default function TradingTools() {
         </div>
 
         {focusMode && (
-          <div className="tt-focus-overlay">
-            <div className="tt-focus-bar">
+          <div className="tt-focus-overlay" onMouseMove={wakeFocusBar} onTouchStart={wakeFocusBar}>
+            <div className={`tt-focus-bar ${focusBarVisible ? '' : 'tt-focus-bar-hidden'}`}>
               <span className="mono">{chartSymbol}</span>
               <button type="button" className="tt-icon-btn" onClick={() => setFocusMode(false)} aria-label="Exit focus mode" title="Exit focus (Esc)">
                 <X size={15} />
@@ -655,11 +760,14 @@ export default function TradingTools() {
         )}
 
         <div className="tt-two">
+          <Watchlist activeSymbol={chartSymbol} onSelect={setChartSymbol} />
+          <PriceAlerts chartSymbol={chartSymbol} />
+        </div>
+
+        <div className="tt-two">
           <LotCalculator suggestedBalance={equity !== null ? Math.max(equity, 0) + 10000 : null} />
           <LivePositions />
         </div>
-
-        <PriceAlerts chartSymbol={chartSymbol} />
 
         <div className="tt-card">
           <div className="tt-card-head">
@@ -850,6 +958,8 @@ const styles = `
   background:rgba(255,255,255,.02); border:1px solid var(--line); font-size:.82rem;
 }
 .tt-alert-row.triggered{ border-color:rgba(20,201,174,.35); background:rgba(20,201,174,.06); }
+.tt-watchlist-row{ width:100%; text-align:left; cursor:pointer; font-family:inherit; }
+.tt-watchlist-row:hover{ border-color:var(--teal); }
 .tt-alert-badge{ font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.15rem .4rem; border-radius:5px; background:rgba(20,201,174,.18); color:var(--teal); }
 .tt-alert-badge-mail{ width:13px; height:13px; opacity:.7; color:var(--dim); flex-shrink:0; }
 .tt-alert-remove{ margin-left:auto; background:none; border:none; color:var(--dim2); cursor:pointer; font-size:.85rem; padding:.2rem; }
@@ -857,12 +967,16 @@ const styles = `
 
 .tt-focus-overlay{
   position:fixed; inset:0; z-index:200; background:var(--bg);
-  display:flex; flex-direction:column; animation:tt-focus-in 200ms ease both;
+  animation:tt-focus-in 260ms cubic-bezier(0.22,1,0.36,1) both;
 }
-@keyframes tt-focus-in{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes tt-focus-in{ from{ opacity:0; transform:scale(0.98); } to{ opacity:1; transform:scale(1); } }
 .tt-focus-bar{
+  position:absolute; top:env(safe-area-inset-top); left:0; right:0; z-index:2;
   display:flex; align-items:center; justify-content:space-between;
-  padding:.85rem 1.1rem; border-bottom:1px solid var(--line); flex-shrink:0;
+  padding:.85rem 1.1rem; background:linear-gradient(180deg, var(--bg) 0%, transparent 100%);
+  transition:opacity 280ms ease, transform 280ms ease;
+  opacity:1; transform:translateY(0);
 }
-.tt-focus-chart{ flex:1; min-height:0; }
+.tt-focus-bar-hidden{ opacity:0; transform:translateY(-12px); pointer-events:none; }
+.tt-focus-chart{ position:absolute; inset:0; padding-bottom:env(safe-area-inset-bottom); }
 `;

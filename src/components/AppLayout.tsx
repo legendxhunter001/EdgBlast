@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Sidebar, MobileSidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { Link, useLocation } from 'react-router-dom';
@@ -48,7 +48,16 @@ const EdgeSwipe = () => {
 
 const LayoutInner = ({ children }: { children: ReactNode }) => {
   const { pathname } = useLocation();
-  const hideFab = pathname.startsWith('/trades/new') || pathname.startsWith('/auth');
+  const [focusActive, setFocusActive] = useState(false);
+  useEffect(() => {
+    const check = () => setFocusActive(document.body.classList.contains('eb-focus-mode'));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const hideFab = pathname.startsWith('/trades/new') || pathname.startsWith('/auth') || focusActive;
 
   return (
     <div className="min-h-screen flex w-full bg-background">
