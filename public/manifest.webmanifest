@@ -5,7 +5,6 @@
   "start_url": "/",
   "id": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
   "background_color": "#0A0A0C",
   "theme_color": "#0A0A0C",
   "icons": [

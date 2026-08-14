@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
 import { toast } from 'sonner';
-import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell, Palette, RotateCcw } from 'lucide-react';
+import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell, Info } from 'lucide-react';
 
 /* ---------------- TradingView embeds ---------------- */
 
@@ -452,6 +452,30 @@ const Watchlist = ({ activeSymbol, onSelect }: { activeSymbol: string; onSelect:
 
   const remove = (s: string) => persist(symbols.filter((x) => x !== s));
 
+  const marketOverviewConfig = useMemo(
+    () => ({
+      colorTheme: 'dark',
+      dateRange: '12M',
+      showChart: false,
+      locale: 'en',
+      largeChartUrl: '',
+      isTransparent: true,
+      showSymbolLogo: true,
+      showFloatingTooltip: false,
+      width: '100%',
+      height: '100%',
+      tabs: [
+        {
+          title: 'Watchlist',
+          symbols: symbols.map((s) => ({
+            s: /XAU|XAG/i.test(s) ? `OANDA:${s}` : s.includes(':') ? s : `FX:${s}`,
+          })),
+        },
+      ],
+    }),
+    [symbols]
+  );
+
   return (
     <div className="tt-card">
       <div className="tt-card-head">
@@ -472,18 +496,25 @@ const Watchlist = ({ activeSymbol, onSelect }: { activeSymbol: string; onSelect:
         </button>
       </div>
 
+      {!loading && symbols.length > 0 && (
+        <div className="tt-watchlist-live">
+          <TVWidget script="market-overview" config={marketOverviewConfig} height="100%" />
+        </div>
+      )}
+
       {loading ? (
         <div className="tt-empty" style={{ marginTop: '.9rem' }}>Loading…</div>
       ) : symbols.length === 0 ? (
         <div className="tt-empty" style={{ marginTop: '.9rem' }}>No symbols saved yet.</div>
       ) : (
         <div className="tt-alert-list">
+          <div className="tt-hint" style={{ marginBottom: '.3rem' }}>Tap to view on chart</div>
           {symbols.map((s) => (
             <button
               key={s}
               type="button"
               className={`tt-alert-row tt-watchlist-row ${activeSymbol.includes(s) ? 'triggered' : ''}`}
-              onClick={() => onSelect(`FX:${s}`)}
+              onClick={() => onSelect(/XAU|XAG/i.test(s) ? `OANDA:${s}` : `FX:${s}`)}
             >
               <span className="mono strong">{s}</span>
               <span
@@ -511,8 +542,6 @@ export default function TradingTools() {
   const [equity, setEquity] = useState<number | null>(null);
   const [chartSymbol, setChartSymbol] = useState('FX:EURUSD');
   const [chartTheme, setChartTheme] = useState<'dark' | 'light'>('dark');
-  const [upColor, setUpColor] = useState('#14C9AE');
-  const [downColor, setDownColor] = useState('#C98A93');
   const [themeLoaded, setThemeLoaded] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [focusBarVisible, setFocusBarVisible] = useState(true);
@@ -528,19 +557,6 @@ export default function TradingTools() {
     if (focusMode) wakeFocusBar();
     else if (focusBarTimer.current) clearTimeout(focusBarTimer.current);
   }, [focusMode, wakeFocusBar]);
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const colorPickerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!colorPickerOpen) return;
-    const onClick = (e: MouseEvent) => {
-      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
-        setColorPickerOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, [colorPickerOpen]);
 
   // Distinguish phone from desktop so the chart gets a toolbar suited to each —
   // a lighter, decluttered config on phone (like a mobile app), full toolbar on desktop.
@@ -568,21 +584,19 @@ export default function TradingTools() {
     };
   }, [focusMode]);
 
-  // Chart theme and colors are intentionally independent of the app's own light/dark
+  // Chart theme is intentionally independent of the app's own light/dark
   // mode — a trader might run the app in light mode but always want a dark chart.
   useEffect(() => {
     if (!user) return;
     (async () => {
       const { data } = await supabase
         .from('trading_tool_preferences')
-        .select('chart_theme, chart_up_color, chart_down_color')
+        .select('chart_theme')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data?.chart_theme === 'light' || data?.chart_theme === 'dark') {
         setChartTheme(data.chart_theme);
       }
-      if (data?.chart_up_color) setUpColor(data.chart_up_color);
-      if (data?.chart_down_color) setDownColor(data.chart_down_color);
       setThemeLoaded(true);
     })();
   }, [user?.id]);
@@ -594,22 +608,6 @@ export default function TradingTools() {
       .from('trading_tool_preferences')
       .upsert({ user_id: user.id, chart_theme: next }, { onConflict: 'user_id' });
   };
-
-  const handleColorChange = async (next: { up?: string; down?: string }) => {
-    if (next.up) setUpColor(next.up);
-    if (next.down) setDownColor(next.down);
-    if (!user) return;
-    await supabase.from('trading_tool_preferences').upsert(
-      {
-        user_id: user.id,
-        ...(next.up ? { chart_up_color: next.up } : {}),
-        ...(next.down ? { chart_down_color: next.down } : {}),
-      },
-      { onConflict: 'user_id' }
-    );
-  };
-
-  const resetColors = () => handleColorChange({ up: '#14C9AE', down: '#C98A93' });
 
   useEffect(() => {
     (async () => {
@@ -642,16 +640,8 @@ export default function TradingTools() {
       withdateranges: !isMobile,
       allow_symbol_change: true,
       support_host: 'https://www.tradingview.com',
-      overrides: {
-        'mainSeriesProperties.candleStyle.upColor': upColor,
-        'mainSeriesProperties.candleStyle.downColor': downColor,
-        'mainSeriesProperties.candleStyle.borderUpColor': upColor,
-        'mainSeriesProperties.candleStyle.borderDownColor': downColor,
-        'mainSeriesProperties.candleStyle.wickUpColor': upColor,
-        'mainSeriesProperties.candleStyle.wickDownColor': downColor,
-      },
     }),
-    [chartSymbol, chartTheme, upColor, downColor, isMobile]
+    [chartSymbol, chartTheme, isMobile]
   );
 
   return (
@@ -683,42 +673,14 @@ export default function TradingTools() {
                 ))}
               </select>
               <div className="tt-icon-group">
-                <div className="tt-color-wrap" ref={colorPickerRef}>
-                  <button
-                    type="button"
-                    className="tt-icon-btn"
-                    onClick={() => setColorPickerOpen((v) => !v)}
-                    aria-label="Customize candle colors"
-                    title="Customize candle colors"
-                  >
-                    <Palette size={15} />
-                  </button>
-                  {colorPickerOpen && (
-                    <div className="tt-color-popover">
-                      <div className="tt-color-row">
-                        <label htmlFor="tt-up-color">Bullish</label>
-                        <input
-                          id="tt-up-color"
-                          type="color"
-                          value={upColor}
-                          onChange={(e) => handleColorChange({ up: e.target.value })}
-                        />
-                      </div>
-                      <div className="tt-color-row">
-                        <label htmlFor="tt-down-color">Bearish</label>
-                        <input
-                          id="tt-down-color"
-                          type="color"
-                          value={downColor}
-                          onChange={(e) => handleColorChange({ down: e.target.value })}
-                        />
-                      </div>
-                      <button type="button" className="tt-color-reset" onClick={resetColors}>
-                        <RotateCcw size={12} /> Reset to default
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  className="tt-icon-btn"
+                  aria-label="How to customize candle colors"
+                  title="Candle colors can't be set from outside the chart on the free TradingView widget — open the chart's own settings (gear icon on desktop, or tap-hold a candle) to change them there. Your choice is remembered by TradingView."
+                >
+                  <Info size={15} />
+                </button>
                 <button
                   type="button"
                   className="tt-icon-btn"
@@ -803,6 +765,12 @@ const styles = `
   --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.16);
   background:var(--bg); color:var(--text); min-height:100%;
   font-family:'Inter',-apple-system,sans-serif; padding-bottom:4rem;
+  overflow-x:hidden;
+}
+html.light .tt{
+  --bg:#FAFAF9; --elev:#FFFFFF; --teal:#098070; --blue:#2F5FD1; --rose:#A85864;
+  --text:#16161A; --dim:#6B6B72; --dim2:#8F8F96;
+  --line:rgba(10,10,12,.08); --line2:rgba(10,10,12,.14);
 }
 .tt .mono{ font-family:'IBM Plex Mono',ui-monospace,monospace; }
 .tt-inner{ max-width:1180px; margin:0 auto; padding:0 1.25rem; }
@@ -841,7 +809,7 @@ const styles = `
 .tt-symbol-select{
   border:1px solid var(--line2); background:rgba(255,255,255,.02); color:var(--text);
   border-radius:8px; padding:.4rem .6rem; font-size:.8rem; font-family:inherit; cursor:pointer;
-  min-width:96px;
+  min-width:0; max-width:110px;
 }
 .tt-symbol-select:focus{ outline:none; border-color:var(--teal); }
 .tt-symbol-select option{ background:#131316; color:#fff; }
@@ -854,7 +822,7 @@ const styles = `
 }
 .tt-icon-btn:hover{ color:var(--teal); border-color:var(--teal); }
 @media (min-width: 720px){
-  .tt-symbol-select{ min-width:130px; padding:.5rem .75rem; }
+  .tt-symbol-select{ max-width:150px; padding:.5rem .75rem; }
   .tt-icon-btn{ width:34px; height:34px; }
 }
 .tt-chip{
@@ -870,25 +838,6 @@ const styles = `
 .tt-chart{ height:clamp(360px, 58vh, 620px); border-radius:12px; overflow:hidden; border:1px solid var(--line); }
 .tt-cal{ height:clamp(360px, 55vh, 560px); border-radius:12px; overflow:hidden; border:1px solid var(--line); }
 
-.tt-color-wrap{ position:relative; }
-.tt-color-popover{
-  position:absolute; top:calc(100% + 6px); right:0; z-index:30;
-  background:var(--elev); border:1px solid var(--line2); border-radius:10px;
-  padding:.7rem; min-width:150px; box-shadow:0 12px 32px rgba(0,0,0,0.35);
-  display:flex; flex-direction:column; gap:.55rem;
-}
-.tt-color-row{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; font-size:.78rem; color:var(--dim); }
-.tt-color-row input[type="color"]{
-  width:30px; height:24px; border:1px solid var(--line2); border-radius:5px;
-  background:none; cursor:pointer; padding:0;
-}
-.tt-color-reset{
-  display:flex; align-items:center; gap:.35rem; justify-content:center;
-  background:none; border:1px solid var(--line2); border-radius:7px; padding:.35rem;
-  color:var(--dim); font-size:.72rem; cursor:pointer; font-family:inherit;
-}
-.tt-color-reset:hover{ color:var(--teal); border-color:var(--teal); }
-
 .tt-two{ display:grid; gap:1.15rem; grid-template-columns:1fr; }
 @media (min-width: 980px){ .tt-two{ grid-template-columns:minmax(340px,.85fr) 1.15fr; } }
 
@@ -898,7 +847,7 @@ const styles = `
 .tt-field input, .tt-field select{
   background:rgba(255,255,255,.03); border:1px solid var(--line2); border-radius:9px;
   padding:.6rem .7rem; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:.9rem;
-  transition:border-color .2s ease, background .2s ease; width:100%;
+  transition:border-color .2s ease, background .2s ease; width:100%; min-width:0;
 }
 .tt-field input:focus, .tt-field select:focus{ outline:none; border-color:var(--teal); background:rgba(20,201,174,.05); }
 .tt-field select{ font-family:'Inter',sans-serif; }
@@ -948,6 +897,7 @@ const styles = `
 .tt-alert-input, .tt-alert-select{
   background:rgba(255,255,255,.03); border:1px solid var(--line2); border-radius:9px;
   padding:.55rem .7rem; color:var(--text); font-size:.85rem; font-family:inherit;
+  min-width:0; width:100%;
 }
 .tt-alert-input:focus, .tt-alert-select:focus{ outline:none; border-color:var(--teal); }
 .tt-alert-select option{ background:#131316; }
@@ -960,6 +910,7 @@ const styles = `
 .tt-alert-row.triggered{ border-color:rgba(20,201,174,.35); background:rgba(20,201,174,.06); }
 .tt-watchlist-row{ width:100%; text-align:left; cursor:pointer; font-family:inherit; }
 .tt-watchlist-row:hover{ border-color:var(--teal); }
+.tt-watchlist-live{ height:220px; border-radius:10px; overflow:hidden; border:1px solid var(--line); margin-top:.9rem; }
 .tt-alert-badge{ font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.15rem .4rem; border-radius:5px; background:rgba(20,201,174,.18); color:var(--teal); }
 .tt-alert-badge-mail{ width:13px; height:13px; opacity:.7; color:var(--dim); flex-shrink:0; }
 .tt-alert-remove{ margin-left:auto; background:none; border:none; color:var(--dim2); cursor:pointer; font-size:.85rem; padding:.2rem; }

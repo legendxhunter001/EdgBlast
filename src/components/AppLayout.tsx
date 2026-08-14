@@ -57,7 +57,7 @@ const LayoutInner = ({ children }: { children: ReactNode }) => {
     return () => observer.disconnect();
   }, []);
 
-  const hideFab = pathname.startsWith('/trades/new') || pathname.startsWith('/auth') || focusActive;
+  const hideFab = pathname !== '/' || focusActive;
 
   return (
     <div className="min-h-screen flex w-full bg-background">

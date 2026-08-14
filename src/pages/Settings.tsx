@@ -14,6 +14,11 @@ const styles = `
   background:var(--bg); color:var(--text); min-height:100vh;
   font-family:'Inter',-apple-system,sans-serif; padding-bottom:4rem;
 }
+html.light .eb-set{
+  --bg:#FAFAF9; --elev:#FFFFFF; --teal:#098070; --blue:#2F5FD1; --rose:#A85864;
+  --text:#16161A; --dim:#6B6B72; --dim2:#8F8F96;
+  --line:rgba(10,10,12,.08); --line2:rgba(10,10,12,.14);
+}
 .eb-set header.hd{ padding:2rem 1.5rem 1.4rem; border-bottom:1px solid var(--line); }
 .eb-set h1{ font-family:'Newsreader',serif; font-size:1.9rem; font-weight:600; }
 .eb-set .sub{ color:var(--dim); font-size:.9rem; margin-top:.4rem; }
