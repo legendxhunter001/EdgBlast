@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 import { formatCurrency, pnlClass } from '@/lib/format';
 import { DirectionBadge } from './Dashboard';
+import { SymbolLogo } from '@/components/SymbolLogo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import ImportCsvDialog from '@/components/ImportCsvDialog';
@@ -104,7 +105,7 @@ const Trades = () => {
               <tbody>
                 {filtered.map(t => (
                   <tr key={t.id} className="border-t border-border/40 hover:bg-secondary/30 transition">
-                    <td className="px-4 py-3"><Link to={`/trades/${t.id}`} className="font-medium hover:text-primary">{t.asset}</Link></td>
+                    <td className="px-4 py-3"><Link to={`/trades/${t.id}`} className="font-medium hover:text-primary inline-flex items-center gap-1.5"><SymbolLogo symbol={t.asset} />{t.asset}</Link></td>
                     <td><DirectionBadge dir={t.direction} /></td>
                     <td className="text-muted-foreground text-xs">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d, yyyy') : '—'}</td>
                     <td className="text-right font-mono text-xs">{t.entry_price ?? '—'}</td>
@@ -123,7 +124,7 @@ const Trades = () => {
             <Link key={t.id} to={`/trades/${t.id}`} className="glass rounded-xl p-4 hover:border-primary/40 transition group">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <div className="font-display font-semibold text-lg group-hover:text-primary transition">{t.asset}</div>
+                  <div className="font-display font-semibold text-lg group-hover:text-primary transition inline-flex items-center gap-1.5"><SymbolLogo symbol={t.asset} size={16} />{t.asset}</div>
                   <div className="text-xs text-muted-foreground">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d, yyyy') : '—'}</div>
                 </div>
                 <DirectionBadge dir={t.direction} />

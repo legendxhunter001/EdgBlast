@@ -7,6 +7,7 @@ import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Area, AreaCh
 import { format, parseISO, isToday, isThisWeek, isThisMonth } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OnboardingDashboard } from '@/components/OnboardingDashboard';
+import { SymbolLogo } from '@/components/SymbolLogo';
 
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' }) => (
   <div className="luxe-card card-hover p-5 relative overflow-hidden">
@@ -202,7 +203,7 @@ const Dashboard = () => {
                 <tbody>
                   {recent.map(t => (
                     <tr key={t.id} className="border-b border-border/40 last:border-0 hover:bg-secondary/40 transition">
-                      <td className="py-3"><Link to={`/trades/${t.id}`} className="font-medium hover:text-primary">{t.asset}</Link></td>
+                      <td className="py-3"><Link to={`/trades/${t.id}`} className="font-medium hover:text-primary inline-flex items-center gap-1.5"><SymbolLogo symbol={t.asset} />{t.asset}</Link></td>
                       <td><DirectionBadge dir={t.direction} /></td>
                       <td className="text-muted-foreground">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d, yyyy') : '—'}</td>
                       <td className={`text-right font-mono ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</td>
@@ -230,7 +231,7 @@ const TopList = ({ title, icon: Icon, trades, kind }: { title: string; icon: any
       {trades.map(t => (
         <Link key={t.id} to={`/trades/${t.id}`} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50 transition">
           <div>
-            <div className="text-sm font-medium">{t.asset}</div>
+            <div className="text-sm font-medium inline-flex items-center gap-1.5"><SymbolLogo symbol={t.asset} />{t.asset}</div>
             <div className="text-[10px] text-muted-foreground">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d') : '—'}</div>
           </div>
           <div className={`font-mono text-sm ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</div>

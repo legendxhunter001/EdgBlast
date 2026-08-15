@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, X, Minus } from 'l
 import { Button } from '@/components/ui/button';
 import { formatCurrency, pnlClass } from '@/lib/format';
 import { Link } from 'react-router-dom';
+import { SymbolLogo } from '@/components/SymbolLogo';
 import { cn } from '@/lib/utils';
 
 type DayData = { pnl: number; count: number; wins: number; trades: any[] };
@@ -235,7 +236,7 @@ const Calendar = () => {
                 {selectedData.trades.map((t: any) => (
                   <Link key={t.id} to={`/trades/${t.id}`} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/40 hover:bg-secondary/70 transition-colors">
                     <div>
-                      <div className="text-sm font-medium">{t.asset}</div>
+                      <div className="text-sm font-medium inline-flex items-center gap-1.5"><SymbolLogo symbol={t.asset} />{t.asset}</div>
                       <div className="text-[10px] text-muted-foreground uppercase">{t.direction}</div>
                     </div>
                     <div className={cn('font-mono text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
@@ -264,7 +265,7 @@ const Calendar = () => {
           <div className="space-y-1.5">
             {selectedData.trades.map((t: any) => (
               <Link key={t.id} to={`/trades/${t.id}`} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/40">
-                <div className="text-sm font-medium">{t.asset}</div>
+                <div className="text-sm font-medium inline-flex items-center gap-1.5"><SymbolLogo symbol={t.asset} />{t.asset}</div>
                 <div className={cn('font-mono text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
               </Link>
             ))}

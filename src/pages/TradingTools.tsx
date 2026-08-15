@@ -287,6 +287,7 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
   const [notifyEmail, setNotifyEmail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [checkError, setCheckError] = useState('');
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -304,8 +305,14 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
   useEffect(() => {
     if (!user) return;
     const check = async () => {
+      const activeAlerts = alerts.filter((a) => !a.triggered);
+      if (activeAlerts.length === 0) { setCheckError(''); return; }
       const { data, error: fnErr } = await supabase.functions.invoke('check-price-alerts', { body: {} });
-      if (fnErr || !data?.success) return;
+      if (fnErr || !data?.success) {
+        setCheckError(data?.message || fnErr?.message || 'Could not check alerts right now.');
+        return;
+      }
+      setCheckError('');
       const triggered = data.triggered ?? [];
       for (const t of triggered) {
         toast.success(`${t.symbol} ${t.condition === 'above' ? 'reached' : 'dropped to'} ${t.price.toFixed(5)}`, {
@@ -317,7 +324,7 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
     check();
     const id = setInterval(check, 60_000);
     return () => clearInterval(id);
-  }, [user, load]);
+  }, [user, load, alerts]);
 
   const activeCount = alerts.filter((a) => !a.triggered).length;
 
@@ -391,6 +398,11 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
       </label>
 
       {error && <div className="tt-alert" style={{ marginTop: '.6rem' }}>{error}</div>}
+      {checkError && (
+        <div className="tt-alert" style={{ marginTop: '.6rem' }}>
+          Alerts aren't being checked right now: {checkError}
+        </div>
+      )}
 
       {alerts.length === 0 ? (
         <div className="tt-empty" style={{ marginTop: '.9rem' }}>No alerts yet — add one above.</div>
