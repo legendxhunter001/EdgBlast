@@ -119,7 +119,7 @@ export const SymbolLogo = ({ symbol, size = 22, className = '' }: { symbol: stri
             alt=""
             onError={() => setBadgeFailed(true)}
             style={{
-              position: 'absolute', right: -2, bottom: -2, width: badgeSize, height: badgeSize, borderRadius: '50%',
+              position: 'absolute', right: -2, top: -2, width: badgeSize, height: badgeSize, borderRadius: '50%',
               border: '2px solid var(--eb-bg-elev, #131316)', background: '#1a1a1f', objectFit: 'cover',
             }}
           />
