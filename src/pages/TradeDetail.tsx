@@ -184,7 +184,7 @@ const TradeDetail = () => {
         <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
           <div>
             <div className="flex items-center gap-3 mb-1.5">
-              <h1 className="font-display text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2"><SymbolLogo symbol={trade.asset} size={22} />{trade.asset}</h1>
+              <h1 className="font-display text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2.5"><SymbolLogo symbol={trade.asset} size={30} />{trade.asset}</h1>
               <DirectionBadge dir={trade.direction} />
             </div>
             <div className="text-sm text-muted-foreground">
