@@ -98,19 +98,21 @@ export const SymbolLogo = ({ symbol, size = 22, className = '' }: { symbol: stri
     );
   }
 
-  // Pair: one main circle (base) + smaller badge circle (quote) in the corner —
-  // matches TradingView's own real watchlist/list style exactly.
+  // Pair: two overlapping circles side by side (base left, quote overlapping
+  // its right edge) — matches the exact 80px/48px/32px proportions of the
+  // reference TradingView-style implementation.
   if (urls.length === 2) {
-    const badgeSize = Math.round(size * 0.56);
+    const offset = Math.round(size * (32 / 48));
+    const width = Math.round(size * (80 / 48));
     return (
-      <span className={className} style={{ position: 'relative', display: 'inline-block', width: size, height: size, flexShrink: 0 }} aria-hidden="true">
+      <span className={className} style={{ position: 'relative', display: 'inline-block', width, height: size, flexShrink: 0 }} aria-hidden="true">
         <img
           src={urls[0]}
           alt=""
           onError={() => setMainFailed(true)}
           style={{
-            width: size, height: size, borderRadius: '50%',
-            border: '1px solid rgba(255,255,255,0.12)', background: '#1a1a1f', objectFit: 'cover',
+            position: 'absolute', left: 0, top: 0, width: size, height: size, borderRadius: '50%',
+            border: '2px solid var(--eb-bg-elev, #131316)', background: '#1a1a1f', objectFit: 'cover', zIndex: 1,
           }}
         />
         {!badgeFailed && (
@@ -119,8 +121,8 @@ export const SymbolLogo = ({ symbol, size = 22, className = '' }: { symbol: stri
             alt=""
             onError={() => setBadgeFailed(true)}
             style={{
-              position: 'absolute', right: -2, top: -2, width: badgeSize, height: badgeSize, borderRadius: '50%',
-              border: '2px solid var(--eb-bg-elev, #131316)', background: '#1a1a1f', objectFit: 'cover',
+              position: 'absolute', left: offset, top: 0, width: size, height: size, borderRadius: '50%',
+              border: '2px solid var(--eb-bg-elev, #131316)', background: '#1a1a1f', objectFit: 'cover', zIndex: 2,
             }}
           />
         )}
