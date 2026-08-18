@@ -98,21 +98,22 @@ export const SymbolLogo = ({ symbol, size = 22, className = '' }: { symbol: stri
     );
   }
 
-  // Pair: two overlapping circles side by side (base left, quote overlapping
-  // its right edge) — matches the exact 80px/48px/32px proportions of the
-  // reference TradingView-style implementation.
+  // Forex pair: diagonal cascade — base currency (front, lower-left) and
+  // quote currency (back, upper-right), matching the exact reference proportions.
   if (urls.length === 2) {
-    const offset = Math.round(size * (32 / 48));
-    const width = Math.round(size * (80 / 48));
+    const width = Math.round(size * (54 / 32));
+    const height = Math.round(size * (48 / 32));
+    const offset = Math.round(size * (16 / 32));
     return (
-      <span className={className} style={{ position: 'relative', display: 'inline-block', width, height: size, flexShrink: 0 }} aria-hidden="true">
+      <span className={className} style={{ position: 'relative', display: 'inline-block', width, height, flexShrink: 0 }} aria-hidden="true">
         <img
           src={urls[0]}
           alt=""
           onError={() => setMainFailed(true)}
           style={{
-            position: 'absolute', left: 0, top: 0, width: size, height: size, borderRadius: '50%',
-            border: '2px solid var(--eb-bg-elev, #131316)', background: '#1a1a1f', objectFit: 'cover', zIndex: 1,
+            position: 'absolute', left: 0, top: offset, width: size, height: size, borderRadius: '50%',
+            border: '1.5px solid var(--eb-bg-elev, #111)', boxShadow: '0 2px 6px rgba(0,0,0,0.45)',
+            background: '#1e222d', objectFit: 'cover', zIndex: 2,
           }}
         />
         {!badgeFailed && (
@@ -122,7 +123,8 @@ export const SymbolLogo = ({ symbol, size = 22, className = '' }: { symbol: stri
             onError={() => setBadgeFailed(true)}
             style={{
               position: 'absolute', left: offset, top: 0, width: size, height: size, borderRadius: '50%',
-              border: '2px solid var(--eb-bg-elev, #131316)', background: '#1a1a1f', objectFit: 'cover', zIndex: 2,
+              border: '1.5px solid var(--eb-bg-elev, #111)', boxShadow: '0 2px 6px rgba(0,0,0,0.45)',
+              background: '#1e222d', objectFit: 'cover', zIndex: 1,
             }}
           />
         )}
