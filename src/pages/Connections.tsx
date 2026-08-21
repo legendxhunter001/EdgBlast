@@ -212,9 +212,12 @@ export default function Connections() {
       `}</style>
 
       <div className="eb-page-header">
-        <div>
-          <div className="eb-page-title">MT5 Connections</div>
-          <div className="eb-page-sub">Manage every MT5 account feeding this journal.</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '.9rem' }}>
+          <img src="/mt5-logo.png" alt="MetaTrader 5" width="44" height="44" style={{ objectFit: 'contain', flexShrink: 0 }} />
+          <div>
+            <div className="eb-page-title">MT5 Connections</div>
+            <div className="eb-page-sub">Manage every MT5 account feeding this journal.</div>
+          </div>
         </div>
         <button className="eb-add-btn" onClick={() => setShowAddModal(true)}>
           + Add Account

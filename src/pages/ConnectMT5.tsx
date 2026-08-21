@@ -213,12 +213,7 @@ export default function ConnectMT5({ onConnected, compact = false }: ConnectMT5P
       <div className="eb-connect-card">
         {!compact && (
           <div className="eb-connect-header">
-            <svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true">
-              <rect x="4" y="26" width="6" height="16" rx="1.5" fill="#14C9AE" />
-              <rect x="14" y="18" width="6" height="24" rx="1.5" fill="#3D6FE5" />
-              <rect x="24" y="10" width="6" height="32" rx="1.5" fill="#14C9AE" />
-              <rect x="34" y="20" width="6" height="22" rx="1.5" fill="#3D6FE5" />
-            </svg>
+            <img src="/mt5-logo.png" alt="MetaTrader 5" width="38" height="38" style={{ objectFit: 'contain' }} />
             <div>
               <div className="eb-connect-title">Connect an MT5 Account</div>
               <div className={`eb-connect-status ${state}`}>
