@@ -127,6 +127,7 @@ export type Database = {
         Row: {
           account_number: string
           broker_server: string
+          can_trade: boolean
           created_at: string
           id: string
           is_primary: boolean
@@ -141,6 +142,7 @@ export type Database = {
         Insert: {
           account_number: string
           broker_server: string
+          can_trade?: boolean
           created_at?: string
           id?: string
           is_primary?: boolean
@@ -155,6 +157,7 @@ export type Database = {
         Update: {
           account_number?: string
           broker_server?: string
+          can_trade?: boolean
           created_at?: string
           id?: string
           is_primary?: boolean
@@ -167,6 +170,77 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string
+          direction: string
+          entry_price: number | null
+          filled_at: string | null
+          id: string
+          metaapi_order_id: string | null
+          metaapi_position_id: string | null
+          mt5_connection_id: string
+          order_type: string
+          rejected_reason: string | null
+          risk_amount: number | null
+          risk_pct: number | null
+          status: string
+          stop_loss: number | null
+          symbol: string
+          take_profit: number | null
+          user_id: string
+          volume: number
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          entry_price?: number | null
+          filled_at?: string | null
+          id?: string
+          metaapi_order_id?: string | null
+          metaapi_position_id?: string | null
+          mt5_connection_id: string
+          order_type: string
+          rejected_reason?: string | null
+          risk_amount?: number | null
+          risk_pct?: number | null
+          status?: string
+          stop_loss?: number | null
+          symbol: string
+          take_profit?: number | null
+          user_id: string
+          volume: number
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          entry_price?: number | null
+          filled_at?: string | null
+          id?: string
+          metaapi_order_id?: string | null
+          metaapi_position_id?: string | null
+          mt5_connection_id?: string
+          order_type?: string
+          rejected_reason?: string | null
+          risk_amount?: number | null
+          risk_pct?: number | null
+          status?: string
+          stop_loss?: number | null
+          symbol?: string
+          take_profit?: number | null
+          user_id?: string
+          volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_mt5_connection_id_fkey"
+            columns: ["mt5_connection_id"]
+            isOneToOne: false
+            referencedRelation: "mt5_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_settings: {
         Row: {

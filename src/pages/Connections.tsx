@@ -48,6 +48,22 @@ export default function Connections() {
     await refresh();
   };
 
+  const [tradingConfirmId, setTradingConfirmId] = useState<string | null>(null);
+  const handleToggleTrading = async (id: string, next: boolean) => {
+    if (next) {
+      setTradingConfirmId(id);
+      return;
+    }
+    await supabase.from("mt5_connections").update({ can_trade: false }).eq("id", id);
+    await refresh();
+  };
+  const confirmEnableTrading = async () => {
+    if (!tradingConfirmId) return;
+    await supabase.from("mt5_connections").update({ can_trade: true }).eq("id", tradingConfirmId);
+    setTradingConfirmId(null);
+    await refresh();
+  };
+
   const handleDisconnect = async (id: string) => {
     setActionError(null);
     const { data, error } = await supabase.functions.invoke("delete-mt5-account", {
@@ -185,6 +201,25 @@ export default function Connections() {
         .eb-card-detail-row span:last-child{ color:var(--eb-text); font-weight:600; }
 
         .eb-card-actions{ display:flex; gap:.5rem; margin-top:1.1rem; flex-wrap:wrap; }
+        .eb-trading-row{
+          display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+          margin-top:.9rem; padding:.6rem .7rem; border-radius:9px;
+          background:rgba(201,138,147,.06); border:1px solid rgba(201,138,147,.2);
+        }
+        .eb-trading-label{ font-size:.8rem; font-weight:650; }
+        .eb-trading-sub{ font-size:.7rem; color:var(--eb-text-dim2); margin-top:.1rem; }
+        .eb-trading-switch{
+          width:40px; height:23px; border-radius:999px; border:1px solid var(--eb-line-strong);
+          background:rgba(255,255,255,.05); position:relative; cursor:pointer; flex-shrink:0;
+          transition:background .2s ease, border-color .2s ease;
+        }
+        .eb-trading-switch span{
+          position:absolute; top:2px; left:2px; width:17px; height:17px; border-radius:50%;
+          background:var(--eb-text-dim); transition:transform .2s ease, background .2s ease;
+        }
+        .eb-trading-switch.on{ background:rgba(201,138,147,.28); border-color:var(--eb-rose-text); }
+        .eb-trading-switch.on span{ transform:translateX(17px); background:var(--eb-rose-text); }
+        .eb-trading-switch:disabled{ opacity:.5; cursor:default; }
         .eb-card-btn{ flex:1; min-width:90px; padding:.55rem .8rem; border-radius:8px; font-size:.78rem; font-weight:600; border:1px solid var(--eb-line-strong); background:transparent; color:var(--eb-text); cursor:pointer; transition:all .15s ease; display:flex; align-items:center; justify-content:center; gap:.35rem; }
         .eb-card-btn:hover{ border-color:var(--eb-teal-text); color:var(--eb-teal-text); }
         .eb-card-btn.danger:hover{ border-color:var(--eb-rose-text); color:var(--eb-rose-text); }
@@ -342,7 +377,22 @@ export default function Connections() {
                   </div>
                 )}
 
-
+                <div className="eb-trading-row">
+                  <div>
+                    <div className="eb-trading-label">Live trading</div>
+                    <div className="eb-trading-sub">{c.can_trade ? "Enabled — real orders will execute" : "Off — read-only journal sync"}</div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={c.can_trade}
+                    className={`eb-trading-switch ${c.can_trade ? "on" : ""}`}
+                    onClick={() => handleToggleTrading(c.id, !c.can_trade)}
+                    disabled={c.status !== "connected"}
+                  >
+                    <span />
+                  </button>
+                </div>
 
                 <div className="eb-card-actions">
                   <button
@@ -412,6 +462,37 @@ export default function Connections() {
                 style={{ flex: 1 }}
               >
                 Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tradingConfirmId && (
+        <div className="eb-modal-backdrop" onClick={() => setTradingConfirmId(null)} role="presentation">
+          <div
+            className="eb-confirm-box"
+            onClick={(e) => e.stopPropagation()}
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="Confirm enable trading"
+          >
+            <p style={{ fontWeight: 700, marginBottom: ".4rem", color: "var(--eb-rose-text)" }}>Enable live trading?</p>
+            <p style={{ fontSize: ".85rem", color: "var(--eb-text-dim)", lineHeight: 1.5 }}>
+              Orders placed from Edge Blast will execute for real on this account, using real money.
+              Every order still goes through your risk rules and requires a confirmation step before it's sent —
+              but this switch is what allows trading to happen at all. Turn it off any time.
+            </p>
+            <div className="eb-confirm-actions">
+              <button className="eb-card-btn" onClick={() => setTradingConfirmId(null)} style={{ flex: 1 }}>
+                Cancel
+              </button>
+              <button
+                className="eb-card-btn danger"
+                onClick={confirmEnableTrading}
+                style={{ flex: 1 }}
+              >
+                Enable trading
               </button>
             </div>
           </div>

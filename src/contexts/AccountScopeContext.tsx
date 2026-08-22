@@ -9,6 +9,7 @@ export interface MT5Connection {
   status: "connecting" | "connected" | "error" | "disconnected";
   is_primary: boolean;
   last_synced_at: string | null;
+  can_trade: boolean;
 }
 
 interface AccountScopeContextValue {
@@ -50,7 +51,7 @@ export function AccountScopeProvider({ children }: { children: ReactNode }) {
     }
     const { data } = await supabase
       .from("mt5_connections")
-      .select("id, account_number, broker_server, label, status, is_primary, last_synced_at")
+      .select("id, account_number, broker_server, label, status, is_primary, last_synced_at, can_trade")
       .eq("user_id", user.id)
       .order("is_primary", { ascending: false })
       .order("created_at", { ascending: true });

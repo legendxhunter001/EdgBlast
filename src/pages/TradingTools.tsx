@@ -546,6 +546,162 @@ const Watchlist = ({ activeSymbol, onSelect }: { activeSymbol: string; onSelect:
   );
 };
 
+/* ---------------- Order panel (real execution) ---------------- */
+
+const OrderPanel = ({ chartSymbol }: { chartSymbol: string }) => {
+  const { connections } = useAccountScope();
+  const tradable = connections.filter((c: any) => c.can_trade && c.status === 'connected');
+  const [connectionId, setConnectionId] = useState('');
+  const [symbol, setSymbol] = useState(chartSymbol.split(':').pop() ?? 'EURUSD');
+  const [direction, setDirection] = useState<'long' | 'short'>('long');
+  const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
+  const [volume, setVolume] = useState('0.01');
+  const [entryPrice, setEntryPrice] = useState('');
+  const [stopLoss, setStopLoss] = useState('');
+  const [takeProfit, setTakeProfit] = useState('');
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!connectionId && tradable.length > 0) setConnectionId(tradable[0].id);
+  }, [tradable, connectionId]);
+
+  useEffect(() => { setSymbol(chartSymbol.split(':').pop() ?? symbol); }, [chartSymbol]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (tradable.length === 0) {
+    return (
+      <div className="tt-card">
+        <div className="tt-card-head"><h2>Place trade</h2></div>
+        <div className="tt-empty">
+          No account has live trading enabled. Go to Connections and turn on "Live trading" for an account first.
+        </div>
+      </div>
+    );
+  }
+
+  const canReview = symbol.trim() && Number(volume) > 0 && (orderType === 'market' || Number(entryPrice) > 0);
+
+  const submit = async () => {
+    setSubmitting(true);
+    setResult(null);
+    const { data, error } = await supabase.functions.invoke('place-order', {
+      body: {
+        connection_id: connectionId,
+        symbol: symbol.trim().toUpperCase(),
+        direction, order_type: orderType,
+        volume: Number(volume),
+        entry_price: orderType === 'market' ? null : Number(entryPrice),
+        stop_loss: stopLoss ? Number(stopLoss) : null,
+        take_profit: takeProfit ? Number(takeProfit) : null,
+      },
+    });
+    setSubmitting(false);
+    setReviewOpen(false);
+    if (error || !data?.success) {
+      const msg = data?.message || error?.message || 'Order failed.';
+      setResult({ success: false, message: msg });
+      toast.error(msg);
+    } else {
+      setResult({ success: true, message: 'Trade placed and filled.' });
+      toast.success(`${symbol.toUpperCase()} ${direction} order filled`);
+    }
+  };
+
+  return (
+    <div className="tt-card">
+      <div className="tt-card-head">
+        <h2>Place trade</h2>
+        <span className="tt-hint" style={{ color: 'var(--rose)' }}>Live — real money</span>
+      </div>
+
+      <div className="tt-fields">
+        <label className="tt-field">
+          <span>Account</span>
+          <select value={connectionId} onChange={(e) => setConnectionId(e.target.value)}>
+            {tradable.map((c: any) => <option key={c.id} value={c.id}>{c.label || c.account_number}</option>)}
+          </select>
+        </label>
+        <label className="tt-field">
+          <span>Symbol</span>
+          <input value={symbol} onChange={(e) => setSymbol(e.target.value)} style={{ textTransform: 'uppercase' }} />
+        </label>
+        <label className="tt-field">
+          <span>Direction</span>
+          <select value={direction} onChange={(e) => setDirection(e.target.value as 'long' | 'short')}>
+            <option value="long">Buy / Long</option>
+            <option value="short">Sell / Short</option>
+          </select>
+        </label>
+        <label className="tt-field">
+          <span>Order type</span>
+          <select value={orderType} onChange={(e) => setOrderType(e.target.value as any)}>
+            <option value="market">Market</option>
+            <option value="limit">Limit</option>
+            <option value="stop">Stop</option>
+          </select>
+        </label>
+        <label className="tt-field">
+          <span>Volume (lots)</span>
+          <input type="number" step="0.01" value={volume} onChange={(e) => setVolume(e.target.value)} />
+        </label>
+        {orderType !== 'market' && (
+          <label className="tt-field">
+            <span>Entry price</span>
+            <input type="number" step="any" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} />
+          </label>
+        )}
+        <label className="tt-field">
+          <span>Stop loss</span>
+          <input type="number" step="any" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} />
+        </label>
+        <label className="tt-field">
+          <span>Take profit</span>
+          <input type="number" step="any" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} />
+        </label>
+      </div>
+
+      <button
+        type="button"
+        className="tt-chip on"
+        style={{ marginTop: '.9rem', width: '100%', justifyContent: 'center', padding: '.6rem' }}
+        disabled={!canReview}
+        onClick={() => setReviewOpen(true)}
+      >
+        Review order
+      </button>
+
+      {result && (
+        <div className="tt-alert" style={{ marginTop: '.7rem', borderColor: result.success ? 'var(--teal)' : undefined, color: result.success ? 'var(--teal)' : undefined }}>
+          {result.message}
+        </div>
+      )}
+
+      {reviewOpen && (
+        <div className="tt-order-review-backdrop" onClick={() => setReviewOpen(false)} role="presentation">
+          <div className="tt-order-review" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+            <div className="tt-order-review-title">Confirm this trade</div>
+            <div className="tt-order-review-row"><span>Symbol</span><b>{symbol.toUpperCase()}</b></div>
+            <div className="tt-order-review-row"><span>Direction</span><b>{direction === 'long' ? 'Buy' : 'Sell'}</b></div>
+            <div className="tt-order-review-row"><span>Type</span><b>{orderType}</b></div>
+            <div className="tt-order-review-row"><span>Volume</span><b>{volume} lots</b></div>
+            {orderType !== 'market' && <div className="tt-order-review-row"><span>Entry</span><b>{entryPrice}</b></div>}
+            <div className="tt-order-review-row"><span>Stop loss</span><b>{stopLoss || '—'}</b></div>
+            <div className="tt-order-review-row"><span>Take profit</span><b>{takeProfit || '—'}</b></div>
+            <p className="tt-order-review-warn">This will place a real order on your live account. Your risk rules are checked automatically and will block this if it violates them.</p>
+            <div style={{ display: 'flex', gap: '.6rem', marginTop: '.9rem' }}>
+              <button type="button" className="tt-chip" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setReviewOpen(false)}>Cancel</button>
+              <button type="button" className="tt-chip on" style={{ flex: 1, justifyContent: 'center' }} disabled={submitting} onClick={submit}>
+                {submitting ? 'Placing…' : 'Confirm & place trade'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ---------------- Page ---------------- */
 
 export default function TradingTools() {
@@ -737,6 +893,8 @@ export default function TradingTools() {
           <Watchlist activeSymbol={chartSymbol} onSelect={setChartSymbol} />
           <PriceAlerts chartSymbol={chartSymbol} />
         </div>
+
+        <OrderPanel chartSymbol={chartSymbol} />
 
         <div className="tt-two">
           <LotCalculator suggestedBalance={equity !== null ? Math.max(equity, 0) + 10000 : null} />
@@ -942,4 +1100,17 @@ html.light .tt{
 }
 .tt-focus-bar-hidden{ opacity:0; transform:translateY(-12px); pointer-events:none; }
 .tt-focus-chart{ position:absolute; inset:0; padding-bottom:env(safe-area-inset-bottom); }
+
+.tt-order-review-backdrop{
+  position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.6); backdrop-filter:blur(3px);
+  display:flex; align-items:center; justify-content:center; padding:1rem;
+}
+.tt-order-review{
+  background:var(--elev); border:1px solid var(--line2); border-radius:14px; padding:1.3rem;
+  max-width:340px; width:100%; box-shadow:0 20px 48px rgba(0,0,0,.4);
+}
+.tt-order-review-title{ font-weight:700; font-size:1rem; margin-bottom:.8rem; }
+.tt-order-review-row{ display:flex; justify-content:space-between; padding:.4rem 0; border-bottom:1px solid rgba(255,255,255,.05); font-size:.85rem; }
+.tt-order-review-row span{ color:var(--dim); }
+.tt-order-review-warn{ font-size:.72rem; color:var(--rose); margin-top:.8rem; line-height:1.5; }
 `;
