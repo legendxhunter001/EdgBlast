@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen,
-  Settings, LogOut, PanelLeftClose, PanelLeftOpen, Plug, Compass, Wrench,
+  Settings, LogOut, PanelLeftClose, PanelLeftOpen, Plug, Compass, Wrench, LineChart,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSidebarState } from '@/hooks/useSidebar';
@@ -26,6 +26,7 @@ const items: Entry[] = [
   { divider: 'Connections' },
   { to: '/connections', label: 'Connections', icon: Plug },
   { divider: 'Trading Tools' },
+  { to: '/analyze', label: 'Analyze', icon: LineChart },
   { to: '/trading-tools', label: 'Trading Tools', icon: Wrench },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];

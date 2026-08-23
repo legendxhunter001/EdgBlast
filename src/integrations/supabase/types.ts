@@ -90,6 +90,45 @@ export type Database = {
         }
         Relationships: []
       }
+      chart_drawings: {
+        Row: {
+          color: string
+          created_at: string
+          drawing_type: string
+          id: string
+          label: string | null
+          points: Json
+          symbol: string
+          timeframe: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          drawing_type: string
+          id?: string
+          label?: string | null
+          points: Json
+          symbol: string
+          timeframe?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          drawing_type?: string
+          id?: string
+          label?: string | null
+          points?: Json
+          symbol?: string
+          timeframe?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string
