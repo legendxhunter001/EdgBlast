@@ -5,10 +5,11 @@ import {
 } from 'lightweight-charts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { functionErrorMessage } from '@/lib/functionError';
 import { toast } from 'sonner';
 import {
   MousePointer2, TrendingUp, Minus, Save, Trash2,
-  ChevronDown, Palette, Maximize2, X, Star,
+  ChevronDown, Palette, Maximize2, X, Star, List,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -84,6 +85,7 @@ export default function Analyze() {
   const [focusMode, setFocusMode] = useState(false);
   const [symbolOpen, setSymbolOpen] = useState(false);
   const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [watchlistOpen, setWatchlistOpen] = useState(false);
 
   useEffect(() => { drawingsRef.current = drawings; }, [drawings]);
 
@@ -218,7 +220,10 @@ export default function Analyze() {
       });
       if (cancelled) return;
       setLoading(false);
-      if (fnErr || !data?.success) { setError(data?.message || fnErr?.message || 'Could not load candles.'); return; }
+      if (fnErr || !data?.success) {
+        setError(await functionErrorMessage(fnErr, data, 'Could not load candles.'));
+        return;
+      }
       seriesRef.current?.setData(data.candles);
       chartRef.current?.timeScale().fitContent();
     })();
@@ -448,6 +453,11 @@ export default function Analyze() {
         className="h-8 px-3 rounded-lg border border-border text-xs text-muted-foreground hover:text-bear hover:border-bear/50 flex items-center gap-1.5 transition-colors">
         <Trash2 className="size-3.5" /> Clear
       </button>
+      <button onClick={() => setWatchlistOpen((v) => !v)}
+        className={cn('h-8 px-3 rounded-lg border text-xs flex items-center gap-1.5 transition-colors', watchlistOpen ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground')}
+        title="Watchlist">
+        <List className="size-3.5" /> <span className="hidden sm:inline">Watchlist</span>
+      </button>
       <button onClick={() => setFocusMode(true)}
         className="h-8 px-3 rounded-lg border border-border text-xs text-muted-foreground flex items-center gap-1.5 ml-auto"
         title="Fullscreen focus">
@@ -483,6 +493,47 @@ export default function Analyze() {
           {pendingPoint ? 'Click second point to finish' : 'Click first point to start trendline'}
         </div>
       )}
+
+      {/* Watchlist drawer — toggled by the chart's own toolbar icon, not a persistent panel */}
+      <div
+        className={cn(
+          'absolute top-0 right-0 h-full w-64 bg-card/95 backdrop-blur border-l border-border flex flex-col transition-transform duration-250 ease-out z-30',
+          watchlistOpen ? 'translate-x-0' : 'translate-x-full'
+        )}
+      >
+        <div className="px-3 py-2.5 border-b border-border flex items-center justify-between flex-shrink-0">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Watchlist</span>
+          <button onClick={() => setWatchlistOpen(false)} className="text-muted-foreground hover:text-foreground">
+            <X className="size-3.5" />
+          </button>
+        </div>
+        {watchlist.length === 0 ? (
+          <div className="p-4 text-xs text-muted-foreground">
+            Tap the star next to the symbol picker to add pairs here.
+          </div>
+        ) : (
+          <>
+            <div style={{ height: 200 }} className="border-b border-border flex-shrink-0">
+              <WatchlistWidget symbols={watchlist} isDark={isDark} />
+            </div>
+            <div className="flex-1 overflow-y-auto scrollbar-thin p-1.5 space-y-1">
+              {watchlist.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setSymbol(s); setCustomSymbol(''); }}
+                  className={cn(
+                    'w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-colors',
+                    activeSymbol === s ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-secondary/50 text-foreground'
+                  )}
+                >
+                  <span>{s}</span>
+                  {activeSymbol === s && <span className="text-[10px] uppercase tracking-wide">Viewing</span>}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 
@@ -496,43 +547,7 @@ export default function Analyze() {
           </p>
         </header>
         <ChartToolbar />
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 min-w-0">
-            <ChartArea height={560} />
-          </div>
-          <aside className="lg:w-72 flex-shrink-0 flex flex-col rounded-xl border border-border overflow-hidden bg-card">
-            <div className="px-3 py-2.5 border-b border-border flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Watchlist</span>
-              <span className="text-[10px] text-muted-foreground">{watchlist.length} symbols</span>
-            </div>
-            {watchlist.length === 0 ? (
-              <div className="p-4 text-xs text-muted-foreground">
-                Tap the star next to the symbol picker to add pairs here.
-              </div>
-            ) : (
-              <>
-                <div style={{ height: 220 }} className="border-b border-border">
-                  <WatchlistWidget symbols={watchlist} isDark={isDark} />
-                </div>
-                <div className="flex-1 overflow-y-auto scrollbar-thin p-1.5 space-y-1">
-                  {watchlist.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => { setSymbol(s); setCustomSymbol(''); }}
-                      className={cn(
-                        'w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-colors',
-                        activeSymbol === s ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-secondary/50 text-foreground'
-                      )}
-                    >
-                      <span>{s}</span>
-                      {activeSymbol === s && <span className="text-[10px] uppercase tracking-wide">Viewing</span>}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </aside>
-        </div>
+        <ChartArea height={560} />
         {drawings.length > 0 && (
           <div className="glass rounded-xl p-4">
             <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wider font-semibold">Drawings on this setup</div>

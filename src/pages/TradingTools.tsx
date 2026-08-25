@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
+import { functionErrorMessage } from '@/lib/functionError';
 import { toast } from 'sonner';
 import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell, Info } from 'lucide-react';
 
@@ -309,7 +310,7 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
       if (activeAlerts.length === 0) { setCheckError(''); return; }
       const { data, error: fnErr } = await supabase.functions.invoke('check-price-alerts', { body: {} });
       if (fnErr || !data?.success) {
-        setCheckError(data?.message || fnErr?.message || 'Could not check alerts right now.');
+        setCheckError(await functionErrorMessage(fnErr, data, 'Could not check alerts right now.'));
         return;
       }
       setCheckError('');
@@ -599,7 +600,7 @@ const OrderPanel = ({ chartSymbol }: { chartSymbol: string }) => {
     setSubmitting(false);
     setReviewOpen(false);
     if (error || !data?.success) {
-      const msg = data?.message || error?.message || 'Order failed.';
+      const msg = await functionErrorMessage(error, data, 'Order failed.');
       setResult({ success: false, message: msg });
       toast.error(msg);
     } else {
