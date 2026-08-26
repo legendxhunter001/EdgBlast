@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Image as ImageIcon, X, Search, Loader2, ZoomIn } from "lucide-react";
+import { Image as ImageIcon, Images, X, Search, Loader2, ZoomIn } from "lucide-react";
 
 type Entry = {
   id: string;
@@ -51,6 +51,9 @@ export default function Journey() {
   const [images, setImages] = useState<JournalImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<(JournalImage & { entryId: string; entryTitle: string })[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dirty = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -178,6 +181,35 @@ export default function Journey() {
     setImages((prev) => prev.filter((i) => i.id !== img.id));
   };
 
+  const openGallery = async () => {
+    if (!user) return;
+    setGalleryOpen(true);
+    setGalleryLoading(true);
+    const { data } = await supabase
+      .from("journal_images")
+      .select("id, storage_path, entry_id, journal_entries(title)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (!data) { setGalleryImages([]); setGalleryLoading(false); return; }
+    const withUrls = await Promise.all(
+      data.map(async (img: any) => {
+        const { data: signed } = await supabase.storage.from("journal-images").createSignedUrl(img.storage_path, 3600);
+        return {
+          id: img.id, storage_path: img.storage_path, url: signed?.signedUrl ?? "",
+          entryId: img.entry_id, entryTitle: img.journal_entries?.title || "Untitled Entry",
+        };
+      })
+    );
+    setGalleryImages(withUrls);
+    setGalleryLoading(false);
+  };
+
+  const jumpToEntryFromGallery = (entryId: string) => {
+    const entry = entries.find((e) => e.id === entryId);
+    if (entry) selectEntry(entry);
+    setGalleryOpen(false);
+  };
+
   const shareUrl = active?.is_shared && active.share_token ? `${window.location.origin}/journal/${active.share_token}` : null;
   const words = wordCount(content);
   const filteredEntries = entries.filter((e) =>
@@ -243,10 +275,35 @@ export default function Journey() {
           font-size:.72rem; display:flex; align-items:center; gap:.35rem; color:var(--dim); transition:all .15s ease;
         }
         .eb-journey .mood-chip.on{ color:var(--text); border-color:currentColor; }
+        .eb-journey .btn.icon-btn{ padding:.45rem; display:flex; align-items:center; justify-content:center; }
         .eb-journey .body-input{
           flex:1; width:100%; margin-top:.9rem; background:transparent; border:none; outline:none;
-          color:var(--text); font-size:.95rem; line-height:1.75; resize:none; min-height:32vh;
+          color:var(--text); font-size:.95rem; line-height:1.85rem; resize:none; min-height:32vh;
+          background-image:repeating-linear-gradient(to bottom, transparent, transparent calc(1.85rem - 1px), var(--line) calc(1.85rem - 1px), var(--line) 1.85rem);
+          background-attachment:local;
+          padding-left:1rem; border-left:2px solid rgba(20,201,174,.25);
         }
+        .eb-journey .gallery-modal-backdrop{
+          position:fixed; inset:0; z-index:210; background:rgba(0,0,0,.6); backdrop-filter:blur(2px);
+          display:flex; align-items:center; justify-content:center; padding:1.5rem;
+        }
+        .eb-journey .gallery-modal{
+          background:var(--elev); border:1px solid var(--line); border-radius:16px;
+          width:100%; max-width:760px; max-height:82vh; display:flex; flex-direction:column; overflow:hidden;
+        }
+        .eb-journey .gallery-modal-head{
+          display:flex; align-items:center; justify-content:space-between; padding:1rem 1.2rem;
+          border-bottom:1px solid var(--line); font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--dim);
+        }
+        .eb-journey .gallery-modal-body{ overflow-y:auto; padding:1.2rem; }
+        .eb-journey .gallery-modal-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:.8rem; }
+        .eb-journey .gallery-modal-item{ border-radius:10px; overflow:hidden; border:1px solid var(--line); cursor:pointer; }
+        .eb-journey .gallery-modal-item img{ width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+        .eb-journey .gallery-modal-caption{
+          width:100%; background:rgba(0,0,0,.04); border:none; padding:.4rem .5rem; font-size:.68rem;
+          color:var(--dim); text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
+        }
+        .eb-journey .gallery-modal-caption:hover{ color:var(--teal); }
         .eb-journey .gallery{ margin-top:1rem; }
         .eb-journey .gallery-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:.5rem; margin-top:.5rem; }
         .eb-journey .gallery-item{ position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; border:1px solid var(--line); cursor:pointer; }
@@ -288,7 +345,12 @@ export default function Journey() {
             <div className="list-head">
               <div className="list-head-top">
                 <span>Entries</span>
-                <button className="btn primary" onClick={createEntry}>+ New</button>
+                <div style={{ display: "flex", gap: ".4rem" }}>
+                  <button className="btn icon-btn" onClick={openGallery} title="View all photos" aria-label="View all photos">
+                    <Images size={14} />
+                  </button>
+                  <button className="btn primary" onClick={createEntry}>+ New</button>
+                </div>
               </div>
               <div className="search-wrap">
                 <Search size={13} />
@@ -398,6 +460,41 @@ export default function Journey() {
             <X size={18} />
           </button>
           <img src={lightbox} alt="" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+
+      {galleryOpen && (
+        <div className="gallery-modal-backdrop" onClick={() => setGalleryOpen(false)}>
+          <div className="gallery-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="gallery-modal-head">
+              <span>All photos · {galleryImages.length}</span>
+              <button className="lightbox-close" style={{ position: "static" }} onClick={() => setGalleryOpen(false)} aria-label="Close">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="gallery-modal-body">
+              {galleryLoading ? (
+                <div className="empty">Loading your photo history…</div>
+              ) : galleryImages.length === 0 ? (
+                <div className="empty">No photos yet — add one from any entry and it'll show up here.</div>
+              ) : (
+                <div className="gallery-modal-grid">
+                  {galleryImages.map((img) => (
+                    <div key={img.id} className="gallery-modal-item" onClick={() => setLightbox(img.url)}>
+                      <img src={img.url} alt="" loading="lazy" />
+                      <button
+                        className="gallery-modal-caption"
+                        onClick={(e) => { e.stopPropagation(); jumpToEntryFromGallery(img.entryId); }}
+                        title="Go to entry"
+                      >
+                        {img.entryTitle}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

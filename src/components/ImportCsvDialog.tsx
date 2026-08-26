@@ -32,7 +32,8 @@ const FIELD_DEFS: { key: string; label: string; required?: boolean; aliases: str
   { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comment', 'comments', 'remarks'] },
   { key: 'emotional_state', label: 'Emotional state', aliases: ['emotional_state', 'emotion', 'mood', 'feeling', 'psychology'] },
   { key: 'confidence_rating', label: 'Confidence (1-10)', aliases: ['confidence_rating', 'confidence', 'conviction'] },
-  { key: 'thesis', label: 'Trade thesis', aliases: ['thesis', 'setup', 'idea', 'rationale', 'reason'] },
+  { key: 'thesis', label: 'Trade thesis', aliases: ['thesis', 'setup', 'idea', 'rationale'] },
+  { key: 'entry_reasoning', label: 'Entry explanation', aliases: ['entry_reasoning', 'explanation', 'reason', 'reasoning', 'entry_reason', 'entry_notes', 'comment', 'comments', 'why'] },
   { key: 'lessons_learned', label: 'Lessons learned', aliases: ['lessons_learned', 'lessons', 'takeaway', 'takeaways'] },
 ];
 
@@ -149,6 +150,7 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
       const confRaw = parseNum(get('confidence_rating'));
       const confidence_rating = confRaw !== null ? Math.min(10, Math.max(1, Math.round(confRaw))) : null;
       const thesis = get('thesis')?.trim() || null;
+      const entry_reasoning = get('entry_reasoning')?.trim() || null;
       const lessons_learned = get('lessons_learned')?.trim() || null;
 
       if (pnl === null && entry_price !== null && exit_price !== null && position_size !== null) {
@@ -174,6 +176,7 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
         emotional_state: emotional_state as any,
         confidence_rating,
         thesis,
+        entry_reasoning,
         lessons_learned,
       };
     });
