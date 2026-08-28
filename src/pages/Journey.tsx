@@ -196,6 +196,12 @@ export default function Journey() {
     loadImages(activeId);
   };
 
+  const handleMultiEntryUpload = async (files: FileList) => {
+    for (const file of Array.from(files)) {
+      await handleUpload(file);
+    }
+  };
+
   const removeImage = async (img: JournalImage) => {
     await supabase.storage.from("journal-images").remove([img.storage_path]);
     await supabase.from("journal_images").delete().eq("id", img.id);
@@ -556,8 +562,9 @@ export default function Journey() {
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     style={{ display: "none" }}
-                    onChange={(e) => { if (e.target.files?.[0]) handleUpload(e.target.files[0]); e.target.value = ""; }}
+                    onChange={(e) => { if (e.target.files?.length) handleMultiEntryUpload(e.target.files); e.target.value = ""; }}
                   />
                 </div>
 
