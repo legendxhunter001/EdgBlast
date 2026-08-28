@@ -167,6 +167,7 @@ export type Database = {
       }
       journal_images: {
         Row: {
+          album: string | null
           created_at: string
           entry_id: string
           id: string
@@ -174,6 +175,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          album?: string | null
           created_at?: string
           entry_id: string
           id?: string
@@ -181,6 +183,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          album?: string | null
           created_at?: string
           entry_id?: string
           id?: string

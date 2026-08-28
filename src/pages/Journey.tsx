@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Image as ImageIcon, Images, X, Search, Loader2, Upload } from "lucide-react";
+import {
+  Image as ImageIcon, Images, X, Search, Loader2, Upload,
+  Check, Trash2, FolderInput, ZoomOut, ZoomIn,
+} from "lucide-react";
 
 type Entry = {
   id: string;
@@ -13,11 +16,25 @@ type Entry = {
   updated_at: string;
 };
 
-type JournalImage = { id: string; storage_path: string; url: string };
+type JournalImage = { id: string; storage_path: string; url: string; album: string | null };
 type GalleryImage = JournalImage & { entryId: string; entryTitle: string };
 
 const GALLERY_ENTRY_TITLE = "Photos";
-const TILE_SIZES = { sm: 90, md: 140, lg: 200 };
+const MIN_TILE = 70;
+const MAX_TILE = 260;
+
+const ALBUMS: { key: string; label: string }[] = [
+  { key: "mt5", label: "MT5" },
+  { key: "charts", label: "Charts" },
+  { key: "entry", label: "Entry" },
+  { key: "exit", label: "Exit" },
+  { key: "post_trade_analysis", label: "Post-Trade Analysis" },
+  { key: "general", label: "General" },
+];
+
+function albumLabel(key: string | null): string {
+  return ALBUMS.find((a) => a.key === (key ?? "general"))?.label ?? "General";
+}
 
 function timeAgo(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -32,6 +49,12 @@ function wordCount(text: string): number {
   return text.trim() ? text.trim().split(/\s+/).length : 0;
 }
 
+function touchDist(touches: React.TouchList): number {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 export default function Journey() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -44,6 +67,7 @@ export default function Journey() {
   const [search, setSearch] = useState("");
   const [images, setImages] = useState<JournalImage[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadAlbum, setUploadAlbum] = useState("entry");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dirty = useRef(false);
@@ -53,8 +77,14 @@ export default function Journey() {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [galleryUploading, setGalleryUploading] = useState(false);
-  const [tileSize, setTileSize] = useState<"sm" | "md" | "lg">("md");
+  const [tilePx, setTilePx] = useState(140);
+  const [activeAlbum, setActiveAlbum] = useState<string>("all");
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [moveMenuOpen, setMoveMenuOpen] = useState(false);
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
+  const pinchDist = useRef<number | null>(null);
+  const pinchStartTile = useRef(140);
 
   const active = entries.find((e) => e.id === activeId) ?? null;
 
@@ -80,12 +110,12 @@ export default function Journey() {
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
   const loadImages = useCallback(async (entryId: string) => {
-    const { data } = await supabase.from("journal_images").select("id, storage_path").eq("entry_id", entryId);
+    const { data } = await supabase.from("journal_images").select("id, storage_path, album").eq("entry_id", entryId);
     if (!data) { setImages([]); return; }
     const withUrls = await Promise.all(
       data.map(async (img) => {
         const { data: signed } = await supabase.storage.from("journal-images").createSignedUrl(img.storage_path, 3600);
-        return { id: img.id, storage_path: img.storage_path, url: signed?.signedUrl ?? "" };
+        return { id: img.id, storage_path: img.storage_path, url: signed?.signedUrl ?? "", album: img.album };
       })
     );
     setImages(withUrls);
@@ -160,7 +190,7 @@ export default function Journey() {
     const path = `${user.id}/${activeId}/${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("journal-images").upload(path, file, { contentType: file.type });
     if (upErr) { toast.error(upErr.message); setUploading(false); return; }
-    const { error: insErr } = await supabase.from("journal_images").insert({ user_id: user.id, entry_id: activeId, storage_path: path });
+    const { error: insErr } = await supabase.from("journal_images").insert({ user_id: user.id, entry_id: activeId, storage_path: path, album: uploadAlbum });
     setUploading(false);
     if (insErr) { toast.error(insErr.message); return; }
     loadImages(activeId);
@@ -177,9 +207,11 @@ export default function Journey() {
     if (!user) return;
     setGalleryOpen(true);
     setGalleryLoading(true);
+    setSelectMode(false);
+    setSelectedIds(new Set());
     const { data } = await supabase
       .from("journal_images")
-      .select("id, storage_path, entry_id, journal_entries(title)")
+      .select("id, storage_path, album, entry_id, journal_entries(title)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (!data) { setGalleryImages([]); setGalleryLoading(false); return; }
@@ -187,7 +219,7 @@ export default function Journey() {
       data.map(async (img: any) => {
         const { data: signed } = await supabase.storage.from("journal-images").createSignedUrl(img.storage_path, 3600);
         return {
-          id: img.id, storage_path: img.storage_path, url: signed?.signedUrl ?? "",
+          id: img.id, storage_path: img.storage_path, url: signed?.signedUrl ?? "", album: img.album,
           entryId: img.entry_id, entryTitle: img.journal_entries?.title || "Untitled Entry",
         };
       })
@@ -229,18 +261,69 @@ export default function Journey() {
     const path = `${user.id}/${entryId}/${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("journal-images").upload(path, file, { contentType: file.type });
     if (upErr) { toast.error(upErr.message); setGalleryUploading(false); return; }
-    const { error: insErr } = await supabase.from("journal_images").insert({ user_id: user.id, entry_id: entryId, storage_path: path });
+    const album = activeAlbum === "all" ? "general" : activeAlbum;
+    const { error: insErr } = await supabase.from("journal_images").insert({ user_id: user.id, entry_id: entryId, storage_path: path, album });
     setGalleryUploading(false);
     if (insErr) { toast.error(insErr.message); return; }
     openGallery();
     if (activeId === entryId) loadImages(entryId);
   };
 
+  const handleMultiUpload = async (files: FileList) => {
+    for (const file of Array.from(files)) {
+      await handleGalleryUpload(file);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const deleteSelected = async () => {
+    const toDelete = galleryImages.filter((img) => selectedIds.has(img.id));
+    if (toDelete.length === 0) return;
+    await Promise.all(toDelete.map((img) => supabase.storage.from("journal-images").remove([img.storage_path])));
+    await supabase.from("journal_images").delete().in("id", Array.from(selectedIds));
+    setGalleryImages((prev) => prev.filter((img) => !selectedIds.has(img.id)));
+    toast.success(`${toDelete.length} photo${toDelete.length === 1 ? "" : "s"} deleted`);
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  };
+
+  const moveSelectedToAlbum = async (album: string) => {
+    await supabase.from("journal_images").update({ album }).in("id", Array.from(selectedIds));
+    setGalleryImages((prev) => prev.map((img) => (selectedIds.has(img.id) ? { ...img, album } : img)));
+    toast.success(`Moved to ${albumLabel(album)}`);
+    setSelectedIds(new Set());
+    setSelectMode(false);
+    setMoveMenuOpen(false);
+  };
+
+  const onGalleryTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      pinchDist.current = touchDist(e.touches);
+      pinchStartTile.current = tilePx;
+    }
+  };
+  const onGalleryTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchDist.current) {
+      e.preventDefault();
+      const scale = touchDist(e.touches) / pinchDist.current;
+      setTilePx(Math.min(MAX_TILE, Math.max(MIN_TILE, Math.round(pinchStartTile.current * scale))));
+    }
+  };
+  const onGalleryTouchEnd = () => { pinchDist.current = null; };
+
   const shareUrl = active?.is_shared && active.share_token ? `${window.location.origin}/journal/${active.share_token}` : null;
   const words = wordCount(content);
   const filteredEntries = entries.filter((e) =>
     !search.trim() || e.title.toLowerCase().includes(search.toLowerCase()) || e.content.toLowerCase().includes(search.toLowerCase())
   );
+  const visibleGalleryImages = activeAlbum === "all" ? galleryImages : galleryImages.filter((img) => (img.album ?? "general") === activeAlbum);
 
   return (
     <div className="eb-journey">
@@ -274,7 +357,8 @@ export default function Journey() {
         .eb-journey .btn:hover{ background:var(--accent-soft); border-color:var(--accent); }
         .eb-journey .btn.primary{ background:var(--text); border-color:var(--text); color:var(--bg); }
         .eb-journey .btn.primary:hover{ opacity:.88; }
-        .eb-journey .btn.danger:hover{ background:rgba(192,138,138,.14); border-color:rgba(192,138,138,.4); color:#D8A0A0; }
+        .eb-journey .btn.danger{ color:#D8A0A0; border-color:rgba(192,138,138,.35); }
+        .eb-journey .btn.danger:hover{ background:rgba(192,138,138,.14); border-color:rgba(192,138,138,.4); }
         .eb-journey .btn.icon-btn{ padding:.45rem; display:flex; align-items:center; justify-content:center; }
         .eb-journey .search-wrap{ position:relative; }
         .eb-journey .search-wrap svg{ position:absolute; left:.6rem; top:50%; transform:translateY(-50%); color:var(--dim); }
@@ -305,7 +389,12 @@ export default function Journey() {
           padding-left:1rem; border-left:2px solid var(--line);
         }
         .eb-journey .gallery{ margin-top:1rem; }
-        .eb-journey .gallery-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:.5rem; margin-top:.5rem; }
+        .eb-journey .gallery-head-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:.4rem; }
+        .eb-journey .album-select{
+          background:transparent; border:1px solid var(--line); border-radius:8px; padding:.3rem .5rem;
+          font-size:.72rem; color:var(--dim); outline:none;
+        }
+        .eb-journey .gallery-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:.5rem; }
         .eb-journey .gallery-item{ position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; border:1px solid var(--line); cursor:pointer; }
         .eb-journey .gallery-item img{ width:100%; height:100%; object-fit:cover; }
         .eb-journey .gallery-remove{
@@ -330,31 +419,52 @@ export default function Journey() {
         .eb-journey .lightbox-close{ position:absolute; top:1rem; right:1rem; background:rgba(255,255,255,.1); border:none; border-radius:999px; padding:.5rem; color:#fff; }
 
         /* Full-screen gallery */
-        .eb-journey .gallery-fullscreen{
-          position:fixed; inset:0; z-index:220; background:var(--bg); display:flex; flex-direction:column;
-        }
+        .eb-journey .gallery-fullscreen{ position:fixed; inset:0; z-index:220; background:var(--bg); display:flex; flex-direction:column; }
         .eb-journey .gallery-fs-head{
-          display:flex; align-items:center; gap:.75rem; padding:1rem 1.25rem; border-bottom:1px solid var(--line);
+          display:flex; align-items:center; gap:.6rem; padding:1rem 1.25rem; border-bottom:1px solid var(--line);
           flex-wrap:wrap; flex-shrink:0; padding-top:calc(1rem + env(safe-area-inset-top));
         }
         .eb-journey .gallery-fs-title{ font-family:'Newsreader',serif; font-size:1.2rem; font-weight:600; }
         .eb-journey .gallery-fs-count{ font-size:.75rem; color:var(--dim); font-family:'IBM Plex Mono',monospace; }
-        .eb-journey .size-toggle{ display:flex; gap:.25rem; padding:.2rem; border:1px solid var(--line); border-radius:9px; }
-        .eb-journey .size-toggle button{
-          width:28px; height:28px; border-radius:6px; border:none; background:transparent; color:var(--dim);
-          display:flex; align-items:center; justify-content:center;
+        .eb-journey .zoom-row{ display:flex; align-items:center; gap:.4rem; color:var(--dim); }
+        .eb-journey .zoom-row input[type="range"]{ width:90px; accent-color:var(--accent); }
+        .eb-journey .album-tabs{ display:flex; gap:.4rem; overflow-x:auto; padding:.7rem 1.25rem 0; flex-shrink:0; }
+        .eb-journey .album-tab{
+          flex-shrink:0; border:1px solid var(--line); background:transparent; border-radius:999px;
+          padding:.35rem .8rem; font-size:.75rem; color:var(--dim); white-space:nowrap;
         }
-        .eb-journey .size-toggle button.on{ background:var(--accent-soft); color:var(--accent); }
-        .eb-journey .gallery-fs-body{ flex:1; overflow-y:auto; padding:1.25rem; }
-        .eb-journey .gallery-fs-grid{ display:grid; gap:.6rem; }
+        .eb-journey .album-tab.on{ background:var(--text); border-color:var(--text); color:var(--bg); font-weight:600; }
+        .eb-journey .gallery-fs-body{ flex:1; overflow-y:auto; padding:1.25rem; touch-action:pan-y; }
+        .eb-journey .gallery-fs-grid{ display:grid; gap:.5rem; }
         .eb-journey .gallery-fs-item{ position:relative; border-radius:10px; overflow:hidden; border:1px solid var(--line); cursor:pointer; }
         .eb-journey .gallery-fs-item img{ width:100%; aspect-ratio:1; object-fit:cover; display:block; }
         .eb-journey .gallery-fs-caption{
           position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,.75), transparent);
-          padding:.5rem .5rem .35rem; font-size:.66rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-          opacity:0; transition:opacity .15s ease;
+          padding:.5rem .5rem .35rem; font-size:.64rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+          opacity:0; transition:opacity .15s ease; border:none; width:100%; text-align:left;
         }
         .eb-journey .gallery-fs-item:hover .gallery-fs-caption{ opacity:1; }
+        .eb-journey .select-check{
+          position:absolute; top:6px; left:6px; width:22px; height:22px; border-radius:50%;
+          border:2px solid rgba(255,255,255,.8); background:rgba(0,0,0,.3);
+          display:flex; align-items:center; justify-content:center; z-index:2;
+        }
+        .eb-journey .select-check.on{ background:var(--accent); border-color:var(--accent); }
+        .eb-journey .gallery-fs-item.selected img{ opacity:.6; }
+        .eb-journey .select-bar{
+          display:flex; align-items:center; gap:.5rem; padding:.7rem 1.25rem; border-top:1px solid var(--line);
+          flex-shrink:0; flex-wrap:wrap;
+        }
+        .eb-journey .move-menu{ position:relative; }
+        .eb-journey .move-menu-list{
+          position:absolute; bottom:calc(100% + 6px); left:0; background:var(--elev); border:1px solid var(--line);
+          border-radius:10px; padding:.35rem; min-width:170px; box-shadow:0 12px 28px rgba(0,0,0,.3); z-index:10;
+        }
+        .eb-journey .move-menu-item{
+          display:block; width:100%; text-align:left; padding:.5rem .6rem; border-radius:7px; border:none;
+          background:transparent; font-size:.8rem; color:var(--text);
+        }
+        .eb-journey .move-menu-item:hover{ background:var(--accent-soft); }
         @media (max-width:880px){ .eb-journey .layout{ grid-template-columns:1fr; } .eb-journey .list{ max-height:240px; } }
       `}</style>
 
@@ -422,6 +532,12 @@ export default function Journey() {
                 />
 
                 <div className="gallery">
+                  <div className="gallery-head-row">
+                    <span className="meta">Photos</span>
+                    <select className="album-select" value={uploadAlbum} onChange={(e) => setUploadAlbum(e.target.value)} title="New photos go to this album">
+                      {ALBUMS.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+                    </select>
+                  </div>
                   <div className="gallery-grid">
                     {images.map((img) => (
                       <div key={img.id} className="gallery-item" onClick={() => setLightbox(img.url)}>
@@ -474,52 +590,111 @@ export default function Journey() {
         <div className="gallery-fullscreen">
           <div className="gallery-fs-head">
             <span className="gallery-fs-title">All Photos</span>
-            <span className="gallery-fs-count">{galleryImages.length}</span>
+            <span className="gallery-fs-count">{visibleGalleryImages.length}</span>
             <span className="spacer" />
-            <div className="size-toggle">
-              {(["sm", "md", "lg"] as const).map((s) => (
-                <button key={s} className={tileSize === s ? "on" : ""} onClick={() => setTileSize(s)} title={`${s === "sm" ? "Small" : s === "md" ? "Medium" : "Large"} thumbnails`}>
-                  <div style={{ width: s === "sm" ? 8 : s === "md" ? 11 : 14, height: s === "sm" ? 8 : s === "md" ? 11 : 14, border: "1.5px solid currentColor", borderRadius: 2 }} />
-                </button>
-              ))}
+            <div className="zoom-row">
+              <ZoomOut size={14} />
+              <input
+                type="range" min={MIN_TILE} max={MAX_TILE} value={tilePx}
+                onChange={(e) => setTilePx(Number(e.target.value))}
+                aria-label="Thumbnail size"
+              />
+              <ZoomIn size={14} />
             </div>
-            <button className="btn icon-btn" onClick={() => galleryFileInputRef.current?.click()} disabled={galleryUploading} title="Add photo">
+            <button
+              className="btn"
+              onClick={() => { setSelectMode((v) => !v); setSelectedIds(new Set()); }}
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </button>
+            <button className="btn icon-btn" onClick={() => galleryFileInputRef.current?.click()} disabled={galleryUploading} title="Add photos">
               {galleryUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
             </button>
             <input
               ref={galleryFileInputRef}
               type="file"
               accept="image/*"
+              multiple
               style={{ display: "none" }}
-              onChange={(e) => { if (e.target.files?.[0]) handleGalleryUpload(e.target.files[0]); e.target.value = ""; }}
+              onChange={(e) => { if (e.target.files?.length) handleMultiUpload(e.target.files); e.target.value = ""; }}
             />
             <button className="btn icon-btn" onClick={() => setGalleryOpen(false)} aria-label="Close gallery">
               <X size={16} />
             </button>
           </div>
-          <div className="gallery-fs-body">
+
+          <div className="album-tabs">
+            <button className={`album-tab ${activeAlbum === "all" ? "on" : ""}`} onClick={() => setActiveAlbum("all")}>All Photos</button>
+            {ALBUMS.map((a) => (
+              <button key={a.key} className={`album-tab ${activeAlbum === a.key ? "on" : ""}`} onClick={() => setActiveAlbum(a.key)}>
+                {a.label}
+              </button>
+            ))}
+          </div>
+
+          <div
+            className="gallery-fs-body"
+            onTouchStart={onGalleryTouchStart}
+            onTouchMove={onGalleryTouchMove}
+            onTouchEnd={onGalleryTouchEnd}
+          >
             {galleryLoading ? (
               <div className="empty">Loading your photo history…</div>
-            ) : galleryImages.length === 0 ? (
-              <div className="empty">No photos yet — add one here, or from any entry, and it'll show up in this gallery.</div>
+            ) : visibleGalleryImages.length === 0 ? (
+              <div className="empty">No photos in this album yet.</div>
             ) : (
-              <div className="gallery-fs-grid" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_SIZES[tileSize]}px, 1fr))` }}>
-                {galleryImages.map((img) => (
-                  <div key={img.id} className="gallery-fs-item" onClick={() => setLightbox(img.url)}>
-                    <img src={img.url} alt="" loading="lazy" />
-                    <button
-                      className="gallery-fs-caption"
-                      onClick={(e) => { e.stopPropagation(); jumpToEntryFromGallery(img.entryId); }}
-                      style={{ border: "none", cursor: "pointer", width: "100%", textAlign: "left" }}
-                      title="Go to entry"
+              <div className="gallery-fs-grid" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${tilePx}px, 1fr))` }}>
+                {visibleGalleryImages.map((img) => {
+                  const isSelected = selectedIds.has(img.id);
+                  return (
+                    <div
+                      key={img.id}
+                      className={`gallery-fs-item ${isSelected ? "selected" : ""}`}
+                      onClick={() => (selectMode ? toggleSelect(img.id) : setLightbox(img.url))}
                     >
-                      {img.entryTitle}
-                    </button>
-                  </div>
-                ))}
+                      {selectMode && (
+                        <div className={`select-check ${isSelected ? "on" : ""}`}>
+                          {isSelected && <Check size={13} color="#fff" />}
+                        </div>
+                      )}
+                      <img src={img.url} alt="" loading="lazy" />
+                      {!selectMode && (
+                        <button
+                          className="gallery-fs-caption"
+                          onClick={(e) => { e.stopPropagation(); jumpToEntryFromGallery(img.entryId); }}
+                          title="Go to entry"
+                        >
+                          {img.entryTitle}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
+
+          {selectMode && selectedIds.size > 0 && (
+            <div className="select-bar">
+              <span className="meta">{selectedIds.size} selected</span>
+              <span className="spacer" />
+              <div className="move-menu">
+                {moveMenuOpen && (
+                  <div className="move-menu-list">
+                    {ALBUMS.map((a) => (
+                      <button key={a.key} className="move-menu-item" onClick={() => moveSelectedToAlbum(a.key)}>{a.label}</button>
+                    ))}
+                  </div>
+                )}
+                <button className="btn" onClick={() => setMoveMenuOpen((v) => !v)}>
+                  <FolderInput size={13} style={{ marginRight: 5, display: "inline" }} /> Move to album
+                </button>
+              </div>
+              <button className="btn danger" onClick={deleteSelected}>
+                <Trash2 size={13} style={{ marginRight: 5, display: "inline" }} /> Delete
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

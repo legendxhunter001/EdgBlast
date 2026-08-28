@@ -32,8 +32,14 @@ const FIELD_DEFS: { key: string; label: string; required?: boolean; aliases: str
   { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comment', 'comments', 'remarks'] },
   { key: 'emotional_state', label: 'Emotional state', aliases: ['emotional_state', 'emotion', 'mood', 'feeling', 'psychology'] },
   { key: 'confidence_rating', label: 'Confidence (1-10)', aliases: ['confidence_rating', 'confidence', 'conviction'] },
+  { key: 'review_score', label: 'Rating (1-10)', aliases: ['review_score', 'rating', 'score', 'grade', 'trade_rating'] },
   { key: 'thesis', label: 'Trade thesis', aliases: ['thesis', 'setup', 'idea', 'rationale'] },
-  { key: 'entry_reasoning', label: 'Entry explanation', aliases: ['entry_reasoning', 'explanation', 'reason', 'reasoning', 'entry_reason', 'entry_notes', 'comment', 'comments', 'why'] },
+  { key: 'entry_reasoning', label: 'Entry explanation', aliases: ['entry_reasoning', 'entry_explanation', 'entry_reason', 'entry_notes', 'why'] },
+  { key: 'exit_reasoning', label: 'Exit explanation', aliases: ['exit_reasoning', 'exit_explanation', 'exit_reason', 'exit_notes'] },
+  { key: 'execution_notes', label: 'Execution notes', aliases: ['execution_notes', 'execution', 'execution_quality'] },
+  { key: 'psychology_review', label: 'Psychology review', aliases: ['psychology_review', 'psych_review', 'mental_state', 'mindset'] },
+  { key: 'what_went_well', label: 'What went well', aliases: ['what_went_well', 'went_well', 'strengths', 'positives'] },
+  { key: 'mistakes', label: 'Mistakes', aliases: ['mistakes', 'errors', 'negatives', 'what_went_wrong'] },
   { key: 'lessons_learned', label: 'Lessons learned', aliases: ['lessons_learned', 'lessons', 'takeaway', 'takeaways'] },
 ];
 
@@ -149,8 +155,15 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
       const emotional_state = emoRaw && validEmotions.includes(emoRaw) ? emoRaw : null;
       const confRaw = parseNum(get('confidence_rating'));
       const confidence_rating = confRaw !== null ? Math.min(10, Math.max(1, Math.round(confRaw))) : null;
+      const ratingRaw = parseNum(get('review_score'));
+      const review_score = ratingRaw !== null ? Math.min(10, Math.max(1, Math.round(ratingRaw))) : null;
       const thesis = get('thesis')?.trim() || null;
       const entry_reasoning = get('entry_reasoning')?.trim() || null;
+      const exit_reasoning = get('exit_reasoning')?.trim() || null;
+      const execution_notes = get('execution_notes')?.trim() || null;
+      const psychology_review = get('psychology_review')?.trim() || null;
+      const what_went_well = get('what_went_well')?.trim() || null;
+      const mistakes = get('mistakes')?.trim() || null;
       const lessons_learned = get('lessons_learned')?.trim() || null;
 
       if (pnl === null && entry_price !== null && exit_price !== null && position_size !== null) {
@@ -175,8 +188,14 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
         notes,
         emotional_state: emotional_state as any,
         confidence_rating,
+        review_score,
         thesis,
         entry_reasoning,
+        exit_reasoning,
+        execution_notes,
+        psychology_review,
+        what_went_well,
+        mistakes,
         lessons_learned,
       };
     });
