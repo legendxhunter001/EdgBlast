@@ -26,7 +26,7 @@ const items: Entry[] = [
   { divider: 'Connections' },
   { to: '/connections', label: 'Connections', icon: Plug },
   { divider: 'Trading Tools' },
-  { to: '/analyze', label: 'Analyze', icon: LineChart },
+  { to: '/mt5', label: 'MT5', icon: LineChart },
   { to: '/trading-tools', label: 'Trading Tools', icon: Wrench },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];

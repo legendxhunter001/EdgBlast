@@ -23,7 +23,7 @@ import Reviews from "./pages/Reviews";
 import Settings from "./pages/Settings";
 import Connections from "./pages/Connections";
 import TradingTools from "./pages/TradingTools";
-import Analyze from "./pages/Analyze";
+import MT5 from "./pages/MT5";
 import Journey from "./pages/Journey";
 import NotFound from "./pages/NotFound";
 
@@ -62,7 +62,7 @@ const App = () => (
               <Route path="/settings" element={<Shell><Settings /></Shell>} />
               <Route path="/connections" element={<Shell><Connections /></Shell>} />
               <Route path="/trading-tools" element={<Shell><TradingTools /></Shell>} />
-              <Route path="/analyze" element={<Shell><Analyze /></Shell>} />
+              <Route path="/mt5" element={<Shell><MT5 /></Shell>} />
               <Route path="/journey" element={<Shell><Journey /></Shell>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

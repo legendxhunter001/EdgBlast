@@ -23,7 +23,7 @@ const titleFor = (path: string) => {
   if (path.startsWith('/reviews')) return 'Reviews';
   if (path.startsWith('/journey')) return 'Journey';
   if (path.startsWith('/connections')) return 'Connections';
-  if (path.startsWith('/analyze')) return 'Analyze';
+  if (path.startsWith('/mt5')) return 'MT5';
   if (path.startsWith('/trading-tools')) return 'Trading Tools';
   if (path.startsWith('/settings')) return 'Settings';
   return '';

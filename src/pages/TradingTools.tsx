@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
 import { functionErrorMessage } from '@/lib/functionError';
 import { toast } from 'sonner';
-import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell, Info } from 'lucide-react';
+import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell, Info, CandlestickChart, Calculator, Newspaper } from 'lucide-react';
 
 /* ---------------- TradingView embeds ---------------- */
 
@@ -163,107 +163,6 @@ type Position = {
   swap: number | null;
   commission: number | null;
   openTime: string | null;
-};
-
-const LivePositions = () => {
-  const { scope, connections } = useAccountScope();
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const { data, error: fnErr } = await supabase.functions.invoke('mt5-positions', {
-        body: scope === 'all' ? {} : { connection_id: scope },
-      });
-      if (fnErr || !data?.success) throw new Error(data?.message || fnErr?.message || 'Could not load positions');
-      setPositions((data.positions ?? []) as Position[]);
-      setUpdatedAt(new Date());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load positions');
-    } finally {
-      setLoading(false);
-    }
-  }, [scope]);
-
-  useEffect(() => {
-    load();
-    const id = setInterval(load, 30_000);
-    return () => clearInterval(id);
-  }, [load]);
-
-  const total = positions.reduce((a, p) => a + Number(p.profit ?? 0), 0);
-
-  return (
-    <div className="tt-card">
-      <div className="tt-card-head">
-        <h2>
-          <span className="tt-tag">MT5</span> Live trades
-        </h2>
-        <div className="tt-head-right">
-          <span className="tt-hint mono">
-            {updatedAt ? `Updated ${updatedAt.toLocaleTimeString()}` : 'Loading…'}
-          </span>
-          <button type="button" className="tt-refresh" onClick={load} disabled={loading} aria-label="Refresh positions">
-            <RefreshCw className={loading ? 'tt-spin' : ''} style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      </div>
-
-      <div className="tt-scope-note">
-        {scope === 'all'
-          ? `All connected accounts (${connections.length})`
-          : connections.find((c) => c.id === scope)?.label ?? 'Selected account'}
-      </div>
-
-      {error && <div className="tt-alert">{error}</div>}
-
-      {!error && positions.length === 0 && !loading && (
-        <div className="tt-empty">No open MT5 positions right now.</div>
-      )}
-
-      {positions.length > 0 && (
-        <div className="tt-table-wrap">
-          <table className="tt-table">
-            <thead>
-              <tr>
-                <th>Symbol</th><th>Side</th><th>Vol</th><th>Open</th><th>Current</th><th>P&amp;L</th><th>Account</th>
-              </tr>
-            </thead>
-            <tbody>
-              {positions.map((p, i) => {
-                const pnl = Number(p.profit ?? 0);
-                return (
-                  <tr key={`${p.connection_id}-${p.symbol}-${i}`} style={{ animationDelay: `${i * 40}ms` }}>
-                    <td className="mono strong">{p.symbol}</td>
-                    <td>
-                      <span className={`tt-side ${String(p.type).toLowerCase() === 'short' ? 'sell' : 'buy'}`}>
-                        {String(p.type).toLowerCase() === 'short' ? 'SELL' : 'BUY'}
-                      </span>
-                    </td>
-                    <td className="mono">{p.volume ?? '—'}</td>
-                    <td className="mono">{p.openPrice ?? '—'}</td>
-                    <td className="mono">{p.currentPrice ?? '—'}</td>
-                    <td className={`mono ${pnl >= 0 ? 'pos' : 'neg'}`}>
-                      {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
-                    </td>
-                    <td className="dim">{p.connection_label}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <div className="tt-total">
-            <span>Floating P&amp;L</span>
-            <b className={`mono ${total >= 0 ? 'pos' : 'neg'}`}>{total >= 0 ? '+' : ''}{total.toFixed(2)}</b>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 };
 
 /* ---------------- Price alerts ---------------- */
@@ -549,160 +448,6 @@ const Watchlist = ({ activeSymbol, onSelect }: { activeSymbol: string; onSelect:
 
 /* ---------------- Order panel (real execution) ---------------- */
 
-const OrderPanel = ({ chartSymbol }: { chartSymbol: string }) => {
-  const { connections } = useAccountScope();
-  const tradable = connections.filter((c: any) => c.can_trade && c.status === 'connected');
-  const [connectionId, setConnectionId] = useState('');
-  const [symbol, setSymbol] = useState(chartSymbol.split(':').pop() ?? 'EURUSD');
-  const [direction, setDirection] = useState<'long' | 'short'>('long');
-  const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
-  const [volume, setVolume] = useState('0.01');
-  const [entryPrice, setEntryPrice] = useState('');
-  const [stopLoss, setStopLoss] = useState('');
-  const [takeProfit, setTakeProfit] = useState('');
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
-
-  useEffect(() => {
-    if (!connectionId && tradable.length > 0) setConnectionId(tradable[0].id);
-  }, [tradable, connectionId]);
-
-  useEffect(() => { setSymbol(chartSymbol.split(':').pop() ?? symbol); }, [chartSymbol]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (tradable.length === 0) {
-    return (
-      <div className="tt-card">
-        <div className="tt-card-head"><h2>Place trade</h2></div>
-        <div className="tt-empty">
-          No account has live trading enabled. Go to Connections and turn on "Live trading" for an account first.
-        </div>
-      </div>
-    );
-  }
-
-  const canReview = symbol.trim() && Number(volume) > 0 && (orderType === 'market' || Number(entryPrice) > 0);
-
-  const submit = async () => {
-    setSubmitting(true);
-    setResult(null);
-    const { data, error } = await supabase.functions.invoke('place-order', {
-      body: {
-        connection_id: connectionId,
-        symbol: symbol.trim().toUpperCase(),
-        direction, order_type: orderType,
-        volume: Number(volume),
-        entry_price: orderType === 'market' ? null : Number(entryPrice),
-        stop_loss: stopLoss ? Number(stopLoss) : null,
-        take_profit: takeProfit ? Number(takeProfit) : null,
-      },
-    });
-    setSubmitting(false);
-    setReviewOpen(false);
-    if (error || !data?.success) {
-      const msg = await functionErrorMessage(error, data, 'Order failed.');
-      setResult({ success: false, message: msg });
-      toast.error(msg);
-    } else {
-      setResult({ success: true, message: 'Trade placed and filled.' });
-      toast.success(`${symbol.toUpperCase()} ${direction} order filled`);
-    }
-  };
-
-  return (
-    <div className="tt-card">
-      <div className="tt-card-head">
-        <h2>Place trade</h2>
-        <span className="tt-hint" style={{ color: 'var(--rose)' }}>Live — real money</span>
-      </div>
-
-      <div className="tt-fields">
-        <label className="tt-field">
-          <span>Account</span>
-          <select value={connectionId} onChange={(e) => setConnectionId(e.target.value)}>
-            {tradable.map((c: any) => <option key={c.id} value={c.id}>{c.label || c.account_number}</option>)}
-          </select>
-        </label>
-        <label className="tt-field">
-          <span>Symbol</span>
-          <input value={symbol} onChange={(e) => setSymbol(e.target.value)} style={{ textTransform: 'uppercase' }} />
-        </label>
-        <label className="tt-field">
-          <span>Direction</span>
-          <select value={direction} onChange={(e) => setDirection(e.target.value as 'long' | 'short')}>
-            <option value="long">Buy / Long</option>
-            <option value="short">Sell / Short</option>
-          </select>
-        </label>
-        <label className="tt-field">
-          <span>Order type</span>
-          <select value={orderType} onChange={(e) => setOrderType(e.target.value as any)}>
-            <option value="market">Market</option>
-            <option value="limit">Limit</option>
-            <option value="stop">Stop</option>
-          </select>
-        </label>
-        <label className="tt-field">
-          <span>Volume (lots)</span>
-          <input type="number" step="0.01" value={volume} onChange={(e) => setVolume(e.target.value)} />
-        </label>
-        {orderType !== 'market' && (
-          <label className="tt-field">
-            <span>Entry price</span>
-            <input type="number" step="any" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} />
-          </label>
-        )}
-        <label className="tt-field">
-          <span>Stop loss</span>
-          <input type="number" step="any" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} />
-        </label>
-        <label className="tt-field">
-          <span>Take profit</span>
-          <input type="number" step="any" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} />
-        </label>
-      </div>
-
-      <button
-        type="button"
-        className="tt-chip on"
-        style={{ marginTop: '.9rem', width: '100%', justifyContent: 'center', padding: '.6rem' }}
-        disabled={!canReview}
-        onClick={() => setReviewOpen(true)}
-      >
-        Review order
-      </button>
-
-      {result && (
-        <div className="tt-alert" style={{ marginTop: '.7rem', borderColor: result.success ? 'var(--teal)' : undefined, color: result.success ? 'var(--teal)' : undefined }}>
-          {result.message}
-        </div>
-      )}
-
-      {reviewOpen && (
-        <div className="tt-order-review-backdrop" onClick={() => setReviewOpen(false)} role="presentation">
-          <div className="tt-order-review" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
-            <div className="tt-order-review-title">Confirm this trade</div>
-            <div className="tt-order-review-row"><span>Symbol</span><b>{symbol.toUpperCase()}</b></div>
-            <div className="tt-order-review-row"><span>Direction</span><b>{direction === 'long' ? 'Buy' : 'Sell'}</b></div>
-            <div className="tt-order-review-row"><span>Type</span><b>{orderType}</b></div>
-            <div className="tt-order-review-row"><span>Volume</span><b>{volume} lots</b></div>
-            {orderType !== 'market' && <div className="tt-order-review-row"><span>Entry</span><b>{entryPrice}</b></div>}
-            <div className="tt-order-review-row"><span>Stop loss</span><b>{stopLoss || '—'}</b></div>
-            <div className="tt-order-review-row"><span>Take profit</span><b>{takeProfit || '—'}</b></div>
-            <p className="tt-order-review-warn">This will place a real order on your live account. Your risk rules are checked automatically and will block this if it violates them.</p>
-            <div style={{ display: 'flex', gap: '.6rem', marginTop: '.9rem' }}>
-              <button type="button" className="tt-chip" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setReviewOpen(false)}>Cancel</button>
-              <button type="button" className="tt-chip on" style={{ flex: 1, justifyContent: 'center' }} disabled={submitting} onClick={submit}>
-                {submitting ? 'Placing…' : 'Confirm & place trade'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 /* ---------------- Page ---------------- */
 
 export default function TradingTools() {
@@ -713,6 +458,7 @@ export default function TradingTools() {
   const [chartTheme, setChartTheme] = useState<'dark' | 'light'>('dark');
   const [themeLoaded, setThemeLoaded] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [section, setSection] = useState<'tradingview' | 'calculator' | 'news'>('tradingview');
   const [focusBarVisible, setFocusBarVisible] = useState(true);
   const focusBarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -821,106 +567,128 @@ export default function TradingTools() {
         <div className="tt-inner">
           <h1>Trading Tools</h1>
           <p className="tt-sub">
-            Charts, position sizing, macro events and your live MT5 exposure — all in one workspace.
+            Charts, position sizing, and macro events — all in one workspace.
           </p>
         </div>
       </header>
 
-      <div className="tt-inner tt-body">
-        <div className="tt-card tt-chart-card">
-          <div className="tt-card-head">
-            <h2>Chart</h2>
-            <div className="tt-toolbar">
-              <select
-                className="tt-symbol-select"
-                value={chartSymbol}
-                onChange={(e) => setChartSymbol(e.target.value)}
-                aria-label="Select symbol"
-              >
-                {['FX:EURUSD', 'FX:GBPUSD', 'OANDA:XAUUSD', 'FX:USDJPY'].map((s) => (
-                  <option key={s} value={s}>{s.split(':')[1]}</option>
-                ))}
-              </select>
-              <div className="tt-icon-group">
-                <button
-                  type="button"
-                  className="tt-icon-btn"
-                  aria-label="How to customize candle colors"
-                  title="Candle colors can't be set from outside the chart on the free TradingView widget — open the chart's own settings (gear icon on desktop, or tap-hold a candle) to change them there. Your choice is remembered by TradingView."
-                >
-                  <Info size={15} />
-                </button>
-                <button
-                  type="button"
-                  className="tt-icon-btn"
-                  onClick={() => handleThemeChange(chartTheme === 'dark' ? 'light' : 'dark')}
-                  aria-label={chartTheme === 'dark' ? 'Switch to light chart' : 'Switch to dark chart'}
-                  title="Chart theme is independent of your app theme"
-                >
-                  {chartTheme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
-                </button>
-                <button
-                  type="button"
-                  className="tt-icon-btn"
-                  onClick={() => setFocusMode(true)}
-                  aria-label="Enter focus mode"
-                  title="Distraction-free fullscreen chart"
-                >
-                  <Maximize2 size={15} />
-                </button>
+      <div className="tt-inner">
+        <div className="tt-rail-layout">
+          <nav className="tt-rail">
+            <button className={`tt-rail-btn ${section === 'tradingview' ? 'on' : ''}`} onClick={() => setSection('tradingview')} title="TradingView">
+              <CandlestickChart size={18} />
+              <span>TradingView</span>
+            </button>
+            <button className={`tt-rail-btn ${section === 'calculator' ? 'on' : ''}`} onClick={() => setSection('calculator')} title="Lot Calculator">
+              <Calculator size={18} />
+              <span>Calculator</span>
+            </button>
+            <button className={`tt-rail-btn ${section === 'news' ? 'on' : ''}`} onClick={() => setSection('news')} title="News">
+              <Newspaper size={18} />
+              <span>News</span>
+            </button>
+          </nav>
+
+          <div className="tt-body">
+            {section === 'tradingview' && (
+              <>
+                <div className="tt-card tt-chart-card">
+                  <div className="tt-card-head">
+                    <h2>Chart</h2>
+                    <div className="tt-toolbar">
+                      <select
+                        className="tt-symbol-select"
+                        value={chartSymbol}
+                        onChange={(e) => setChartSymbol(e.target.value)}
+                        aria-label="Select symbol"
+                      >
+                        {['FX:EURUSD', 'FX:GBPUSD', 'OANDA:XAUUSD', 'FX:USDJPY'].map((s) => (
+                          <option key={s} value={s}>{s.split(':')[1]}</option>
+                        ))}
+                      </select>
+                      <div className="tt-icon-group">
+                        <button
+                          type="button"
+                          className="tt-icon-btn"
+                          aria-label="How to customize candle colors"
+                          title="Candle colors can't be set from outside the chart on the free TradingView widget — open the chart's own settings (gear icon on desktop, or tap-hold a candle) to change them there. Your choice is remembered by TradingView."
+                        >
+                          <Info size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          className="tt-icon-btn"
+                          onClick={() => handleThemeChange(chartTheme === 'dark' ? 'light' : 'dark')}
+                          aria-label={chartTheme === 'dark' ? 'Switch to light chart' : 'Switch to dark chart'}
+                          title="Chart theme is independent of your app theme"
+                        >
+                          {chartTheme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
+                        </button>
+                        <button
+                          type="button"
+                          className="tt-icon-btn"
+                          onClick={() => setFocusMode(true)}
+                          aria-label="Enter focus mode"
+                          title="Distraction-free fullscreen chart"
+                        >
+                          <Maximize2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="tt-chart">
+                    {themeLoaded && !focusMode && <TVWidget script="advanced-chart" config={chartConfig} height="100%" />}
+                  </div>
+                </div>
+
+                {focusMode && (
+                  <div className="tt-focus-overlay" onMouseMove={wakeFocusBar} onTouchStart={wakeFocusBar}>
+                    <div className={`tt-focus-bar ${focusBarVisible ? '' : 'tt-focus-bar-hidden'}`}>
+                      <span className="mono">{chartSymbol}</span>
+                      <button type="button" className="tt-icon-btn" onClick={() => setFocusMode(false)} aria-label="Exit focus mode" title="Exit focus (Esc)">
+                        <X size={15} />
+                      </button>
+                    </div>
+                    <div className="tt-focus-chart">
+                      {themeLoaded && <TVWidget script="advanced-chart" config={chartConfig} height="100%" />}
+                    </div>
+                  </div>
+                )}
+
+                <div className="tt-two">
+                  <Watchlist activeSymbol={chartSymbol} onSelect={setChartSymbol} />
+                  <PriceAlerts chartSymbol={chartSymbol} />
+                </div>
+              </>
+            )}
+
+            {section === 'calculator' && (
+              <LotCalculator suggestedBalance={equity !== null ? Math.max(equity, 0) + 10000 : null} />
+            )}
+
+            {section === 'news' && (
+              <div className="tt-card">
+                <div className="tt-card-head">
+                  <h2>Economic calendar</h2>
+                  <span className="tt-hint">High-impact events, live</span>
+                </div>
+                <div className="tt-cal">
+                  <TVWidget
+                    script="events"
+                    config={{
+                      colorTheme: 'dark',
+                      isTransparent: true,
+                      width: '100%',
+                      height: '100%',
+                      locale: 'en',
+                      importanceFilter: '0,1',
+                      countryFilter: 'us,eu,gb,jp,ca,au,ch,nz',
+                    }}
+                    height="100%"
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="tt-chart">
-            {themeLoaded && !focusMode && <TVWidget script="advanced-chart" config={chartConfig} height="100%" />}
-          </div>
-        </div>
-
-        {focusMode && (
-          <div className="tt-focus-overlay" onMouseMove={wakeFocusBar} onTouchStart={wakeFocusBar}>
-            <div className={`tt-focus-bar ${focusBarVisible ? '' : 'tt-focus-bar-hidden'}`}>
-              <span className="mono">{chartSymbol}</span>
-              <button type="button" className="tt-icon-btn" onClick={() => setFocusMode(false)} aria-label="Exit focus mode" title="Exit focus (Esc)">
-                <X size={15} />
-              </button>
-            </div>
-            <div className="tt-focus-chart">
-              {themeLoaded && <TVWidget script="advanced-chart" config={chartConfig} height="100%" />}
-            </div>
-          </div>
-        )}
-
-        <div className="tt-two">
-          <Watchlist activeSymbol={chartSymbol} onSelect={setChartSymbol} />
-          <PriceAlerts chartSymbol={chartSymbol} />
-        </div>
-
-        <OrderPanel chartSymbol={chartSymbol} />
-
-        <div className="tt-two">
-          <LotCalculator suggestedBalance={equity !== null ? Math.max(equity, 0) + 10000 : null} />
-          <LivePositions />
-        </div>
-
-        <div className="tt-card">
-          <div className="tt-card-head">
-            <h2>Economic calendar</h2>
-            <span className="tt-hint">High-impact events, live</span>
-          </div>
-          <div className="tt-cal">
-            <TVWidget
-              script="events"
-              config={{
-                colorTheme: 'dark',
-                isTransparent: true,
-                width: '100%',
-                height: '100%',
-                locale: 'en',
-                importanceFilter: '0,1',
-                countryFilter: 'us,eu,gb,jp,ca,au,ch,nz',
-              }}
-              height="100%"
-            />
+            )}
           </div>
         </div>
       </div>
@@ -1106,12 +874,21 @@ html.light .tt{
   position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.6); backdrop-filter:blur(3px);
   display:flex; align-items:center; justify-content:center; padding:1rem;
 }
-.tt-order-review{
-  background:var(--elev); border:1px solid var(--line2); border-radius:14px; padding:1.3rem;
-  max-width:340px; width:100%; box-shadow:0 20px 48px rgba(0,0,0,.4);
+.tt-rail-layout{ display:flex; flex-direction:column; gap:1rem; }
+.tt-rail{ display:flex; gap:.5rem; overflow-x:auto; padding-bottom:.2rem; }
+.tt-rail-btn{
+  display:flex; align-items:center; gap:.45rem; flex-shrink:0;
+  padding:.55rem .9rem; border-radius:10px; border:1px solid var(--line2);
+  background:rgba(255,255,255,.02); color:var(--dim); font-size:.8rem; font-weight:600;
+  transition:color .2s ease, border-color .2s ease, background .2s ease;
 }
-.tt-order-review-title{ font-weight:700; font-size:1rem; margin-bottom:.8rem; }
-.tt-order-review-row{ display:flex; justify-content:space-between; padding:.4rem 0; border-bottom:1px solid rgba(255,255,255,.05); font-size:.85rem; }
-.tt-order-review-row span{ color:var(--dim); }
-.tt-order-review-warn{ font-size:.72rem; color:var(--rose); margin-top:.8rem; line-height:1.5; }
+.tt-rail-btn:hover{ color:var(--text); border-color:var(--line2); }
+.tt-rail-btn.on{ background:linear-gradient(135deg,var(--teal),var(--blue)); border-color:transparent; color:#06110E; }
+.tt-rail-btn span{ white-space:nowrap; }
+@media (min-width: 860px){
+  .tt-rail-layout{ flex-direction:row; align-items:flex-start; }
+  .tt-rail{ flex-direction:column; overflow-x:visible; width:170px; flex-shrink:0; position:sticky; top:1rem; }
+  .tt-rail-btn{ width:100%; }
+  .tt-body{ flex:1; min-width:0; }
+}
 `;
