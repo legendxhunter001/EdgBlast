@@ -8,10 +8,34 @@ export type Json =
 
 export type Database = {
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      ai_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_coach_settings: {
         Row: {
           coaching_frequency: string
@@ -125,6 +149,42 @@ export type Database = {
           symbol?: string
           timeframe?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          created_at: string
+          goal_type: string
+          id: string
+          is_active: boolean
+          starting_at: string
+          starting_value: number | null
+          target_date: string | null
+          target_value: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          goal_type: string
+          id?: string
+          is_active?: boolean
+          starting_at?: string
+          starting_value?: number | null
+          target_date?: string | null
+          target_value: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          goal_type?: string
+          id?: string
+          is_active?: boolean
+          starting_at?: string
+          starting_value?: number | null
+          target_date?: string | null
+          target_value?: number
           user_id?: string
         }
         Relationships: []
@@ -248,6 +308,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          ai_coaching_summary: boolean
+          created_at: string
+          id: string
+          rule_violation: boolean
+          trade_synced: boolean
+          updated_at: string
+          user_id: string
+          weekly_report: boolean
+        }
+        Insert: {
+          ai_coaching_summary?: boolean
+          created_at?: string
+          id?: string
+          rule_violation?: boolean
+          trade_synced?: boolean
+          updated_at?: string
+          user_id: string
+          weekly_report?: boolean
+        }
+        Update: {
+          ai_coaching_summary?: boolean
+          created_at?: string
+          id?: string
+          rule_violation?: boolean
+          trade_synced?: boolean
+          updated_at?: string
+          user_id?: string
+          weekly_report?: boolean
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
@@ -318,39 +411,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      notification_settings: {
-        Row: {
-          ai_coaching_summary: boolean
-          created_at: string
-          id: string
-          rule_violation: boolean
-          trade_synced: boolean
-          updated_at: string
-          user_id: string
-          weekly_report: boolean
-        }
-        Insert: {
-          ai_coaching_summary?: boolean
-          created_at?: string
-          id?: string
-          rule_violation?: boolean
-          trade_synced?: boolean
-          updated_at?: string
-          user_id: string
-          weekly_report?: boolean
-        }
-        Update: {
-          ai_coaching_summary?: boolean
-          created_at?: string
-          id?: string
-          rule_violation?: boolean
-          trade_synced?: boolean
-          updated_at?: string
-          user_id?: string
-          weekly_report?: boolean
-        }
-        Relationships: []
       }
       price_alerts: {
         Row: {
