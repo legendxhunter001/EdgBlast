@@ -5,11 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/format';
 import { toast } from 'sonner';
 import {
-  TrendingUp, TrendingDown, Target, Plus, X, Send, Sparkles,
-  ArrowRight, Loader2, ShieldAlert,
+  TrendingUp, Target, Plus, X,
+  ArrowRight, ShieldAlert,
 } from 'lucide-react';
 import { format, parseISO, getDay, differenceInCalendarDays, startOfMonth } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -26,7 +25,6 @@ type Goal = {
   id: string; goal_type: string; target_value: number; target_date: string | null;
   starting_value: number | null; starting_at: string;
 };
-type ChatMsg = { role: 'user' | 'assistant'; content: string; id?: string };
 
 const Reviews = () => {
   const { user } = useAuth();
@@ -80,7 +78,37 @@ const Reviews = () => {
     const avgRr = rrs.length ? rrs.reduce((a, b) => a + b, 0) / rrs.length : null;
     const poorRrCount = closed.filter((t) => { const rr = Number(t.risk_reward); return !isNaN(rr) && rr > 0 && rr < 1; }).length;
 
-    return { bestDay, worstDay, bestEmotion, worstEmotion, streak, streakType, improving, recentAvg, priorAvg, avgRr, poorRrCount };
+    // Overtrading: group by calendar day, compare avg P&L on heavy-volume days vs lighter days.
+    const byCalDay: Record<string, number[]> = {};
+    closed.forEach((t) => {
+      if (!t.exit_at) return;
+      const key = t.exit_at.slice(0, 10);
+      (byCalDay[key] ??= []).push(Number(t.pnl ?? 0));
+    });
+    const heavyDays = Object.values(byCalDay).filter((d) => d.length >= 3);
+    const lightDays = Object.values(byCalDay).filter((d) => d.length <= 2);
+    const avgOf = (groups: number[][]) => {
+      const all = groups.flat();
+      return all.length ? all.reduce((a, b) => a + b, 0) / all.length : null;
+    };
+    const heavyAvg = avgOf(heavyDays);
+    const lightAvg = avgOf(lightDays);
+    const overtrading = heavyDays.length >= 2 && heavyAvg !== null && lightAvg !== null && heavyAvg < lightAvg;
+
+    // Position-sizing consistency: high variance relative to mean suggests sizing by feel, not plan.
+    const sizes = closed.map((t) => Number(t.position_size)).filter((v) => !isNaN(v) && v > 0);
+    let sizeInconsistent = false;
+    if (sizes.length >= 5) {
+      const mean = sizes.reduce((a, b) => a + b, 0) / sizes.length;
+      const variance = sizes.reduce((s, v) => s + (v - mean) ** 2, 0) / sizes.length;
+      const cv = mean > 0 ? Math.sqrt(variance) / mean : 0;
+      sizeInconsistent = cv > 0.6;
+    }
+
+    return {
+      bestDay, worstDay, bestEmotion, worstEmotion, streak, streakType, improving, recentAvg, priorAvg,
+      avgRr, poorRrCount, overtrading, heavyAvg, lightAvg, sizeInconsistent,
+    };
   }, [closed]);
 
   const winRate = closed.length ? (closed.filter((t) => Number(t.pnl) > 0).length / closed.length) * 100 : null;
@@ -137,40 +165,6 @@ const Reviews = () => {
   const removeGoal = async (id: string) => {
     await supabase.from('goals').update({ is_active: false }).eq('id', id);
     setGoals((prev) => prev.filter((g) => g.id !== id));
-  };
-
-  /* ---------- AI Chat ---------- */
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const [chatLoadingHistory, setChatLoadingHistory] = useState(true);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data } = await supabase.from('ai_chat_messages').select('id, role, content').eq('user_id', user.id).order('created_at', { ascending: true }).limit(50);
-      setMessages((data ?? []) as ChatMsg[]);
-      setChatLoadingHistory(false);
-    })();
-  }, [user]);
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, chatLoading]);
-
-  const sendMessage = async () => {
-    const text = chatInput.trim();
-    if (!text || chatLoading) return;
-    setChatInput('');
-    setMessages((prev) => [...prev, { role: 'user', content: text }]);
-    setChatLoading(true);
-    const { data, error } = await supabase.functions.invoke('ai-coach-chat', { body: { message: text } });
-    setChatLoading(false);
-    if (error || !data?.success) {
-      const msg = data?.message || error?.message || "Couldn't reach the AI coach.";
-      setMessages((prev) => [...prev, { role: 'assistant', content: msg }]);
-      return;
-    }
-    setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
   };
 
   return (
@@ -232,7 +226,13 @@ const Reviews = () => {
               {insights.poorRrCount > 0 && (
                 <li><b>{insights.poorRrCount}</b> recent trade{insights.poorRrCount === 1 ? '' : 's'} had under 1R reward-to-risk — a hard pattern to stay profitable with long-term.</li>
               )}
-              {!insights.worstDay && !insights.worstEmotion && insights.poorRrCount === 0 && (
+              {insights.overtrading && (
+                <li>Days where you take <b>3+ trades</b> perform worse on average than lighter days — a real sign of overtrading, not just bad luck.</li>
+              )}
+              {insights.sizeInconsistent && (
+                <li>Your position sizing swings widely between trades — sizing by feel instead of a fixed plan makes results harder to control.</li>
+              )}
+              {!insights.worstDay && !insights.worstEmotion && insights.poorRrCount === 0 && !insights.overtrading && !insights.sizeInconsistent && (
                 <li className="text-muted-foreground">Nothing stands out yet — keep logging to catch patterns early.</li>
               )}
             </ul>
@@ -300,61 +300,6 @@ const Reviews = () => {
             })}
           </div>
         )}
-      </div>
-
-      {/* AI Coach Chat */}
-      <div className="glass rounded-2xl overflow-hidden flex flex-col" style={{ height: 520 }}>
-        <div className="px-5 py-3.5 border-b border-border flex items-center gap-2 flex-shrink-0">
-          <div className="size-7 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
-            <Sparkles className="size-3.5 text-primary-foreground" />
-          </div>
-          <div>
-            <div className="font-display font-semibold text-sm">AI Trading Manager</div>
-            <div className="text-[11px] text-muted-foreground">Grounded in your real trades and goals</div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-          {chatLoadingHistory ? (
-            <div className="text-sm text-muted-foreground text-center py-8">Loading…</div>
-          ) : messages.length === 0 ? (
-            <div className="text-sm text-muted-foreground text-center py-8 max-w-sm mx-auto">
-              Ask about your performance, what's been holding you back, or how far you are from your goals.
-            </div>
-          ) : (
-            messages.map((m, i) => (
-              <div key={m.id ?? i} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
-                <div className={cn(
-                  'max-w-[80%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap',
-                  m.role === 'user' ? 'bg-gradient-primary text-primary-foreground rounded-br-sm' : 'bg-secondary/60 rounded-bl-sm'
-                )}>
-                  {m.content}
-                </div>
-              </div>
-            ))
-          )}
-          {chatLoading && (
-            <div className="flex justify-start">
-              <div className="bg-secondary/60 rounded-2xl rounded-bl-sm px-3.5 py-2.5">
-                <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-              </div>
-            </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        <div className="border-t border-border p-3 flex items-center gap-2 flex-shrink-0">
-          <input
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Ask your trading manager…"
-            className="flex-1 h-10 px-3.5 rounded-xl border border-border bg-secondary/30 text-sm outline-none focus:border-primary/50"
-          />
-          <button onClick={sendMessage} disabled={chatLoading || !chatInput.trim()} className="size-10 rounded-xl bg-gradient-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 flex-shrink-0">
-            <Send className="size-4" />
-          </button>
-        </div>
       </div>
 
       {goalModalOpen && (

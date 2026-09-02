@@ -24,6 +24,7 @@ import Settings from "./pages/Settings";
 import Connections from "./pages/Connections";
 import TradingTools from "./pages/TradingTools";
 import MT5 from "./pages/MT5";
+import AICoach from "./pages/AICoach";
 import Journey from "./pages/Journey";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/calendar" element={<Shell><Calendar /></Shell>} />
               <Route path="/analytics" element={<Shell><Analytics /></Shell>} />
               <Route path="/reviews" element={<Shell><Reviews /></Shell>} />
+              <Route path="/ai-coach" element={<Shell><AICoach /></Shell>} />
               <Route path="/settings" element={<Shell><Settings /></Shell>} />
               <Route path="/connections" element={<Shell><Connections /></Shell>} />
               <Route path="/trading-tools" element={<Shell><TradingTools /></Shell>} />

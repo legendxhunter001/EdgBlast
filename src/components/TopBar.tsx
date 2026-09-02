@@ -21,6 +21,7 @@ const titleFor = (path: string) => {
   if (path.startsWith('/calendar')) return 'Calendar';
   if (path.startsWith('/analytics')) return 'Analytics';
   if (path.startsWith('/reviews')) return 'Reviews';
+  if (path.startsWith('/ai-coach')) return 'AI Coach';
   if (path.startsWith('/journey')) return 'Journey';
   if (path.startsWith('/connections')) return 'Connections';
   if (path.startsWith('/mt5')) return 'MT5';

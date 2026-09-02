@@ -23,5 +23,5 @@ export async function functionErrorMessage(
 
   const msg = (error as any)?.message;
   if (msg && !/non-2xx status code/i.test(msg)) return msg as string;
-  return fallback;
+  return "We got an error on our end — we'll fix it as soon as possible. Please try again shortly.";
 }

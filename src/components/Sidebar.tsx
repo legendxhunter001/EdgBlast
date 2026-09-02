@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen,
-  Settings, LogOut, PanelLeftClose, PanelLeftOpen, Plug, Compass, Wrench, LineChart,
+  Settings, LogOut, PanelLeftClose, PanelLeftOpen, Plug, Compass, Wrench, LineChart, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSidebarState } from '@/hooks/useSidebar';
@@ -21,6 +21,7 @@ const items: Entry[] = [
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/reviews', label: 'Reviews', icon: NotebookPen },
+  { to: '/ai-coach', label: 'AI Coach', icon: Sparkles },
   { divider: 'Journey' },
   { to: '/journey', label: 'Journey', icon: Compass },
   { divider: 'Connections' },
