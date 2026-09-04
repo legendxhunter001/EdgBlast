@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTrades } from '@/hooks/useTrades';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/format';
 import { toast } from 'sonner';
-import {
-  TrendingUp, Target, Plus, X,
-  ArrowRight, ShieldAlert,
-} from 'lucide-react';
-import { format, parseISO, getDay, differenceInCalendarDays, startOfMonth } from 'date-fns';
-
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+import { Target, Plus, X, ArrowRight, Sparkles } from 'lucide-react';
+import { format, parseISO, differenceInCalendarDays, startOfMonth } from 'date-fns';
 
 const GOAL_DEFS: Record<string, { label: string; unit: string; format: (n: number) => string }> = {
   win_rate: { label: 'Win rate', unit: '%', format: (n) => `${n.toFixed(1)}%` },
@@ -26,95 +22,143 @@ type Goal = {
   starting_value: number | null; starting_at: string;
 };
 
+type Axis = { key: string; label: string; score: number; hasData: boolean };
+
+/* ---------------- Heptagon (7-axis) chart ---------------- */
+const HeptagonChart = ({ axes, size = 260 }: { axes: Axis[]; size?: number }) => {
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size * 0.36;
+  const n = axes.length;
+  const angleFor = (i: number) => -Math.PI / 2 + i * ((2 * Math.PI) / n);
+
+  const pointAt = (i: number, frac: number) => {
+    const a = angleFor(i);
+    return [cx + r * frac * Math.cos(a), cy + r * frac * Math.sin(a)];
+  };
+
+  const dataPoints = axes.map((ax, i) => pointAt(i, Math.max(0.06, ax.score / 100)));
+  const dataPath = dataPoints.map((p) => p.join(',')).join(' ');
+  const rings = [0.25, 0.5, 0.75, 1];
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} role="img" aria-label="Trader profile heptagon">
+      {rings.map((frac) => (
+        <polygon
+          key={frac}
+          points={axes.map((_, i) => pointAt(i, frac).join(',')).join(' ')}
+          fill="none"
+          stroke="hsl(var(--border))"
+          strokeWidth={1}
+        />
+      ))}
+      {axes.map((_, i) => {
+        const [x, y] = pointAt(i, 1);
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="hsl(var(--border))" strokeWidth={1} />;
+      })}
+      <polygon points={dataPath} fill="hsl(var(--primary) / 0.22)" stroke="hsl(var(--primary))" strokeWidth={2} strokeLinejoin="round" />
+      {dataPoints.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={3} fill="hsl(var(--primary))" />
+      ))}
+      {axes.map((ax, i) => {
+        const [x, y] = pointAt(i, 1.32);
+        return (
+          <text
+            key={ax.key}
+            x={x} y={y}
+            textAnchor={Math.abs(x - cx) < 4 ? 'middle' : x > cx ? 'start' : 'end'}
+            dominantBaseline="middle"
+            fontSize={size * 0.043}
+            fill="hsl(var(--muted-foreground))"
+            fontWeight={600}
+          >
+            {ax.label}
+          </text>
+        );
+      })}
+    </svg>
+  );
+};
+
 const Reviews = () => {
   const { user } = useAuth();
   const { data: trades } = useTrades();
   const closed = useMemo(() => (trades ?? []).filter((t) => t.status === 'closed' && t.pnl !== null), [trades]);
 
-  /* ---------- Performance diagnostics ---------- */
-  const insights = useMemo(() => {
-    if (closed.length < 3) return null;
+  /* ---------- 7-axis trader profile (the "heptagon") ---------- */
+  const profile = useMemo(() => {
+    const n = closed.length;
+    const has = (min: number) => n >= min;
 
-    const byDay = new Array(7).fill(0).map(() => ({ pnl: 0, count: 0 }));
-    const byEmotion: Record<string, { pnl: number; count: number }> = {};
-    closed.forEach((t) => {
-      if (t.exit_at) {
-        const d = getDay(parseISO(t.exit_at));
-        byDay[d].pnl += Number(t.pnl ?? 0);
-        byDay[d].count += 1;
-      }
-      const emo = t.emotional_state ?? 'unlogged';
-      if (!byEmotion[emo]) byEmotion[emo] = { pnl: 0, count: 0 };
-      byEmotion[emo].pnl += Number(t.pnl ?? 0);
-      byEmotion[emo].count += 1;
-    });
+    // Discipline — share of trades with an acceptable (>=1R) reward-to-risk.
+    const rrKnown = closed.filter((t) => !isNaN(Number(t.risk_reward)) && Number(t.risk_reward) !== 0);
+    const poorRr = rrKnown.filter((t) => Number(t.risk_reward) < 1).length;
+    const discipline = rrKnown.length ? ((rrKnown.length - poorRr) / rrKnown.length) * 100 : 50;
 
-    const bestDay = byDay.map((d, i) => ({ ...d, day: DAYS[i] })).filter((d) => d.count >= 2).sort((a, b) => b.pnl / b.count - a.pnl / a.count)[0];
-    const worstDay = byDay.map((d, i) => ({ ...d, day: DAYS[i] })).filter((d) => d.count >= 2).sort((a, b) => a.pnl / a.count - b.pnl / b.count)[0];
+    // Psychology — share of emotion-tagged trades logged in a composed state.
+    const emoTagged = closed.filter((t) => t.emotional_state);
+    const goodEmo = emoTagged.filter((t) => ['calm', 'confident', 'excited'].includes(t.emotional_state as string)).length;
+    const psychology = emoTagged.length ? (goodEmo / emoTagged.length) * 100 : 50;
 
-    const emotionEntries = Object.entries(byEmotion).filter(([k, v]) => k !== 'unlogged' && v.count >= 2);
-    const bestEmotion = emotionEntries.sort((a, b) => b[1].pnl / b[1].count - a[1].pnl / a[1].count)[0];
-    const worstEmotion = emotionEntries.sort((a, b) => a[1].pnl / a[1].count - b[1].pnl / b[1].count)[0];
-
-    // Current streak
-    const sorted = [...closed].sort((a, b) => (a.exit_at ?? '').localeCompare(b.exit_at ?? ''));
-    let streak = 0; let streakType: 'win' | 'loss' | null = null;
-    for (let i = sorted.length - 1; i >= 0; i--) {
-      const isWin = Number(sorted[i].pnl) > 0;
-      if (streakType === null) { streakType = isWin ? 'win' : 'loss'; streak = 1; }
-      else if ((isWin && streakType === 'win') || (!isWin && streakType === 'loss')) streak++;
-      else break;
-    }
-
-    // Recent trend: last 10 vs prior 10
-    const last10 = sorted.slice(-10);
-    const prior10 = sorted.slice(-20, -10);
-    const avgPnl = (arr: typeof sorted) => arr.length ? arr.reduce((s, t) => s + Number(t.pnl ?? 0), 0) / arr.length : null;
-    const recentAvg = avgPnl(last10);
-    const priorAvg = avgPnl(prior10);
-    const improving = recentAvg !== null && priorAvg !== null ? recentAvg > priorAvg : null;
-
-    const rrs = closed.map((t) => Number(t.risk_reward)).filter((v) => !isNaN(v) && v !== 0);
-    const avgRr = rrs.length ? rrs.reduce((a, b) => a + b, 0) / rrs.length : null;
-    const poorRrCount = closed.filter((t) => { const rr = Number(t.risk_reward); return !isNaN(rr) && rr > 0 && rr < 1; }).length;
-
-    // Overtrading: group by calendar day, compare avg P&L on heavy-volume days vs lighter days.
-    const byCalDay: Record<string, number[]> = {};
-    closed.forEach((t) => {
-      if (!t.exit_at) return;
-      const key = t.exit_at.slice(0, 10);
-      (byCalDay[key] ??= []).push(Number(t.pnl ?? 0));
-    });
-    const heavyDays = Object.values(byCalDay).filter((d) => d.length >= 3);
-    const lightDays = Object.values(byCalDay).filter((d) => d.length <= 2);
-    const avgOf = (groups: number[][]) => {
-      const all = groups.flat();
-      return all.length ? all.reduce((a, b) => a + b, 0) / all.length : null;
-    };
-    const heavyAvg = avgOf(heavyDays);
-    const lightAvg = avgOf(lightDays);
-    const overtrading = heavyDays.length >= 2 && heavyAvg !== null && lightAvg !== null && heavyAvg < lightAvg;
-
-    // Position-sizing consistency: high variance relative to mean suggests sizing by feel, not plan.
+    // Risk management — inverse of position-size variance (sizing by plan, not by feel).
     const sizes = closed.map((t) => Number(t.position_size)).filter((v) => !isNaN(v) && v > 0);
-    let sizeInconsistent = false;
+    let riskMgmt = 50;
     if (sizes.length >= 5) {
       const mean = sizes.reduce((a, b) => a + b, 0) / sizes.length;
       const variance = sizes.reduce((s, v) => s + (v - mean) ** 2, 0) / sizes.length;
       const cv = mean > 0 ? Math.sqrt(variance) / mean : 0;
-      sizeInconsistent = cv > 0.6;
+      riskMgmt = Math.max(0, Math.min(100, 100 - cv * 100));
     }
 
-    return {
-      bestDay, worstDay, bestEmotion, worstEmotion, streak, streakType, improving, recentAvg, priorAvg,
-      avgRr, poorRrCount, overtrading, heavyAvg, lightAvg, sizeInconsistent,
-    };
-  }, [closed]);
+    // Execution — average R achieved, benchmarked against a healthy 2R average.
+    const rrs = rrKnown.map((t) => Number(t.risk_reward));
+    const avgRr = rrs.length ? rrs.reduce((a, b) => a + b, 0) / rrs.length : null;
+    const execution = avgRr !== null ? Math.max(0, Math.min(100, (avgRr / 2) * 100)) : 50;
 
-  const winRate = closed.length ? (closed.filter((t) => Number(t.pnl) > 0).length / closed.length) * 100 : null;
-  const grossProfit = closed.filter((t) => Number(t.pnl) > 0).reduce((s, t) => s + Number(t.pnl), 0);
-  const grossLoss = Math.abs(closed.filter((t) => Number(t.pnl) < 0).reduce((s, t) => s + Number(t.pnl), 0));
-  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : null;
+    // Consistency — inverse of P&L volatility relative to average trade size.
+    let consistency = 50;
+    if (n >= 5) {
+      const pnls = closed.map((t) => Number(t.pnl ?? 0));
+      const meanAbs = pnls.reduce((s, v) => s + Math.abs(v), 0) / n || 1;
+      const mean = pnls.reduce((a, b) => a + b, 0) / n;
+      const variance = pnls.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
+      const stdDev = Math.sqrt(variance);
+      consistency = Math.max(0, Math.min(100, 100 - (stdDev / meanAbs) * 18));
+    }
+
+    // Patience — heavy-trading days (3+ trades) performing worse signals impatience.
+    const byDay: Record<string, number[]> = {};
+    closed.forEach((t) => { if (t.exit_at) (byDay[t.exit_at.slice(0, 10)] ??= []).push(Number(t.pnl ?? 0)); });
+    const heavy = Object.values(byDay).filter((d) => d.length >= 3).flat();
+    const light = Object.values(byDay).filter((d) => d.length <= 2).flat();
+    const heavyAvg = heavy.length ? heavy.reduce((a, b) => a + b, 0) / heavy.length : null;
+    const lightAvg = light.length ? light.reduce((a, b) => a + b, 0) / light.length : null;
+    let patience = 60;
+    if (heavyAvg !== null && lightAvg !== null && heavy.length >= 3) {
+      patience = heavyAvg < lightAvg ? 32 : 78;
+    }
+
+    // Strategy adherence — trades logged against a named strategy vs ad-hoc.
+    const tagged = closed.filter((t) => t.strategy_id).length;
+    const strategy = n ? (tagged / n) * 100 : 50;
+
+    const axes: Axis[] = [
+      { key: 'discipline', label: 'Discipline', score: discipline, hasData: has(5) },
+      { key: 'psychology', label: 'Psychology', score: psychology, hasData: emoTagged.length >= 5 },
+      { key: 'risk', label: 'Risk Mgmt', score: riskMgmt, hasData: sizes.length >= 5 },
+      { key: 'execution', label: 'Execution', score: execution, hasData: rrs.length >= 5 },
+      { key: 'consistency', label: 'Consistency', score: consistency, hasData: has(5) },
+      { key: 'patience', label: 'Patience', score: patience, hasData: heavy.length >= 3 },
+      { key: 'strategy', label: 'Strategy', score: strategy, hasData: has(5) },
+    ];
+
+    const dataAxes = axes.filter((a) => a.hasData);
+    const overall = dataAxes.length ? dataAxes.reduce((s, a) => s + a.score, 0) / dataAxes.length : null;
+    const strongest = dataAxes.length ? [...dataAxes].sort((a, b) => b.score - a.score)[0] : null;
+    const weakest = dataAxes.length ? [...dataAxes].sort((a, b) => a.score - b.score)[0] : null;
+
+    return { axes, overall, strongest, weakest, avgRr, heavyAvg, lightAvg, poorRr, rrKnownCount: rrKnown.length };
+  }, [closed]);
 
   /* ---------- Goals ---------- */
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -130,11 +174,16 @@ const Reviews = () => {
   }, [user]);
   useEffect(() => { loadGoals(); }, [loadGoals]);
 
+  const winRate = closed.length ? (closed.filter((t) => Number(t.pnl) > 0).length / closed.length) * 100 : null;
+  const grossProfit = closed.filter((t) => Number(t.pnl) > 0).reduce((s, t) => s + Number(t.pnl), 0);
+  const grossLoss = Math.abs(closed.filter((t) => Number(t.pnl) < 0).reduce((s, t) => s + Number(t.pnl), 0));
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : null;
+
   const currentValueFor = (goal: Goal): number | null => {
     switch (goal.goal_type) {
       case 'win_rate': return winRate;
       case 'profit_factor': return profitFactor;
-      case 'avg_rr': return insights?.avgRr ?? null;
+      case 'avg_rr': return profile.avgRr;
       case 'monthly_pnl': {
         const start = startOfMonth(new Date());
         return closed.filter((t) => t.exit_at && parseISO(t.exit_at) >= start).reduce((s, t) => s + Number(t.pnl ?? 0), 0);
@@ -150,7 +199,6 @@ const Reviews = () => {
 
   const addGoal = async () => {
     if (!user || !newGoalTarget) return;
-    const startingValue = ['account_balance'].includes(newGoalType) ? Number(newGoalTarget) * 0 : null;
     const currentEstimate = newGoalType === 'account_balance' ? closed.reduce((s, t) => s + Number(t.pnl ?? 0), 0) : null;
     const { error } = await supabase.from('goals').insert({
       user_id: user.id, goal_type: newGoalType, target_value: Number(newGoalTarget),
@@ -167,75 +215,59 @@ const Reviews = () => {
     setGoals((prev) => prev.filter((g) => g.id !== id));
   };
 
+  const primaryGoal = goals[0];
+  const primaryGoalCurrent = primaryGoal ? currentValueFor(primaryGoal) : null;
+
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
       <header>
-        <h1 className="font-display text-2xl md:text-3xl font-semibold">Reviews</h1>
+        <h1 className="font-display text-2xl md:text-3xl font-semibold">Review</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          What's helping you, what's holding you back, how far you are from your goals — and a coach to help you close the gap.
+          Not what happened to your account — what's making you better, what's holding you back, and what to improve next.
         </p>
       </header>
 
-      {/* Performance diagnostics */}
-      {!insights ? (
+      {/* Hero: score + heptagon */}
+      {closed.length < 5 ? (
         <div className="glass rounded-2xl p-8 text-center text-sm text-muted-foreground">
-          Log a few more closed trades and this page will start showing you real patterns in your performance.
+          Log at least 5 closed trades and your trader profile will appear here — a real read on discipline, psychology, risk, execution, consistency, patience, and strategy.
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="glass rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="size-4 text-bull" />
-              <h3 className="font-display font-semibold">What's moving you forward</h3>
+        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+          <div className="flex-shrink-0 text-center">
+            <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-1">Review Score</div>
+            <div className="font-display text-6xl font-semibold tracking-tight">
+              {profile.overall !== null ? Math.round(profile.overall) : '—'}
+              <span className="text-xl text-muted-foreground font-normal">/100</span>
             </div>
-            <ul className="space-y-2.5 text-sm">
-              {insights.bestDay && (
-                <li>Your best day is <b>{insights.bestDay.day}</b>, averaging {formatCurrency(insights.bestDay.pnl / insights.bestDay.count, { sign: true })} per trade.</li>
-              )}
-              {insights.bestEmotion && (
-                <li>Trades logged as <b className="capitalize">{insights.bestEmotion[0]}</b> perform best — averaging {formatCurrency(insights.bestEmotion[1].pnl / insights.bestEmotion[1].count, { sign: true })}.</li>
-              )}
-              {insights.streakType === 'win' && insights.streak >= 2 && (
-                <li>You're on a <b>{insights.streak}-trade winning streak</b> right now.</li>
-              )}
-              {insights.improving === true && (
-                <li>Your last 10 trades are outperforming the 10 before them — real, recent improvement.</li>
-              )}
-              {!insights.bestDay && !insights.bestEmotion && <li className="text-muted-foreground">Log more trades with dates and emotional state to surface real strengths.</li>}
-            </ul>
           </div>
+          <HeptagonChart axes={profile.axes} />
+        </div>
+      )}
 
-          <div className="glass rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <ShieldAlert className="size-4 text-bear" />
-              <h3 className="font-display font-semibold">What's holding you back</h3>
+      {/* Compact findings row */}
+      {profile.overall !== null && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-border p-4">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Moving you forward</div>
+            <div className="font-display font-semibold text-bull">{profile.strongest?.label ?? '—'}</div>
+          </div>
+          <div className="rounded-xl border border-border p-4">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Holding you back</div>
+            <div className="font-display font-semibold text-bear">{profile.weakest?.label ?? '—'}</div>
+          </div>
+          <div className="rounded-xl border border-border p-4 col-span-2 md:col-span-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">This week's focus</div>
+            <div className="font-display font-semibold">
+              {profile.weakest?.key === 'discipline' && 'Only take trades with 1R+ potential'}
+              {profile.weakest?.key === 'psychology' && 'Pause before entering if not calm or confident'}
+              {profile.weakest?.key === 'risk' && 'Size positions by a fixed plan, not by feel'}
+              {profile.weakest?.key === 'execution' && 'Hold for your planned reward, don\'t cut winners short'}
+              {profile.weakest?.key === 'consistency' && 'Reduce size until results stabilize'}
+              {profile.weakest?.key === 'patience' && 'Cap trades per day — quality over volume'}
+              {profile.weakest?.key === 'strategy' && 'Log every trade against a named strategy'}
+              {!profile.weakest && 'Keep logging trades'}
             </div>
-            <ul className="space-y-2.5 text-sm">
-              {insights.worstDay && insights.worstDay.pnl < 0 && (
-                <li><b>{insights.worstDay.day}</b> is costing you — averaging {formatCurrency(insights.worstDay.pnl / insights.worstDay.count, { sign: true })} per trade.</li>
-              )}
-              {insights.worstEmotion && insights.worstEmotion[1].pnl < 0 && (
-                <li>Trades logged as <b className="capitalize">{insights.worstEmotion[0]}</b> are your costliest — averaging {formatCurrency(insights.worstEmotion[1].pnl / insights.worstEmotion[1].count, { sign: true })}. Worth a pause before entering in this state.</li>
-              )}
-              {insights.streakType === 'loss' && insights.streak >= 2 && (
-                <li>You're on a <b>{insights.streak}-trade losing streak</b> — this is exactly when discipline matters most.</li>
-              )}
-              {insights.improving === false && (
-                <li>Your last 10 trades are underperforming the 10 before them — worth reviewing what changed.</li>
-              )}
-              {insights.poorRrCount > 0 && (
-                <li><b>{insights.poorRrCount}</b> recent trade{insights.poorRrCount === 1 ? '' : 's'} had under 1R reward-to-risk — a hard pattern to stay profitable with long-term.</li>
-              )}
-              {insights.overtrading && (
-                <li>Days where you take <b>3+ trades</b> perform worse on average than lighter days — a real sign of overtrading, not just bad luck.</li>
-              )}
-              {insights.sizeInconsistent && (
-                <li>Your position sizing swings widely between trades — sizing by feel instead of a fixed plan makes results harder to control.</li>
-              )}
-              {!insights.worstDay && !insights.worstEmotion && insights.poorRrCount === 0 && !insights.overtrading && !insights.sizeInconsistent && (
-                <li className="text-muted-foreground">Nothing stands out yet — keep logging to catch patterns early.</li>
-              )}
-            </ul>
           </div>
         </div>
       )}
@@ -254,7 +286,7 @@ const Reviews = () => {
 
         {goals.length === 0 ? (
           <div className="text-sm text-muted-foreground py-4 text-center">
-            No goals set yet. Set one — win rate, monthly P&L, account balance — and this page will track your real distance from it.
+            No goals set yet. Set one and this page will track your real distance from it, not just the numbers.
           </div>
         ) : (
           <div className="space-y-4">
@@ -289,9 +321,7 @@ const Reviews = () => {
                       {gap > 0 ? `${def?.format(Math.abs(gap))} to go.` : "Goal reached — set a new target to keep pushing."}
                       {paceNeeded !== null && paceNeeded > 0 && ` You need to average ${def?.format(paceNeeded)}/day to hit it on time.`}
                       {currentPace !== null && currentPace > 0 && paceNeeded !== null && (
-                        currentPace >= paceNeeded
-                          ? ' At your current pace, you\'re on track.'
-                          : ' At your current pace, you\'re behind — this is the gap to close.'
+                        currentPace >= paceNeeded ? ' At your current pace, you\'re on track.' : ' At your current pace, you\'re behind — this is the gap to close.'
                       )}
                     </p>
                   )}
@@ -301,6 +331,23 @@ const Reviews = () => {
           </div>
         )}
       </div>
+
+      {/* Ask the coach */}
+      <Link
+        to="/ai-coach"
+        className="flex items-center justify-between gap-4 rounded-2xl border border-border p-5 hover:border-primary/40 transition group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-full bg-gradient-primary flex items-center justify-center flex-shrink-0">
+            <Sparkles className="size-4 text-primary-foreground" />
+          </div>
+          <div>
+            <div className="font-display font-semibold text-sm">Talk this through with your coach</div>
+            <div className="text-xs text-muted-foreground">Alex already knows this data — ask why, and what to do about it.</div>
+          </div>
+        </div>
+        <ArrowRight className="size-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+      </Link>
 
       {goalModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setGoalModalOpen(false)}>
