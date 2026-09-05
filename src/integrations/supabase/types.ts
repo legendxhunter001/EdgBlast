@@ -235,8 +235,10 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          import_fingerprint: string | null
           is_shared: boolean
           mood: string | null
+          raw_import_data: Json | null
           share_token: string | null
           title: string
           updated_at: string
@@ -246,8 +248,10 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          import_fingerprint?: string | null
           is_shared?: boolean
           mood?: string | null
+          raw_import_data?: Json | null
           share_token?: string | null
           title?: string
           updated_at?: string
@@ -257,8 +261,10 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          import_fingerprint?: string | null
           is_shared?: boolean
           mood?: string | null
+          raw_import_data?: Json | null
           share_token?: string | null
           title?: string
           updated_at?: string
@@ -704,6 +710,7 @@ export type Database = {
           exit_reasoning: string | null
           fees: number | null
           id: string
+          import_fingerprint: string | null
           lessons_learned: string | null
           mistakes: string | null
           mt5_connection_id: string | null
@@ -714,6 +721,7 @@ export type Database = {
           position_id: string | null
           position_size: number | null
           psychology_review: string | null
+          raw_import_data: Json | null
           review_score: number | null
           risk_reward: number | null
           status: Database["public"]["Enums"]["trade_status"]
@@ -745,6 +753,7 @@ export type Database = {
           exit_reasoning?: string | null
           fees?: number | null
           id?: string
+          import_fingerprint?: string | null
           lessons_learned?: string | null
           mistakes?: string | null
           mt5_connection_id?: string | null
@@ -755,6 +764,7 @@ export type Database = {
           position_id?: string | null
           position_size?: number | null
           psychology_review?: string | null
+          raw_import_data?: Json | null
           review_score?: number | null
           risk_reward?: number | null
           status?: Database["public"]["Enums"]["trade_status"]
@@ -786,6 +796,7 @@ export type Database = {
           exit_reasoning?: string | null
           fees?: number | null
           id?: string
+          import_fingerprint?: string | null
           lessons_learned?: string | null
           mistakes?: string | null
           mt5_connection_id?: string | null
@@ -796,6 +807,7 @@ export type Database = {
           position_id?: string | null
           position_size?: number | null
           psychology_review?: string | null
+          raw_import_data?: Json | null
           review_score?: number | null
           risk_reward?: number | null
           status?: Database["public"]["Enums"]["trade_status"]
