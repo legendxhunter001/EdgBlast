@@ -14,6 +14,7 @@ type Entry = {
   is_shared: boolean;
   share_token: string | null;
   updated_at: string;
+  raw_import_data?: Record<string, string> | null;
 };
 
 type JournalImage = { id: string; storage_path: string; url: string; album: string | null };
@@ -55,6 +56,34 @@ function touchDist(touches: React.TouchList): number {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+const ImportedDataBlock = ({ raw }: { raw: Record<string, string> | null | undefined }) => {
+  const [open, setOpen] = useState(false);
+  if (!raw || typeof raw !== 'object') return null;
+  const entries = Object.entries(raw).filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '');
+  if (entries.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: '1rem', borderTop: '1px solid var(--line)', paddingTop: '.9rem' }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{ background: 'none', border: 'none', color: 'var(--dim)', fontSize: '.76rem', cursor: 'pointer', padding: 0 }}
+      >
+        From your CSV import — all original columns ({entries.length}) {open ? '▲' : '▼'}
+      </button>
+      {open && (
+        <div style={{ marginTop: '.7rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '.7rem' }}>
+          {entries.map(([key, value]) => (
+            <div key={key} style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '.62rem', textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--dim)', fontWeight: 700 }}>{key}</div>
+              <div style={{ fontSize: '.82rem', marginTop: '.2rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{String(value)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Journey() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -91,7 +120,7 @@ export default function Journey() {
   const load = useCallback(async (selectId?: string) => {
     const { data, error: err } = await supabase
       .from("journal_entries")
-      .select("id, title, content, is_shared, share_token, updated_at")
+      .select("id, title, content, is_shared, share_token, updated_at, raw_import_data")
       .order("updated_at", { ascending: false });
     if (err) { setError(err.message); setLoading(false); return; }
     const list = (data ?? []) as Entry[];
@@ -156,7 +185,7 @@ export default function Journey() {
     const { data, error: err } = await supabase
       .from("journal_entries")
       .insert({ user_id: user.id, title: "Untitled Entry", content: "" })
-      .select("id, title, content, is_shared, share_token, updated_at")
+      .select("id, title, content, is_shared, share_token, updated_at, raw_import_data")
       .single();
     if (err || !data) { setError(err?.message ?? "Could not create entry."); return; }
     dirty.current = false;
@@ -249,7 +278,7 @@ export default function Journey() {
     const { data, error: err } = await supabase
       .from("journal_entries")
       .insert({ user_id: user.id, title: GALLERY_ENTRY_TITLE, content: "" })
-      .select("id, title, content, is_shared, share_token, updated_at")
+      .select("id, title, content, is_shared, share_token, updated_at, raw_import_data")
       .single();
     if (err || !data) { toast.error(err?.message ?? "Could not create a place for these photos."); return null; }
     setEntries((prev) => [data as Entry, ...prev]);
@@ -578,6 +607,7 @@ export default function Journey() {
                   <button className="btn danger" onClick={() => deleteEntry(active.id)}>Delete</button>
                 </div>
                 {shareUrl && <div className="share-url" style={{ marginTop: ".6rem" }}>{shareUrl}</div>}
+                <ImportedDataBlock raw={active.raw_import_data} />
               </div>
             )}
           </div>

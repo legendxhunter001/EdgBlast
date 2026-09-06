@@ -351,8 +351,41 @@ const TradeDetail = () => {
         </Button>
       </div>
 
+      <ImportedDataSection trade={trade} />
+
       {lightbox && (
         <Lightbox url={lightbox} onClose={() => setLightbox(null)} />
+      )}
+    </div>
+  );
+};
+
+const ImportedDataSection = ({ trade }: { trade: any }) => {
+  const raw = trade?.raw_import_data as Record<string, string> | null | undefined;
+  const [open, setOpen] = useState(false);
+  if (!raw || typeof raw !== 'object') return null;
+
+  const entries = Object.entries(raw).filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '');
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="luxe-card p-5">
+      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between text-left">
+        <div>
+          <div className="text-caption text-muted-foreground">From your CSV import</div>
+          <div className="text-section mt-0.5">All original columns ({entries.length})</div>
+        </div>
+        <ChevronRight className={cn('size-4 text-muted-foreground transition-transform', open && 'rotate-90')} />
+      </button>
+      {open && (
+        <div className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-3">
+          {entries.map(([key, value]) => (
+            <div key={key} className="min-w-0">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold truncate">{key}</div>
+              <div className="text-sm mt-0.5 whitespace-pre-wrap break-words">{String(value)}</div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
