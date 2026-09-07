@@ -29,8 +29,11 @@ const TRADE_FIELD_DEFS: { key: string; label: string; required?: boolean; aliase
   { key: 'take_profit', label: 'Take profit', aliases: ['take_profit', 'tp', 'takeprofit'] },
   { key: 'fees', label: 'Fees / commission', aliases: ['fees', 'commission', 'fee', 'costs'] },
   { key: 'pnl', label: 'P&L', aliases: ['pnl', 'profit', 'p&l', 'p/l', 'net_profit', 'result'] },
+  { key: 'pnl_percent', label: 'P&L %', aliases: ['pnl_percent', 'pnl_pct', 'pnlpercentage', 'return_pct', 'pnl%'] },
+  { key: 'risk_reward', label: 'R:R', aliases: ['risk_reward', 'rr', 'r_r', 'riskreward', 'r_multiple', 'rmultiple'] },
   { key: 'entry_at', label: 'Entry date/time', aliases: ['entry_at', 'entry_time', 'open_time', 'opentime', 'date_open', 'entry_date', 'date'] },
   { key: 'exit_at', label: 'Exit date/time', aliases: ['exit_at', 'exit_time', 'close_time', 'closetime', 'date_close', 'exit_date'] },
+  { key: 'strategy', label: 'Strategy', aliases: ['strategy', 'strategy_name', 'setup_type', 'system'] },
   { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comment', 'comments', 'remarks'] },
   { key: 'emotional_state', label: 'Emotional state', aliases: ['emotional_state', 'emotion', 'mood', 'feeling', 'psychology'] },
   { key: 'confidence_rating', label: 'Confidence (1-10)', aliases: ['confidence_rating', 'confidence', 'conviction'] },
@@ -204,6 +207,7 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
 
     // Trade mode
     let imported = 0; let skippedInvalid = 0; let duplicates = 0; let errors = 0;
+    const strategyCache = new Map<string, string>();
 
     for (const row of rows) {
       const asset = get(row, 'asset')?.trim();
@@ -240,6 +244,24 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
       const what_went_well = get(row, 'what_went_well')?.trim() || null;
       const mistakes = get(row, 'mistakes')?.trim() || null;
       const lessons_learned = get(row, 'lessons_learned')?.trim() || null;
+      const risk_reward = parseNum(get(row, 'risk_reward'));
+      const pnl_percent = parseNum(get(row, 'pnl_percent'));
+
+      let strategy_id: string | null = null;
+      const strategyName = get(row, 'strategy')?.trim();
+      if (strategyName) {
+        strategy_id = strategyCache.get(strategyName.toLowerCase()) ?? null;
+        if (!strategy_id) {
+          const { data: existingStrat } = await supabase.from('strategies').select('id').eq('user_id', user.id).ilike('name', strategyName).maybeSingle();
+          if (existingStrat) {
+            strategy_id = existingStrat.id;
+          } else {
+            const { data: newStrat } = await supabase.from('strategies').insert({ user_id: user.id, name: strategyName }).select('id').maybeSingle();
+            strategy_id = newStrat?.id ?? null;
+          }
+          if (strategy_id) strategyCache.set(strategyName.toLowerCase(), strategy_id);
+        }
+      }
 
       if (pnl === null && entry_price !== null && exit_price !== null && position_size !== null) {
         const dir = direction === 'long' ? 1 : -1;
@@ -252,6 +274,7 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
         direction,
         status: exit_price !== null ? 'closed' as const : 'open' as const,
         entry_price, exit_price, position_size, stop_loss, take_profit, fees, pnl,
+        pnl_percent, risk_reward, strategy_id,
         entry_at, exit_at, notes,
         emotional_state: emotional_state as any,
         confidence_rating, review_score, thesis, entry_reasoning, exit_reasoning,
