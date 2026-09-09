@@ -147,22 +147,23 @@ export default function AICoach() {
           --text-2xs:10px; --text-xs:11px; --text-sm:12px; --text-base:13px; --text-md:14px; --text-lg:16px;
           --radius-xs:6px; --radius-sm:8px; --radius-md:12px; --radius-lg:16px;
           --dur-fast:140ms; --dur-med:220ms; --ease-out:cubic-bezier(0.16,1,0.3,1);
-          --bg:#0A0A0C; --surface:#131316; --surface-elevated:#1A1A1E; --border:rgba(255,255,255,.08);
-          --text-primary:#F3F1EC; --text-secondary:#9B9A97; --text-tertiary:#66655F;
-          --accent:#14C9AE; --accent-2:#3D6FE5; --accent-hover:#1EDDC0; --success:#4CAF7D;
-          --accent-active-bg: rgba(20,201,174,.10); --accent-active-border: rgba(20,201,174,.30);
-          --accent-glow: rgba(20,201,174,.14); --danger:#C0655F;
+          --bg:#121212; --surface:#181818; --surface-elevated:#1F1F1F; --border:#2A2A2A; --border-strong:#383838;
+          --text-primary:#EAEAE8; --text-secondary:#9C9C98; --text-tertiary:#656562;
+          --accent:#5EA8B8; --accent-2:#6FCADB; --accent-hover:#74BAC9; --success:#4FAE8C;
+          --accent-active-bg: rgba(94,168,184,.10); --accent-active-border: rgba(94,168,184,.30);
+          --accent-2-active-bg: rgba(111,202,219,.16); --accent-2-active-border: rgba(111,202,219,.36);
+          --accent-glow: rgba(94,168,184,.14); --danger:#C0655F;
           --shadow-pill: 0 10px 32px rgba(0,0,0,0.32), 0 2px 8px rgba(0,0,0,0.22);
           --shadow-lg: 0 20px 56px rgba(0,0,0,.38);
           background:var(--bg); color:var(--text-primary); min-height:100%;
           display:flex; font-family:'Inter',-apple-system,sans-serif; position:relative;
         }
         html.light .eb-ai{
-          --bg:#FAFAF8; --surface:#FFFFFF; --surface-elevated:#FFFFFF; --border:rgba(0,0,0,.08);
+          --bg:#FAFAF8; --surface:#FFFFFF; --surface-elevated:#FFFFFF; --border:#E8E7E3; --border-strong:#D3D2CC;
           --text-primary:#1C1C1A; --text-secondary:#6B6B67; --text-tertiary:#9C9C96;
-          --accent:#0E9A85; --accent-2:#2F5FD1; --accent-hover:#0BAF97;
-          --accent-active-bg: rgba(14,154,133,.08); --accent-active-border: rgba(14,154,133,.25);
-          --accent-glow: rgba(14,154,133,.10);
+          --accent:#0E7C8F; --accent-2:#0C5E8A; --accent-hover:#128FA6; --success:#2F8F6D;
+          --accent-active-bg: rgba(14,124,143,.08); --accent-active-border: rgba(14,124,143,.25);
+          --accent-glow: rgba(14,124,143,.08);
         }
         .eb-ai button{ font-family:inherit; cursor:pointer; background:none; border:none; color:inherit; }
 
