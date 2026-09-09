@@ -49,10 +49,12 @@ export type Database = {
       }
       ai_coach_settings: {
         Row: {
+          active_persona: string
           coaching_frequency: string
           created_at: string
           enabled: boolean
           id: string
+          life_context: string | null
           persona_description: string
           persona_name: string
           tone: string
@@ -60,10 +62,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_persona?: string
           coaching_frequency?: string
           created_at?: string
           enabled?: boolean
           id?: string
+          life_context?: string | null
           persona_description?: string
           persona_name?: string
           tone?: string
@@ -71,10 +75,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_persona?: string
           coaching_frequency?: string
           created_at?: string
           enabled?: boolean
           id?: string
+          life_context?: string | null
           persona_description?: string
           persona_name?: string
           tone?: string

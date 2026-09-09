@@ -48,8 +48,14 @@ export default function AICoach() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [personaName, setPersonaName] = useState('Alex');
-  const [personaDescription, setPersonaDescription] = useState('Professional trading manager');
+  const [activePersona, setActivePersona] = useState<'alex' | 'candy' | 'mark'>('alex');
+  const [lifeContext, setLifeContext] = useState('');
+  const PERSONA_INFO = {
+    alex: { name: 'Alex', tag: 'Engaging & driven', desc: 'High-energy friend and trading manager in one. Talks growth, life, and trading together, keeps you honest to your own strategy.' },
+    candy: { name: 'Candy', tag: 'Warm & gentle', desc: "The one to talk to on a hard day. Comforting, patient, helps a loss feel like part of the process instead of a crisis." },
+    mark: { name: 'Mark', tag: 'Dry & focused', desc: "A little funny, dead serious about results. Cracks a joke, then tells you the true thing you needed to hear." },
+  } as const;
+  const personaName = PERSONA_INFO[activePersona].name;
   const [goals, setGoals] = useState<Goal[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -78,8 +84,11 @@ export default function AICoach() {
     (async () => {
       const convs = await loadConversations();
       await loadGoals();
-      const { data: settings } = await supabase.from('ai_coach_settings').select('persona_name, persona_description').eq('user_id', user.id).maybeSingle();
-      if (settings) { setPersonaName(settings.persona_name); setPersonaDescription(settings.persona_description); }
+      const { data: settings } = await supabase.from('ai_coach_settings').select('active_persona, life_context').eq('user_id', user.id).maybeSingle();
+      if (settings) {
+        if (settings.active_persona === 'candy' || settings.active_persona === 'mark') setActivePersona(settings.active_persona);
+        setLifeContext(settings.life_context ?? '');
+      }
       if (convs && convs.length > 0) {
         setActiveConvId(convs[0].id);
         await loadMessages(convs[0].id);
@@ -121,7 +130,7 @@ export default function AICoach() {
 
   const saveSettings = async () => {
     if (!user) return;
-    await supabase.from('ai_coach_settings').upsert({ user_id: user.id, persona_name: personaName, persona_description: personaDescription }, { onConflict: 'user_id' });
+    await supabase.from('ai_coach_settings').upsert({ user_id: user.id, active_persona: activePersona, life_context: lifeContext.trim() || null }, { onConflict: 'user_id' });
     setSettingsOpen(false);
     toast.success('Coach behavior updated');
   };
@@ -462,16 +471,45 @@ export default function AICoach() {
 
       {settingsOpen && (
         <div className="settings-backdrop" onClick={() => setSettingsOpen(false)}>
-          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="settings-modal" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', marginBottom: '1rem' }}>Coach behavior</div>
+
             <div className="settings-field">
-              <label>Name</label>
-              <input value={personaName} onChange={(e) => setPersonaName(e.target.value)} placeholder="Alex" />
+              <label>Personality</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+                {(Object.keys(PERSONA_INFO) as (keyof typeof PERSONA_INFO)[]).map((key) => {
+                  const p = PERSONA_INFO[key];
+                  const on = activePersona === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setActivePersona(key)}
+                      style={{
+                        textAlign: 'left', padding: '.7rem .8rem', borderRadius: 'var(--radius-md)',
+                        border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`,
+                        background: on ? 'var(--accent-active-bg)' : 'transparent',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 700, fontSize: 'var(--text-md)', color: on ? 'var(--accent)' : 'var(--text-primary)' }}>{p.name}</span>
+                        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>{p.tag}</span>
+                      </div>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginTop: '.2rem', lineHeight: 1.4 }}>{p.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
             <div className="settings-field">
-              <label>Behavior</label>
-              <textarea value={personaDescription} onChange={(e) => setPersonaDescription(e.target.value)} placeholder="Professional trading manager" />
+              <label>What should {personaName} know about you?</label>
+              <textarea
+                value={lifeContext}
+                onChange={(e) => setLifeContext(e.target.value)}
+                placeholder="Your name, what matters to you, your faith or values, anything that helps them actually know you — optional"
+              />
             </div>
+
             <button className="new-chat-btn" style={{ justifyContent: 'center', marginBottom: 0 }} onClick={saveSettings}><span>Save</span></button>
           </div>
         </div>
