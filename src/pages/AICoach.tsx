@@ -155,7 +155,8 @@ export default function AICoach() {
           --accent-glow: rgba(94,168,184,.14); --danger:#C0655F;
           --shadow-pill: 0 10px 32px rgba(0,0,0,0.32), 0 2px 8px rgba(0,0,0,0.22);
           --shadow-lg: 0 20px 56px rgba(0,0,0,.38);
-          background:var(--bg); color:var(--text-primary); min-height:100%;
+          background:var(--bg); color:var(--text-primary);
+          height:calc(100vh - 56px); height:calc(100dvh - 56px); overflow:hidden;
           display:flex; font-family:'Inter',-apple-system,sans-serif; position:relative;
         }
         html.light .eb-ai{
