@@ -2052,5 +2052,185 @@ document.addEventListener('DOMContentLoaded', ()=>{
   autoGrow(document.getElementById('composerInput'));
 });
 </script>
+
+<!-- ============================================================
+     REAL BACKEND WIRING — appended only, nothing above this is edited.
+     Connects the send button and conversation list to real data instead
+     of the built-in example response.
+     ============================================================ -->
+<script>
+(function(){
+  const SUPABASE_URL = 'https://xhdedxuuieavkaxhxyyl.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_4fJ6hpisGPnZIOa11akNbA_4RvLVtRg';
+  let authToken = null;
+  let currentConversationId = null;
+  let personaLabel = 'your coach';
+  let ready = false;
+
+  function authHeaders(){
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken, 'apikey': SUPABASE_ANON_KEY };
+  }
+
+  window.addEventListener('message', (ev) => {
+    if (ev.data && ev.data.type === 'edgeblast-auth' && ev.data.token) {
+      const firstTime = !authToken;
+      authToken = ev.data.token;
+      if (ev.data.personaName) personaLabel = ev.data.personaName;
+      if (firstTime && !ready) { ready = true; loadRecentConversations(); }
+    }
+  });
+
+  async function loadRecentConversations(){
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/ai_conversations?select=id,title,updated_at&order=updated_at.desc&limit=8', { headers: authHeaders() });
+      const convs = await res.json();
+      if (!Array.isArray(convs)) return;
+      renderConversationList(convs);
+      if (convs.length > 0) {
+        currentConversationId = convs[0].id;
+        await loadConversationMessages(currentConversationId);
+      }
+    } catch (e) { /* sidebar stays empty, chat still works for a new conversation */ }
+  }
+
+  function renderConversationList(convs){
+    const label = Array.from(document.querySelectorAll('.nav-group-label')).find(l => l.textContent.trim() === 'Recent');
+    const group = label ? label.parentElement : null;
+    if (!group) return;
+    group.querySelectorAll('.conv-item').forEach(el => el.remove());
+    const dotColors = ['var(--accent)', 'var(--accent-2)', 'var(--success)', 'var(--text-tertiary)'];
+    convs.forEach((c, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'conv-item' + (i === 0 ? ' active' : '');
+      btn.setAttribute('data-conv-id', c.id);
+      btn.innerHTML = '<span class="conv-item-dot" style="background:' + dotColors[i % dotColors.length] + '"></span>' + escapeHtml(c.title || 'Untitled conversation');
+      btn.onclick = function(){ switchConversation(c.id, btn); };
+      group.appendChild(btn);
+    });
+    if (convs.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'padding:6px 10px;font-size:var(--text-sm);color:var(--text-tertiary);';
+      empty.textContent = 'No conversations yet.';
+      group.appendChild(empty);
+    }
+  }
+
+  async function switchConversation(id, el){
+    document.querySelectorAll('.conv-item').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
+    currentConversationId = id;
+    await loadConversationMessages(id);
+  }
+
+  async function loadConversationMessages(convId){
+    const inner = document.getElementById('convInner');
+    inner.innerHTML = '';
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/ai_chat_messages?select=role,content&conversation_id=eq.' + convId + '&order=created_at.asc', { headers: authHeaders() });
+      const msgs = await res.json();
+      if (!Array.isArray(msgs)) return;
+      msgs.forEach(m => appendMessage(m.role === 'user' ? 'user' : 'ai', m.content, false));
+      scrollConvToBottom(true);
+    } catch (e) { /* leave the transcript empty for this conversation */ }
+  }
+
+  function renderRichText(container, text){
+    const blocks = text.split(/\n{2,}/);
+    blocks.forEach(block => {
+      const lines = block.split('\n').filter(Boolean);
+      const isList = lines.length > 0 && lines.every(l => /^[-*]\s/.test(l.trim()));
+      const inline = (s) => escapeHtml(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+      if (isList) {
+        const ul = document.createElement('ul');
+        lines.forEach(l => { const li = document.createElement('li'); li.innerHTML = inline(l.replace(/^[-*]\s/, '')); ul.appendChild(li); });
+        container.appendChild(ul);
+      } else {
+        const p = document.createElement('p');
+        p.innerHTML = inline(block);
+        container.appendChild(p);
+      }
+    });
+  }
+
+  function appendMessage(role, text, animate){
+    const inner = document.getElementById('convInner');
+    const msg = document.createElement('div');
+    msg.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+    const actionsHtml = role === 'user'
+      ? '<span class="msg-timestamp">Just now</span>'
+        + '<button class="msg-action-btn" onclick="copyMsgAction(this)" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>'
+      : '<span class="msg-timestamp">Just now</span>'
+        + '<button class="msg-action-btn" onclick="copyMsgAction(this)" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>'
+        + '<button class="msg-action-btn" onclick="regenMsg(this)" aria-label="Regenerate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0114.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0020.5 15"/></svg></button>'
+        + '<button class="msg-action-btn" onclick="likeMsg(this)" aria-label="Good response"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg></button>';
+    msg.innerHTML = '<div class="msg-body"><div class="msg-text"></div><div class="msg-actions">' + actionsHtml + '</div></div>';
+    inner.appendChild(msg);
+    const textEl = msg.querySelector('.msg-text');
+    if (animate && role === 'ai') {
+      streamWords(textEl, text, () => { resetSendBtn(); scrollConvToBottom(); });
+    } else {
+      renderRichText(textEl, text);
+    }
+    return msg;
+  }
+
+  window.sendMessage = async function(){
+    const input = document.getElementById('composerInput');
+    const text = input.value.trim();
+    if (window.generating || !text) return;
+    if (!authToken) { showToast('warning', "Still connecting — try again in a second."); return; }
+
+    appendMessage('user', text, false);
+    input.value = '';
+    autoGrow(input);
+    scrollConvToBottom(true);
+
+    const inner = document.getElementById('convInner');
+    const gen = document.createElement('div');
+    gen.className = 'thinking-indicator';
+    gen.id = 'genIndicator';
+    gen.innerHTML = thinkingMarkupHTML('Thinking');
+    inner.appendChild(gen);
+    scrollConvToBottom(true);
+
+    window.generating = true;
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.classList.add('stop');
+
+    try {
+      const res = await fetch(SUPABASE_URL + '/functions/v1/ai-coach-chat', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ message: text, conversation_id: currentConversationId }),
+      });
+      const data = await res.json();
+      const existingGen = document.getElementById('genIndicator');
+      if (existingGen) existingGen.remove();
+
+      if (!res.ok || !data.success) {
+        appendMessage('ai', data.message || "We got an error on our end — we'll fix it as soon as possible. Please try again shortly.", false);
+        resetSendBtn();
+        return;
+      }
+      if (!currentConversationId && data.conversation_id) {
+        currentConversationId = data.conversation_id;
+        loadRecentConversations();
+      }
+      appendMessage('ai', data.reply, true);
+    } catch (e) {
+      const existingGen = document.getElementById('genIndicator');
+      if (existingGen) existingGen.remove();
+      appendMessage('ai', "We got an error on our end — we'll fix it as soon as possible. Please try again shortly.", false);
+      resetSendBtn();
+    }
+  };
+
+  window.newChat = function(){
+    currentConversationId = null;
+    document.getElementById('convInner').innerHTML = '';
+    document.querySelectorAll('.conv-item').forEach(c => c.classList.remove('active'));
+  };
+})();
+</script>
 </body>
 </html>
