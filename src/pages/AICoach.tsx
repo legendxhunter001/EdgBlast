@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function AICoach() {
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     let cancelled = false;
@@ -21,18 +23,29 @@ export default function AICoach() {
       frame.contentWindow.postMessage({ type: 'edgeblast-auth', token, personaName }, '*');
     };
 
+    const sendTheme = () => {
+      frameRef.current?.contentWindow?.postMessage({ type: 'edgeblast-theme', theme }, '*');
+    };
+
     const frame = frameRef.current;
-    frame?.addEventListener('load', sendAuth);
+    const onLoad = () => { sendAuth(); sendTheme(); };
+    frame?.addEventListener('load', onLoad);
     // Auth can finish loading after the iframe already fired 'load', or the
     // token can refresh mid-session — resend whenever the session changes.
     const { data: sub } = supabase.auth.onAuthStateChange(() => sendAuth());
 
     return () => {
       cancelled = true;
-      frame?.removeEventListener('load', sendAuth);
+      frame?.removeEventListener('load', onLoad);
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  // Re-send whenever the main app's theme changes, so a page already open
+  // updates live too — the iframe itself decides whether to apply it.
+  useEffect(() => {
+    frameRef.current?.contentWindow?.postMessage({ type: 'edgeblast-theme', theme }, '*');
+  }, [theme]);
 
   return (
     <iframe
