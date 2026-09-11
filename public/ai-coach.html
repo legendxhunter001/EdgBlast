@@ -1327,7 +1327,7 @@ else:
         <div id="settingsTab-profile" style="display:none">
           <div class="card">
             <div class="field"><label class="field-label">Display name</label><input class="field-input" value=""></div>
-            <div class="field"><label class="field-label">Preferred name</label><input class="field-input" id="preferredNameInput" placeholder="What should Edge Blast call you?" value="Elion"></div>
+            <div class="field"><label class="field-label">Preferred name</label><input class="field-input" id="preferredNameInput" placeholder="What should Edge Blast call you?" value=""></div>
             <div class="field"><label class="field-label">Email</label><input class="field-input" value=""></div>
             <div class="field"><label class="field-label">Workspace</label><input class="field-input" value="Personal"></div>
             <button class="btn btn-primary" onclick="showToast('success','Profile updated')">Save changes</button>
@@ -1362,7 +1362,7 @@ else:
                 <div class="model-option-icon" style="background:var(--accent)">A</div>
                 <div class="model-option-meta">
                   <div class="model-option-name">Alex</div>
-                  <div class="model-option-sub">Direct and efficient — short, clear answers with no filler.</div>
+                  <div class="model-option-sub">Your professional trading manager and growth partner — sharp, engaging, direct. Talks trading and life, calls out what's really going on, pushes you to grow.</div>
                 </div>
                 <svg class="model-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
               </button>
@@ -1370,14 +1370,14 @@ else:
                 <div class="model-option-icon" style="background:#4A8FA3">C</div>
                 <div class="model-option-meta">
                   <div class="model-option-name">Candy</div>
-                  <div class="model-option-sub">Warm and encouraging — explains things with patience and context.</div>
+                  <div class="model-option-sub">Warm and gentle — the one for a hard day. Sits with you through a loss before turning it into forward motion.</div>
                 </div>
               </button>
               <button class="model-option" onclick="pickDefaultModel(this,'Mark','var(--accent-2)')" data-name="mark">
                 <div class="model-option-icon" style="background:var(--accent-2)">M</div>
                 <div class="model-option-meta">
                   <div class="model-option-name">Mark</div>
-                  <div class="model-option-sub">Thorough and analytical — detailed, step-by-step reasoning.</div>
+                  <div class="model-option-sub">Serious and precise — dry humor, zero excuses. Tells you the truth about your execution, respectfully.</div>
                 </div>
               </button>
             </div>
@@ -2073,7 +2073,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
       authToken = ev.data.token;
       if (ev.data.personaName) personaLabel = ev.data.personaName;
       if (ev.data.email) applyRealUserInfo(ev.data.email);
-      if (firstTime && !ready) { ready = true; loadRecentConversations(); loadCoachSettings(); loadRealGoals(); }
+      if (firstTime && !ready) { ready = true; loadRecentConversations(); loadCoachSettings(); loadRealGoals(); loadActivePersonaSelection(); }
     }
     if (ev.data && ev.data.type === 'edgeblast-theme' && (ev.data.theme === 'light' || ev.data.theme === 'dark')) {
       applyParentTheme(ev.data.theme);
@@ -2119,6 +2119,58 @@ document.addEventListener('DOMContentLoaded', ()=>{
           + '</button>';
       }).join('');
     } catch (e) { slot.innerHTML = ''; }
+  }
+
+  window.pickDefaultModel = function(el, name, color){
+    document.querySelectorAll('#aiModelList .model-option').forEach(o=>{
+      o.classList.remove('selected');
+      const check = o.querySelector('.model-option-check');
+      if(check) check.remove();
+    });
+    el.classList.add('selected');
+    if(!el.querySelector('.model-option-check')){
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','3');
+      svg.setAttribute('class','model-option-check');
+      svg.innerHTML = '<path d="M20 6L9 17l-5-5"/>';
+      el.appendChild(svg);
+    }
+    const personaKey = el.getAttribute('data-name');
+    personaLabel = name;
+    savePersonaChoice(personaKey);
+  };
+
+  async function savePersonaChoice(personaKey){
+    if (!authToken) return;
+    try {
+      await fetch(SUPABASE_URL + '/rest/v1/ai_coach_settings?on_conflict=user_id', {
+        method: 'POST',
+        headers: Object.assign({}, authHeaders(), { 'Prefer': 'resolution=merge-duplicates' }),
+        body: JSON.stringify({ user_id: currentUserId(), active_persona: personaKey }),
+      });
+      showToast('success', personaLabel + ' is now your coach.');
+    } catch (e) {
+      showToast('warning', "Couldn't save that — try again in a moment.");
+    }
+  }
+
+  async function loadActivePersonaSelection(){
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/ai_coach_settings?select=active_persona&limit=1', { headers: authHeaders() });
+      const rows = await res.json();
+      const active = Array.isArray(rows) && rows[0] ? rows[0].active_persona : null;
+      if (!active || active === 'alex') return; // alex is already the default-selected card
+      const el = document.querySelector('#aiModelList .model-option[data-name="' + active + '"]');
+      if (el) {
+        document.querySelectorAll('#aiModelList .model-option').forEach(o => { o.classList.remove('selected'); const c = o.querySelector('.model-option-check'); if (c) c.remove(); });
+        el.classList.add('selected');
+        const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+        svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','3');
+        svg.setAttribute('class','model-option-check');
+        svg.innerHTML = '<path d="M20 6L9 17l-5-5"/>';
+        el.appendChild(svg);
+      }
+    } catch (e) { /* leave default selection as-is */ }
   }
 
   window.savePreferences = async function(){
@@ -2250,6 +2302,61 @@ document.addEventListener('DOMContentLoaded', ()=>{
     window.parent.postMessage({ type: 'edgeblast-signout' }, '*');
   };
 
+  async function realRegenerate(afterEl, removeEl, userText){
+    if (generating) return;
+    if (!authToken) { showToast('warning', "Still connecting — try again in a second."); return; }
+    const inner = document.getElementById('convInner');
+    const gen = document.createElement('div');
+    gen.className = 'thinking-indicator';
+    gen.id = 'genIndicator';
+    gen.innerHTML = thinkingMarkupHTML('Thinking');
+    afterEl.after(gen);
+    if (removeEl) removeEl.remove();
+    scrollConvToBottom(true);
+    generating = true;
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.classList.add('stop');
+
+    try {
+      const res = await fetch(SUPABASE_URL + '/functions/v1/ai-coach-chat', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ message: userText, conversation_id: currentConversationId }),
+      });
+      const data = await res.json();
+      const existingGen = document.getElementById('genIndicator');
+      if (existingGen) existingGen.remove();
+      if (!res.ok || !data.success) {
+        appendMessage('ai', data.message || "We got an error on our end — we'll fix it as soon as possible. Please try again shortly.", false);
+        resetSendBtn();
+        return;
+      }
+      appendMessage('ai', data.reply, true);
+    } catch (e) {
+      const existingGen = document.getElementById('genIndicator');
+      if (existingGen) existingGen.remove();
+      appendMessage('ai', "We got an error on our end — we'll fix it as soon as possible. Please try again shortly.", false);
+      resetSendBtn();
+    }
+  }
+
+  window.regenMsg = function(btn){
+    const msgEl = btn.closest('.msg');
+    const prevUser = msgEl.previousElementSibling;
+    const userText = prevUser && prevUser.classList.contains('user') ? (prevUser.querySelector('.msg-text') ? prevUser.querySelector('.msg-text').innerText.trim() : '') : '';
+    if (!userText) { showToast('warning', "Can't find the original message to regenerate from."); return; }
+    realRegenerate(msgEl, msgEl, userText);
+  };
+
+  window.retryMsg = function(btn){
+    const msgEl = btn.closest('.msg');
+    const userText = msgEl.querySelector('.msg-text') ? msgEl.querySelector('.msg-text').innerText.trim() : '';
+    if (!userText) return;
+    const next = msgEl.nextElementSibling;
+    const toRemove = (next && next.classList.contains('ai')) ? next : null;
+    realRegenerate(msgEl, toRemove, userText);
+  };
+
   function appendMessage(role, text, animate){
     const inner = document.getElementById('convInner');
     const msg = document.createElement('div');
@@ -2323,7 +2430,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const input = document.getElementById('composerInput');
     const text = input.value.trim();
     const attachment = pendingAttachment;
-    if (window.generating || (!text && !attachment)) return;
+    if (generating || (!text && !attachment)) return;
     if (!authToken) { showToast('warning', "Still connecting — try again in a second."); return; }
 
     if (attachment) appendUserImageBubble(attachment.previewUrl);
@@ -2342,7 +2449,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     inner.appendChild(gen);
     scrollConvToBottom(true);
 
-    window.generating = true;
+    generating = true;
     const sendBtn = document.getElementById('sendBtn');
     sendBtn.classList.add('stop');
 
