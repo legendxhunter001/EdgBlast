@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/hooks/useTheme';
+import { useNavigate } from 'react-router-dom';
 
 export default function AICoach() {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const { theme } = useTheme();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
@@ -20,7 +22,7 @@ export default function AICoach() {
         const { data: settings } = await supabase.from('ai_coach_settings').select('active_persona').eq('user_id', userId).maybeSingle();
         if (settings?.active_persona) personaName = settings.active_persona.charAt(0).toUpperCase() + settings.active_persona.slice(1);
       }
-      frame.contentWindow.postMessage({ type: 'edgeblast-auth', token, personaName }, '*');
+      frame.contentWindow.postMessage({ type: 'edgeblast-auth', token, personaName, email: data.session?.user.email ?? '' }, '*');
     };
 
     const sendTheme = () => {
@@ -34,12 +36,21 @@ export default function AICoach() {
     // token can refresh mid-session — resend whenever the session changes.
     const { data: sub } = supabase.auth.onAuthStateChange(() => sendAuth());
 
+    const onMessage = async (ev: MessageEvent) => {
+      if (ev.data?.type === 'edgeblast-signout') {
+        await supabase.auth.signOut();
+        navigate('/');
+      }
+    };
+    window.addEventListener('message', onMessage);
+
     return () => {
       cancelled = true;
       frame?.removeEventListener('load', onLoad);
       sub.subscription.unsubscribe();
+      window.removeEventListener('message', onMessage);
     };
-  }, []);
+  }, [navigate]);
 
   // Re-send whenever the main app's theme changes, so a page already open
   // updates live too — the iframe itself decides whether to apply it.
