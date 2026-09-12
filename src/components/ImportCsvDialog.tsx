@@ -22,6 +22,7 @@ type ImportMode = 'trade' | 'journal';
 const TRADE_FIELD_DEFS: { key: string; label: string; required?: boolean; aliases: string[] }[] = [
   { key: 'asset', label: 'Asset / Symbol', required: true, aliases: ['asset', 'symbol', 'pair', 'ticker', 'instrument'] },
   { key: 'direction', label: 'Direction', required: true, aliases: ['direction', 'side', 'type', 'buy/sell', 'action'] },
+  { key: 'status', label: 'Status', aliases: ['status', 'trade_status', 'state'] },
   { key: 'entry_price', label: 'Entry price', aliases: ['entry_price', 'entry', 'open_price', 'openprice', 'price_open'] },
   { key: 'exit_price', label: 'Exit price', aliases: ['exit_price', 'exit', 'close_price', 'closeprice', 'price_close'] },
   { key: 'position_size', label: 'Position size', aliases: ['position_size', 'size', 'volume', 'lots', 'lot_size', 'quantity', 'qty'] },
@@ -272,7 +273,11 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
         user_id: user.id,
         asset: asset.toUpperCase(),
         direction,
-        status: exit_price !== null ? 'closed' as const : 'open' as const,
+        status: (() => {
+          const raw = get(row, 'status')?.trim().toLowerCase();
+          if (raw === 'open' || raw === 'closed') return raw as 'open' | 'closed';
+          return exit_price !== null ? 'closed' as const : 'open' as const;
+        })(),
         entry_price, exit_price, position_size, stop_loss, take_profit, fees, pnl,
         pnl_percent, risk_reward, strategy_id,
         entry_at, exit_at, notes,
