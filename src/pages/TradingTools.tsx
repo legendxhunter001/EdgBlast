@@ -68,7 +68,8 @@ const SYMBOLS: { symbol: string; pipValue: number; pipSize: number }[] = [
 const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }) => {
   const [balance, setBalance] = useState('10000');
   const [risk, setRisk] = useState('1');
-  const [slPips, setSlPips] = useState('20');
+  const [entryPrice, setEntryPrice] = useState('');
+  const [stopPrice, setStopPrice] = useState('');
   const [symbol, setSymbol] = useState('EURUSD');
   const [customPip, setCustomPip] = useState('');
 
@@ -77,11 +78,17 @@ const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }
 
   const b = Number(balance) || 0;
   const r = Number(risk) || 0;
-  const sl = Number(slPips) || 0;
+  const entry = Number(entryPrice) || 0;
+  const stop = Number(stopPrice) || 0;
+  // Pip distance is computed from the real prices using each instrument's
+  // actual pip size (0.0001 for most FX pairs, 0.01 for JPY pairs, etc.) —
+  // never a manual guess, which is exactly where decimal entries like
+  // 1.80083 used to get miscalculated when only whole numbers "worked".
+  const slPips = entry > 0 && stop > 0 ? Math.abs(entry - stop) / meta.pipSize : 0;
 
   const riskAmount = (b * r) / 100;
-  const lots = sl > 0 && pipValue > 0 ? riskAmount / (sl * pipValue) : 0;
-  const valid = b > 0 && r > 0 && sl > 0 && pipValue > 0;
+  const lots = slPips > 0 && pipValue > 0 ? riskAmount / (slPips * pipValue) : 0;
+  const valid = b > 0 && r > 0 && slPips > 0 && pipValue > 0;
 
   return (
     <div className="tt-card">
@@ -107,15 +114,20 @@ const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }
         </label>
 
         <label className="tt-field">
-          <span>Stop loss (pips)</span>
-          <input inputMode="decimal" value={slPips} onChange={(e) => setSlPips(e.target.value.replace(/[^\d.]/g, ''))} />
-        </label>
-
-        <label className="tt-field">
           <span>Symbol</span>
           <select value={symbol} onChange={(e) => { setSymbol(e.target.value); setCustomPip(''); }}>
             {SYMBOLS.map((s) => <option key={s.symbol} value={s.symbol}>{s.symbol}</option>)}
           </select>
+        </label>
+
+        <label className="tt-field">
+          <span>Entry price</span>
+          <input inputMode="decimal" placeholder="e.g. 1.80083" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value.replace(/[^\d.]/g, ''))} />
+        </label>
+
+        <label className="tt-field">
+          <span>Stop loss price</span>
+          <input inputMode="decimal" placeholder="e.g. 1.79883" value={stopPrice} onChange={(e) => setStopPrice(e.target.value.replace(/[^\d.]/g, ''))} />
         </label>
 
         <label className="tt-field">
@@ -130,6 +142,10 @@ const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }
       </div>
 
       <div className="tt-result">
+        <div>
+          <span>Stop distance</span>
+          <b className="mono">{slPips > 0 ? `${slPips.toFixed(1)} pips` : '—'}</b>
+        </div>
         <div>
           <span>Position size</span>
           <b className="mono">{valid ? `${lots.toFixed(2)} lots` : '—'}</b>

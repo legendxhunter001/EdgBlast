@@ -84,6 +84,41 @@ const parseNum = (raw: string | undefined): number | null => {
   return isNaN(n) ? null : n;
 };
 
+// A price that's missing its decimal point (e.g. "186800" instead of
+// "1.86800") is a common manual-entry mistake — this brings it back into a
+// realistic range for the given symbol rather than importing it as garbage.
+// Only ever applied to symbols we can confidently classify — anything else
+// (indices, exotic tickers) is left completely untouched rather than guessed.
+const realisticRange = (asset: string): [number, number] | null => {
+  const sym = asset.toUpperCase();
+  if (sym.startsWith('XAU')) return [1000, 6000];
+  if (sym.startsWith('XAG')) return [10, 100];
+  if (sym.startsWith('BTC')) return [1000, 200000];
+  if (sym.startsWith('ETH')) return [50, 10000];
+  if (sym.endsWith('JPY') && /^[A-Z]{6}$/.test(sym)) return [50, 400];
+  if (/^[A-Z]{6}$/.test(sym)) return [0.05, 3.0]; // standard 6-letter FX pair
+  return null; // unrecognized symbol (index, exotic ticker, etc.) — don't touch it
+};
+
+const fixMissingDecimal = (value: number | null, asset: string, referencePrice?: number | null): number | null => {
+  if (value === null || value <= 0 || !asset) return value;
+  const range = realisticRange(asset);
+  if (!range) return value;
+  const [lo, hi] = range;
+  if (value <= hi) return value; // already realistic (or below range) — don't guess
+  const scale = Math.pow(10, Math.ceil(Math.log10(value / hi)));
+  const corrected = value / scale;
+  if (corrected < lo || corrected > hi) return value; // didn't land in a realistic range at all
+  // If we know the trade's entry price, a genuinely-missing-decimal value should
+  // land close to it (stop/target aren't usually more than ~20% away) — this
+  // catches real typos that just happen to look plausible in isolation.
+  if (referencePrice && referencePrice > 0) {
+    const pctDiff = Math.abs(corrected - referencePrice) / referencePrice;
+    if (pctDiff > 0.2) return value;
+  }
+  return corrected;
+};
+
 const parseDate = (raw: string | undefined): string | null => {
   if (!raw) return null;
   const d = new Date(raw);
@@ -219,11 +254,11 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
       const { data: dup } = await supabase.from('trades').select('id').eq('user_id', user.id).eq('import_fingerprint', fingerprint).maybeSingle();
       if (dup) { duplicates++; continue; }
 
-      const entry_price = parseNum(get(row, 'entry_price'));
-      const exit_price = parseNum(get(row, 'exit_price'));
+      const entry_price = fixMissingDecimal(parseNum(get(row, 'entry_price')), asset);
+      const exit_price = fixMissingDecimal(parseNum(get(row, 'exit_price')), asset, entry_price);
       const position_size = parseNum(get(row, 'position_size'));
-      const stop_loss = parseNum(get(row, 'stop_loss'));
-      const take_profit = parseNum(get(row, 'take_profit'));
+      const stop_loss = fixMissingDecimal(parseNum(get(row, 'stop_loss')), asset, entry_price);
+      const take_profit = fixMissingDecimal(parseNum(get(row, 'take_profit')), asset, entry_price);
       const fees = parseNum(get(row, 'fees')) ?? 0;
       let pnl = parseNum(get(row, 'pnl'));
       const entry_at = parseDate(get(row, 'entry_at'));
