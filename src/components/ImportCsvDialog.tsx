@@ -35,18 +35,18 @@ const TRADE_FIELD_DEFS: { key: string; label: string; required?: boolean; aliase
   { key: 'entry_at', label: 'Entry date/time', aliases: ['entry_at', 'entry_time', 'open_time', 'opentime', 'date_open', 'entry_date', 'date'] },
   { key: 'exit_at', label: 'Exit date/time', aliases: ['exit_at', 'exit_time', 'close_time', 'closetime', 'date_close', 'exit_date'] },
   { key: 'strategy', label: 'Strategy', aliases: ['strategy', 'strategy_name', 'setup_type', 'system'] },
-  { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comment', 'comments', 'remarks'] },
-  { key: 'emotional_state', label: 'Emotional state', aliases: ['emotional_state', 'emotion', 'mood', 'feeling', 'psychology'] },
+  { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comment', 'comments', 'remarks', 'trade_notes', 'tradenotes'] },
+  { key: 'emotional_state', label: 'Emotional state', aliases: ['emotional_state', 'emotion', 'mood', 'feeling'] },
   { key: 'confidence_rating', label: 'Confidence (1-10)', aliases: ['confidence_rating', 'confidence', 'conviction'] },
-  { key: 'review_score', label: 'Rating (1-10)', aliases: ['review_score', 'rating', 'score', 'grade', 'trade_rating'] },
+  { key: 'review_score', label: 'Rating (1-10)', aliases: ['review_score', 'rating', 'score', 'grade', 'trade_rating', 'review'] },
   { key: 'thesis', label: 'Trade thesis', aliases: ['thesis', 'setup', 'idea', 'rationale', 'definition'] },
-  { key: 'entry_reasoning', label: 'Entry explanation', aliases: ['entry_reasoning', 'entry_explanation', 'entry_reason', 'entry_notes', 'why'] },
-  { key: 'exit_reasoning', label: 'Exit explanation', aliases: ['exit_reasoning', 'exit_explanation', 'exit_reason', 'exit_notes'] },
+  { key: 'entry_reasoning', label: 'Entry explanation', aliases: ['entry_reasoning', 'entry_explanation', 'entry_reason', 'entry_notes', 'entry_review', 'entryreview', 'why'] },
+  { key: 'exit_reasoning', label: 'Exit explanation', aliases: ['exit_reasoning', 'exit_explanation', 'exit_reason', 'exit_notes', 'exit_review', 'exitreview'] },
   { key: 'execution_notes', label: 'Execution notes', aliases: ['execution_notes', 'execution', 'execution_quality'] },
-  { key: 'psychology_review', label: 'Psychology review', aliases: ['psychology_review', 'psych_review', 'mental_state', 'mindset'] },
+  { key: 'psychology_review', label: 'Psychology review', aliases: ['psychology_review', 'psych_review', 'mental_state', 'mindset', 'psychology_notes'] },
   { key: 'what_went_well', label: 'What went well', aliases: ['what_went_well', 'went_well', 'strengths', 'positives'] },
-  { key: 'mistakes', label: 'Mistakes', aliases: ['mistakes', 'errors', 'negatives', 'what_went_wrong'] },
-  { key: 'lessons_learned', label: 'Lessons learned', aliases: ['lessons_learned', 'lessons', 'takeaway', 'takeaways', 'experience'] },
+  { key: 'mistakes', label: 'Mistakes', aliases: ['mistakes', 'errors', 'negatives', 'what_went_wrong', 'mistakes_to_avoid', 'mistakestoavoid', 'avoid'] },
+  { key: 'lessons_learned', label: 'Lessons learned', aliases: ['lessons_learned', 'lessons', 'takeaway', 'takeaways', 'experience', 'lessonslearned'] },
 ];
 
 // Journal fields — used when a CSV clearly represents journal/notepad entries
@@ -430,15 +430,37 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
                     </tr>
                   </thead>
                   <tbody>
-                    {previewRows.map((row, i) => (
-                      <tr key={i} className="border-t border-border/50">
-                        {fieldDefs.filter((f) => mapping[f.key]).map((f) => (
-                          <td key={f.key} className="px-2.5 py-1.5 max-w-[220px] truncate text-muted-foreground" title={row[mapping[f.key]]}>
-                            {row[mapping[f.key]] || '—'}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
+                    {previewRows.map((row, i) => {
+                      const assetVal = mapping['asset'] ? row[mapping['asset']] : '';
+                      const entryVal = mapping['entry_price'] ? parseNum(row[mapping['entry_price']]) : null;
+                      const correctedEntry = fixMissingDecimal(entryVal, assetVal);
+                      return (
+                        <tr key={i} className="border-t border-border/50">
+                          {fieldDefs.filter((f) => mapping[f.key]).map((f) => {
+                            const raw = row[mapping[f.key]];
+                            const isPriceField = ['entry_price', 'exit_price', 'stop_loss', 'take_profit'].includes(f.key);
+                            let corrected: number | null = null;
+                            if (isPriceField) {
+                              const num = parseNum(raw);
+                              corrected = f.key === 'entry_price' ? correctedEntry : fixMissingDecimal(num, assetVal, correctedEntry);
+                            }
+                            const willCorrect = isPriceField && corrected !== null && String(corrected) !== raw?.trim();
+                            return (
+                              <td key={f.key} className="px-2.5 py-1.5 max-w-[220px] text-muted-foreground" title={raw}>
+                                {willCorrect ? (
+                                  <span className="text-foreground">
+                                    <span className="line-through text-muted-foreground/50">{raw}</span>{' '}
+                                    <span className="text-bull font-medium">→ {corrected}</span>
+                                  </span>
+                                ) : (
+                                  <span className="truncate block">{raw || '—'}</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
