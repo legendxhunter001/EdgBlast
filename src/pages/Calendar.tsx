@@ -233,15 +233,23 @@ const Calendar = () => {
 
               <div className="space-y-1.5">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Trades</div>
-                {selectedData.trades.map((t: any) => (
-                  <Link key={t.id} to={`/trades/${t.id}`} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/40 hover:bg-secondary/70 transition-colors">
-                    <div>
-                      <div className="text-sm font-medium inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase">{t.direction}</div>
-                    </div>
-                    <div className={cn('font-mono text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
-                  </Link>
-                ))}
+                {selectedData.trades.map((t: any) => {
+                  const snippet = t.thesis || t.lessons_learned || t.notes;
+                  return (
+                    <Link key={t.id} to={`/trades/${t.id}`} className="block p-2.5 rounded-lg bg-secondary/40 hover:bg-secondary/70 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</div>
+                          <div className="text-[10px] text-muted-foreground uppercase">{t.direction}</div>
+                        </div>
+                        <div className={cn('font-mono text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
+                      </div>
+                      {snippet && (
+                        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{snippet}</p>
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -263,12 +271,20 @@ const Calendar = () => {
             <MiniStat label="Win rate" value={`${Math.round((selectedData.wins / selectedData.count) * 100)}%`} />
           </div>
           <div className="space-y-1.5">
-            {selectedData.trades.map((t: any) => (
-              <Link key={t.id} to={`/trades/${t.id}`} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/40">
-                <div className="text-sm font-medium inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</div>
-                <div className={cn('font-mono text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
-              </Link>
-            ))}
+            {selectedData.trades.map((t: any) => {
+              const snippet = t.thesis || t.lessons_learned || t.notes;
+              return (
+                <Link key={t.id} to={`/trades/${t.id}`} className="block p-2.5 rounded-lg bg-secondary/40">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</div>
+                    <div className={cn('font-mono text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
+                  </div>
+                  {snippet && (
+                    <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{snippet}</p>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
