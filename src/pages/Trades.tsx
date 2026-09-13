@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useTrades } from '@/hooks/useTrades';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { Search, LayoutGrid, List, Filter, FileUp } from 'lucide-react';
+import { Search, LayoutGrid, List, Filter, FileUp, ImageDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 import { formatCurrency, pnlClass } from '@/lib/format';
@@ -11,6 +11,7 @@ import { SymbolLogo } from '@/components/SymbolLogo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import ImportCsvDialog from '@/components/ImportCsvDialog';
+import ImportScreenshotsDialog from '@/components/ImportScreenshotsDialog';
 
 const Trades = () => {
   const { data: trades, isLoading } = useTrades();
@@ -19,6 +20,7 @@ const Trades = () => {
   const [filter, setFilter] = useState<'all' | 'wins' | 'losses' | 'long' | 'short'>('all');
   const [sort, setSort] = useState<'date' | 'pnl' | 'asset'>('date');
   const [importOpen, setImportOpen] = useState(false);
+  const [importShotsOpen, setImportShotsOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let list = trades ?? [];
@@ -48,11 +50,15 @@ const Trades = () => {
           <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-1.5">
             <FileUp className="size-4" /> Import CSV
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setImportShotsOpen(true)} className="gap-1.5">
+            <ImageDown className="size-4" /> Import screenshots
+          </Button>
           <Link to="/trades/new" className="px-4 py-2 rounded-lg bg-gradient-bull text-primary-foreground text-sm font-medium shadow-glow-bull">+ New trade</Link>
         </div>
       </header>
 
       <ImportCsvDialog open={importOpen} onOpenChange={setImportOpen} />
+      <ImportScreenshotsDialog open={importShotsOpen} onOpenChange={setImportShotsOpen} />
 
       <div className="glass rounded-xl p-4 flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
