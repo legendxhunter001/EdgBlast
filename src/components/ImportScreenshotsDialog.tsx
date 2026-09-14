@@ -81,11 +81,37 @@ export default function ImportScreenshotsDialog({ open, onOpenChange }: ImportSc
     }
   };
 
+  // Some browsers/OSes auto-extract a downloaded zip, so the person ends up
+  // selecting individual image files instead of the zip itself — this reads
+  // those directly, same matching logic, no zip parsing needed.
+  const handleImageFiles = (files: File[]) => {
+    setFileName(files.length === 1 ? files[0].name : `${files.length} images`);
+    const results: ParsedFile[] = files.map((file) => {
+      const m = file.name.match(FILENAME_RE);
+      if (!m) return { name: file.name, blob: file, date: null, asset: null, kind: null, tradeId: null };
+      const [, date, asset, kind] = m;
+      const tradeId = matchTrade(date, asset);
+      return { name: file.name, blob: file, date, asset, kind: kind.toLowerCase() as any, tradeId };
+    });
+    setParsed(results);
+    setStage('preview');
+  };
+
+  const handleFiles = (files: File[]) => {
+    if (files.length === 1 && /\.zip$/i.test(files[0].name)) { handleZip(files[0]); return; }
+    const images = files.filter((f) => /\.(jpe?g|png|gif|webp|avif)$/i.test(f.name));
+    if (images.length === 0) {
+      toast.error("Couldn't find a zip file or any images in what you selected.");
+      return;
+    }
+    handleImageFiles(images);
+  };
+
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleZip(file);
+    const files = Array.from(e.dataTransfer.files ?? []);
+    if (files.length) handleFiles(files);
   };
 
   const matched = useMemo(
@@ -157,14 +183,15 @@ export default function ImportScreenshotsDialog({ open, onOpenChange }: ImportSc
             <input
               id="screenshots-zip-input"
               type="file"
-              accept=".zip,application/zip"
+              accept=".zip,application/zip,image/*"
+              multiple
               className="hidden"
-              onChange={(e) => e.target.files?.[0] && handleZip(e.target.files[0])}
+              onChange={(e) => e.target.files?.length && handleFiles(Array.from(e.target.files))}
             />
             <FileArchive className="size-10 mx-auto text-primary/70 mb-3" />
-            <div className="font-medium text-sm">Drop your screenshots .zip here, or tap to browse</div>
+            <div className="font-medium text-sm">Drop your zip — or the individual screenshots — here, or tap to browse</div>
             <div className="text-xs text-muted-foreground mt-1.5">
-              Files should be named like <span className="font-mono">2026-09-10_XAUUSD_entry.jpg</span> — that's exactly what the Lovable export produces.
+              Works either way: the zip from Lovable, or the extracted image files themselves. Names should look like <span className="font-mono">2026-09-10_XAUUSD_entry.jpg</span> — that's what the export produces.
             </div>
           </div>
         )}
