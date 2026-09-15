@@ -737,7 +737,7 @@ html.light .tt{
 .tt-card{
   background:var(--elev); border:1px solid var(--line); border-radius:16px; padding:1.15rem;
   animation:tt-in .45s cubic-bezier(.22,1,.36,1) both;
-  transition:border-color .25s ease;
+  transition:border-color .25s cubic-bezier(0.22,1,0.36,1);
 }
 .tt-card:hover{ border-color:var(--line2); }
 @keyframes tt-in{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;} }
@@ -753,7 +753,7 @@ html.light .tt{
 .tt-refresh{
   width:30px; height:30px; border-radius:8px; border:1px solid var(--line2);
   background:rgba(255,255,255,.02); color:var(--dim); cursor:pointer; font-size:.95rem; line-height:1;
-  transition:color .2s ease, border-color .2s ease, transform .15s ease;
+  transition:color .2s cubic-bezier(0.22,1,0.36,1), border-color .2s cubic-bezier(0.22,1,0.36,1), transform .15s cubic-bezier(0.22,1,0.36,1);
 }
 .tt-refresh:hover:not(:disabled){ color:var(--teal); border-color:var(--teal); }
 .tt-refresh:disabled{ opacity:.6; cursor:default; }
@@ -773,7 +773,7 @@ html.light .tt{
   width:30px; height:30px; border-radius:8px; border:1px solid var(--line2);
   background:rgba(255,255,255,.02); color:var(--dim); cursor:pointer;
   display:flex; align-items:center; justify-content:center;
-  transition:color .2s ease, border-color .2s ease, background .2s ease;
+  transition:color .2s cubic-bezier(0.22,1,0.36,1), border-color .2s cubic-bezier(0.22,1,0.36,1), background .2s cubic-bezier(0.22,1,0.36,1);
 }
 .tt-icon-btn:hover{ color:var(--teal); border-color:var(--teal); }
 @media (min-width: 720px){
@@ -783,7 +783,7 @@ html.light .tt{
 .tt-chip{
   border:1px solid var(--line2); background:rgba(255,255,255,.02); color:var(--dim);
   border-radius:999px; padding:.3rem .75rem; font-size:.76rem; cursor:pointer; font-family:inherit;
-  transition:color .2s ease, background .2s ease, border-color .2s ease, transform .15s ease;
+  transition:color .2s cubic-bezier(0.22,1,0.36,1), background .2s cubic-bezier(0.22,1,0.36,1), border-color .2s cubic-bezier(0.22,1,0.36,1), transform .15s cubic-bezier(0.22,1,0.36,1);
   display:inline-flex; align-items:center; gap:.35rem;
 }
 .tt-chip-icon{ width:13px; height:13px; flex-shrink:0; }
@@ -802,7 +802,7 @@ html.light .tt{
 .tt-field input, .tt-field select{
   background:rgba(255,255,255,.03); border:1px solid var(--line2); border-radius:9px;
   padding:.6rem .7rem; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:.9rem;
-  transition:border-color .2s ease, background .2s ease; width:100%; min-width:0;
+  transition:border-color .2s cubic-bezier(0.22,1,0.36,1), background .2s cubic-bezier(0.22,1,0.36,1); width:100%; min-width:0;
 }
 .tt-field input:focus, .tt-field select:focus{ outline:none; border-color:var(--teal); background:rgba(20,201,174,.05); }
 .tt-field select{ font-family:'Inter',sans-serif; }
@@ -832,7 +832,7 @@ html.light .tt{
   font-weight:650; padding:.4rem .55rem; border-bottom:1px solid var(--line);
 }
 .tt-table td{ padding:.6rem .55rem; border-bottom:1px solid rgba(255,255,255,.04); }
-.tt-table tbody tr{ animation:tt-row .35s ease both; }
+.tt-table tbody tr{ animation:tt-row .35s cubic-bezier(0.22,1,0.36,1) both; }
 @keyframes tt-row{ from{opacity:0; transform:translateY(5px);} to{opacity:1;transform:none;} }
 .tt-table .strong{ font-weight:600; }
 .tt-table .dim{ color:var(--dim); }
@@ -880,7 +880,7 @@ html.light .tt{
   position:absolute; top:env(safe-area-inset-top); left:0; right:0; z-index:2;
   display:flex; align-items:center; justify-content:space-between;
   padding:.85rem 1.1rem; background:linear-gradient(180deg, var(--bg) 0%, transparent 100%);
-  transition:opacity 280ms ease, transform 280ms ease;
+  transition:opacity 280ms cubic-bezier(0.22,1,0.36,1), transform 280ms cubic-bezier(0.22,1,0.36,1);
   opacity:1; transform:translateY(0);
 }
 .tt-focus-bar-hidden{ opacity:0; transform:translateY(-12px); pointer-events:none; }
@@ -896,7 +896,7 @@ html.light .tt{
   display:flex; align-items:center; gap:.45rem; flex-shrink:0;
   padding:.55rem .9rem; border-radius:10px; border:1px solid var(--line2);
   background:rgba(255,255,255,.02); color:var(--dim); font-size:.8rem; font-weight:600;
-  transition:color .2s ease, border-color .2s ease, background .2s ease;
+  transition:color .2s cubic-bezier(0.22,1,0.36,1), border-color .2s cubic-bezier(0.22,1,0.36,1), background .2s cubic-bezier(0.22,1,0.36,1);
 }
 .tt-rail-btn:hover{ color:var(--text); border-color:var(--line2); }
 .tt-rail-btn.on{ background:linear-gradient(135deg,var(--teal),var(--blue)); border-color:transparent; color:#06110E; }

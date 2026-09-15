@@ -387,7 +387,7 @@ export default function Journey() {
         .eb-journey .btn{
           border:1px solid var(--line); background:transparent; color:var(--text);
           border-radius:10px; padding:.45rem .8rem; font-size:.8rem; font-weight:600;
-          transition:background .18s ease, border-color .18s ease;
+          transition:background .18s cubic-bezier(0.22,1,0.36,1), border-color .18s cubic-bezier(0.22,1,0.36,1);
         }
         .eb-journey .btn:hover{ background:var(--accent-soft); border-color:var(--accent); }
         .eb-journey .btn.primary{ background:var(--text); border-color:var(--text); color:var(--bg); }
@@ -405,7 +405,7 @@ export default function Journey() {
         .eb-journey .list{ max-height:56vh; overflow:auto; padding:.5rem; }
         .eb-journey .item{
           width:100%; text-align:left; border:1px solid transparent; background:transparent; color:inherit;
-          border-radius:12px; padding:.7rem .8rem; display:block; transition:background .18s ease;
+          border-radius:12px; padding:.7rem .8rem; display:block; transition:background .18s cubic-bezier(0.22,1,0.36,1);
         }
         .eb-journey .item:hover{ background:rgba(127,127,127,.08); }
         .eb-journey .item.active{ background:var(--accent-soft); border-color:var(--line); }
@@ -434,7 +434,7 @@ export default function Journey() {
         .eb-journey .gallery-item img{ width:100%; height:100%; object-fit:cover; }
         .eb-journey .gallery-remove{
           position:absolute; top:3px; right:3px; background:rgba(0,0,0,.6); border:none; border-radius:6px;
-          color:#fff; padding:2px; display:flex; opacity:0; transition:opacity .15s ease;
+          color:#fff; padding:2px; display:flex; opacity:0; transition:opacity .15s cubic-bezier(0.22,1,0.36,1);
         }
         .eb-journey .gallery-item:hover .gallery-remove{ opacity:1; }
         .eb-journey .add-photo{
@@ -476,7 +476,7 @@ export default function Journey() {
         .eb-journey .gallery-fs-caption{
           position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,.75), transparent);
           padding:.5rem .5rem .35rem; font-size:.64rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-          opacity:0; transition:opacity .15s ease; border:none; width:100%; text-align:left;
+          opacity:0; transition:opacity .15s cubic-bezier(0.22,1,0.36,1); border:none; width:100%; text-align:left;
         }
         .eb-journey .gallery-fs-item:hover .gallery-fs-caption{ opacity:1; }
         .eb-journey .select-check{

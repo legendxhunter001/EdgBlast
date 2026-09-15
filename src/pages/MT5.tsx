@@ -111,9 +111,15 @@ const MT5AccountPanel = () => {
           background:var(--mt5-card); border:1px solid var(--mt5-line); color:var(--mt5-text);
           border-radius:8px; padding:.4rem .6rem; font-size:.78rem; max-width:160px;
         }
-        .mt5-refresh{ background:var(--mt5-card); border:1px solid var(--mt5-line); border-radius:8px; padding:.4rem; color:var(--mt5-dim); }
+        .mt5-refresh{ background:var(--mt5-card); border:1px solid var(--mt5-line); border-radius:8px; padding:.4rem; color:var(--mt5-dim); transition:color .2s cubic-bezier(0.22,1,0.36,1), border-color .2s cubic-bezier(0.22,1,0.36,1), transform .15s cubic-bezier(0.22,1,0.36,1); }
+        .mt5-refresh:hover{ color:var(--mt5-blue); border-color:var(--mt5-blue); }
+        .mt5-refresh:active{ transform:scale(.92); }
         .mt5-balance-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:.6rem; margin-bottom:1rem; }
-        .mt5-balance-card{ background:var(--mt5-card); border:1px solid var(--mt5-line); border-radius:10px; padding:.7rem .8rem; }
+        .mt5-balance-card{
+          background:var(--mt5-card); border:1px solid var(--mt5-line); border-radius:10px; padding:.7rem .8rem;
+          transition:transform .2s cubic-bezier(0.22,1,0.36,1), border-color .2s cubic-bezier(0.22,1,0.36,1);
+        }
+        .mt5-balance-card:hover{ transform:translateY(-2px); border-color:var(--mt5-blue); }
         .mt5-balance-label{ font-size:.62rem; text-transform:uppercase; letter-spacing:.06em; color:var(--mt5-dim); font-weight:700; }
         .mt5-balance-value{ font-family:'IBM Plex Mono',monospace; font-size:1.05rem; font-weight:600; margin-top:.3rem; }
         .mt5-balance-value.pos{ color:var(--mt5-green); }
@@ -121,7 +127,9 @@ const MT5AccountPanel = () => {
         .mt5-section-label{ font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--mt5-dim); font-weight:700; margin:1rem 0 .5rem; }
         .mt5-pos-row{
           display:flex; align-items:center; gap:.7rem; padding:.65rem .1rem; border-bottom:1px solid var(--mt5-line); font-size:.82rem;
+          transition:background .18s cubic-bezier(0.22,1,0.36,1);
         }
+        .mt5-pos-row:hover{ background:rgba(255,255,255,.02); }
         .mt5-pos-symbol{ font-weight:700; min-width:64px; }
         .mt5-pos-side{ font-size:.62rem; font-weight:800; letter-spacing:.05em; padding:.15rem .4rem; border-radius:5px; }
         .mt5-pos-side.buy{ background:rgba(38,166,154,.18); color:var(--mt5-green); }
@@ -135,15 +143,20 @@ const MT5AccountPanel = () => {
         .mt5-field input, .mt5-field select{
           background:var(--mt5-card); border:1px solid var(--mt5-line); color:var(--mt5-text);
           border-radius:8px; padding:.5rem .6rem; font-size:.85rem; font-family:'IBM Plex Mono',monospace;
+          transition:border-color .2s cubic-bezier(0.22,1,0.36,1);
         }
+        .mt5-field input:focus, .mt5-field select:focus{ outline:none; border-color:var(--mt5-blue); }
         .mt5-side-toggle{ display:flex; border-radius:8px; overflow:hidden; border:1px solid var(--mt5-line); }
-        .mt5-side-toggle button{ flex:1; padding:.5rem; font-size:.8rem; font-weight:700; background:var(--mt5-card); color:var(--mt5-dim); border:none; }
+        .mt5-side-toggle button{ flex:1; padding:.5rem; font-size:.8rem; font-weight:700; background:var(--mt5-card); color:var(--mt5-dim); border:none; transition:background .2s cubic-bezier(0.22,1,0.36,1), color .2s cubic-bezier(0.22,1,0.36,1); }
         .mt5-side-toggle button.buy.on{ background:var(--mt5-green); color:#04120F; }
         .mt5-side-toggle button.sell.on{ background:var(--mt5-red); color:#1A0505; }
         .mt5-submit{
           width:100%; margin-top:.9rem; padding:.7rem; border-radius:10px; border:none; font-weight:700; font-size:.85rem;
           background:linear-gradient(135deg,var(--mt5-blue),#1E5FD8); color:#fff;
+          transition:transform .15s cubic-bezier(0.22,1,0.36,1), box-shadow .2s cubic-bezier(0.22,1,0.36,1), opacity .2s cubic-bezier(0.22,1,0.36,1);
         }
+        .mt5-submit:not(:disabled):hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(46,124,246,.28); }
+        .mt5-submit:not(:disabled):active{ transform:translateY(0) scale(.98); }
         .mt5-submit:disabled{ opacity:.4; }
         .mt5-review-backdrop{ position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; padding:1rem; }
         .mt5-review{ background:var(--mt5-card); border:1px solid var(--mt5-line); border-radius:14px; padding:1.2rem; max-width:320px; width:100%; }
