@@ -715,7 +715,7 @@ export default function TradingTools() {
 const styles = `
 .tt, .tt *{ box-sizing:border-box; }
 .tt{
-  --bg:#0A0A0C; --elev:#131316; --teal:#14C9AE; --blue:#3D6FE5; --rose:#C98A93;
+  --bg:#0A0A0C; --elev:#131316; --teal:#5F9095; --blue:#3D6FE5; --rose:#C98A93;
   --text:#F3F1EC; --dim:#9B9A97; --dim2:#66655F;
   --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.16);
   background:var(--bg); color:var(--text); min-height:100%;
@@ -723,7 +723,7 @@ const styles = `
   overflow-x:hidden;
 }
 html.light .tt{
-  --bg:#FAFAF9; --elev:#FFFFFF; --teal:#098070; --blue:#2F5FD1; --rose:#A85864;
+  --bg:#FAFAF9; --elev:#FFFFFF; --teal:#6E9AA0; --blue:#2F5FD1; --rose:#A85864;
   --text:#16161A; --dim:#6B6B72; --dim2:#8F8F96;
   --line:rgba(10,10,12,.08); --line2:rgba(10,10,12,.14);
 }
