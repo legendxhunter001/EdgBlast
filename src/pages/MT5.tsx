@@ -111,7 +111,11 @@ const MT5AccountPanel = () => {
           background:var(--mt5-card); border:1px solid var(--mt5-line); color:var(--mt5-text);
           border-radius:8px; padding:.4rem .6rem; font-size:.78rem; max-width:160px;
         }
-        .mt5-refresh{ background:var(--mt5-card); border:1px solid var(--mt5-line); border-radius:8px; padding:.4rem; color:var(--mt5-dim); transition:color .2s cubic-bezier(0.22,1,0.36,1), border-color .2s cubic-bezier(0.22,1,0.36,1), transform .15s cubic-bezier(0.22,1,0.36,1); }
+        .mt5-refresh{
+          width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+          background:var(--mt5-card); border:1px solid var(--mt5-line); border-radius:8px; color:var(--mt5-dim);
+          transition:color .2s cubic-bezier(0.22,1,0.36,1), border-color .2s cubic-bezier(0.22,1,0.36,1), transform .15s cubic-bezier(0.22,1,0.36,1);
+        }
         .mt5-refresh:hover{ color:var(--mt5-blue); border-color:var(--mt5-blue); }
         .mt5-refresh:active{ transform:scale(.92); }
         .mt5-balance-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:.6rem; margin-bottom:1rem; }
@@ -166,14 +170,14 @@ const MT5AccountPanel = () => {
       `}</style>
 
       <div className="mt5-head">
-        <div className="mt5-title"><LineChart size={15} color="var(--mt5-blue)" /> MT5 Account</div>
+        <div className="mt5-title"><LineChart size={16} color="var(--mt5-blue)" /> MT5 Account</div>
         <div style={{ display: 'flex', gap: '.4rem', alignItems: 'center' }}>
           <select className="mt5-select" value={connectionId} onChange={(e) => setConnectionId(e.target.value)}>
             {connected.length === 0 && <option value="">No connected account</option>}
             {connected.map((c: any) => <option key={c.id} value={c.id}>{c.label || c.account_number}</option>)}
           </select>
           <button className="mt5-refresh" onClick={load} disabled={loading} aria-label="Refresh">
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>

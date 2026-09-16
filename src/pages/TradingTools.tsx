@@ -452,7 +452,7 @@ const Watchlist = ({ activeSymbol, onSelect }: { activeSymbol: string; onSelect:
                 onClick={(e) => { e.stopPropagation(); remove(s); }}
                 aria-label={`Remove ${s} from watchlist`}
               >
-                <X size={13} />
+                <X size={14} />
               </span>
             </button>
           ))}
@@ -592,15 +592,15 @@ export default function TradingTools() {
         <div className="tt-rail-layout">
           <nav className="tt-rail">
             <button className={`tt-rail-btn ${section === 'tradingview' ? 'on' : ''}`} onClick={() => setSection('tradingview')} title="TradingView">
-              <CandlestickChart size={18} />
+              <CandlestickChart size={20} />
               <span>TradingView</span>
             </button>
             <button className={`tt-rail-btn ${section === 'calculator' ? 'on' : ''}`} onClick={() => setSection('calculator')} title="Lot Calculator">
-              <Calculator size={18} />
+              <Calculator size={20} />
               <span>Calculator</span>
             </button>
             <button className={`tt-rail-btn ${section === 'news' ? 'on' : ''}`} onClick={() => setSection('news')} title="News">
-              <Newspaper size={18} />
+              <Newspaper size={20} />
               <span>News</span>
             </button>
           </nav>
@@ -629,7 +629,7 @@ export default function TradingTools() {
                           aria-label="How to customize candle colors"
                           title="Candle colors can't be set from outside the chart on the free TradingView widget — open the chart's own settings (gear icon on desktop, or tap-hold a candle) to change them there. Your choice is remembered by TradingView."
                         >
-                          <Info size={15} />
+                          <Info size={16} />
                         </button>
                         <button
                           type="button"
@@ -638,7 +638,7 @@ export default function TradingTools() {
                           aria-label={chartTheme === 'dark' ? 'Switch to light chart' : 'Switch to dark chart'}
                           title="Chart theme is independent of your app theme"
                         >
-                          {chartTheme === 'dark' ? <Moon size={15} /> : <Sun size={15} />}
+                          {chartTheme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
                         </button>
                         <button
                           type="button"
@@ -647,7 +647,7 @@ export default function TradingTools() {
                           aria-label="Enter focus mode"
                           title="Distraction-free fullscreen chart"
                         >
-                          <Maximize2 size={15} />
+                          <Maximize2 size={16} />
                         </button>
                       </div>
                     </div>
@@ -662,7 +662,7 @@ export default function TradingTools() {
                     <div className={`tt-focus-bar ${focusBarVisible ? '' : 'tt-focus-bar-hidden'}`}>
                       <span className="mono">{chartSymbol}</span>
                       <button type="button" className="tt-icon-btn" onClick={() => setFocusMode(false)} aria-label="Exit focus mode" title="Exit focus (Esc)">
-                        <X size={15} />
+                        <X size={16} />
                       </button>
                     </div>
                     <div className="tt-focus-chart">
