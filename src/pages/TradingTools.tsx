@@ -788,7 +788,7 @@ html.light .tt{
 }
 .tt-chip-icon{ width:13px; height:13px; flex-shrink:0; }
 .tt-chip:hover{ color:var(--text); transform:translateY(-1px); }
-.tt-chip.on{ color:#06110E; background:linear-gradient(135deg,var(--teal),var(--blue)); border-color:transparent; font-weight:650; }
+.tt-chip.on{ background:linear-gradient(135deg,var(--teal),var(--blue)); border-color:transparent; font-weight:650; color:#fff; }
 
 .tt-chart{ height:clamp(360px, 58vh, 620px); border-radius:12px; overflow:hidden; border:1px solid var(--line); }
 .tt-cal{ height:clamp(360px, 55vh, 560px); border-radius:12px; overflow:hidden; border:1px solid var(--line); }
@@ -804,7 +804,7 @@ html.light .tt{
   padding:.6rem .7rem; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:.9rem;
   transition:border-color .2s cubic-bezier(0.22,1,0.36,1), background .2s cubic-bezier(0.22,1,0.36,1); width:100%; min-width:0;
 }
-.tt-field input:focus, .tt-field select:focus{ outline:none; border-color:var(--teal); background:rgba(20,201,174,.05); }
+.tt-field input:focus, .tt-field select:focus{ outline:none; border-color:var(--teal); background:rgba(95,144,149,.08); }
 .tt-field select{ font-family:'Inter',sans-serif; }
 .tt-field option{ background:#131316; }
 .tt-mini{
@@ -862,11 +862,11 @@ html.light .tt{
   display:flex; align-items:center; gap:.5rem; padding:.5rem .7rem; border-radius:8px;
   background:rgba(255,255,255,.02); border:1px solid var(--line); font-size:.82rem;
 }
-.tt-alert-row.triggered{ border-color:rgba(20,201,174,.35); background:rgba(20,201,174,.06); }
+.tt-alert-row.triggered{ border-color:rgba(95,144,149,.4); background:rgba(95,144,149,.1); }
 .tt-watchlist-row{ width:100%; text-align:left; cursor:pointer; font-family:inherit; }
 .tt-watchlist-row:hover{ border-color:var(--teal); }
 .tt-watchlist-live{ height:220px; border-radius:10px; overflow:hidden; border:1px solid var(--line); margin-top:.9rem; }
-.tt-alert-badge{ font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.15rem .4rem; border-radius:5px; background:rgba(20,201,174,.18); color:var(--teal); }
+.tt-alert-badge{ font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.15rem .4rem; border-radius:5px; background:rgba(95,144,149,.22); color:var(--teal); }
 .tt-alert-badge-mail{ width:13px; height:13px; opacity:.7; color:var(--dim); flex-shrink:0; }
 .tt-alert-remove{ margin-left:auto; background:none; border:none; color:var(--dim2); cursor:pointer; font-size:.85rem; padding:.2rem; }
 .tt-alert-remove:hover{ color:var(--rose); }
@@ -899,7 +899,7 @@ html.light .tt{
   transition:color .2s cubic-bezier(0.22,1,0.36,1), border-color .2s cubic-bezier(0.22,1,0.36,1), background .2s cubic-bezier(0.22,1,0.36,1);
 }
 .tt-rail-btn:hover{ color:var(--text); border-color:var(--line2); }
-.tt-rail-btn.on{ background:linear-gradient(135deg,var(--teal),var(--blue)); border-color:transparent; color:#06110E; }
+.tt-rail-btn.on{ background:linear-gradient(135deg,var(--teal),var(--blue)); border-color:transparent; color:#fff; }
 .tt-rail-btn span{ white-space:nowrap; }
 @media (min-width: 860px){
   .tt-rail-layout{ flex-direction:row; align-items:flex-start; }
