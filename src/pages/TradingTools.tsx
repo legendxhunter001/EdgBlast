@@ -592,15 +592,15 @@ export default function TradingTools() {
         <div className="tt-rail-layout">
           <nav className="tt-rail">
             <button className={`tt-rail-btn ${section === 'tradingview' ? 'on' : ''}`} onClick={() => setSection('tradingview')} title="TradingView">
-              <CandlestickChart size={20} />
+              <span className="tt-rail-icon"><CandlestickChart size={18} /></span>
               <span>TradingView</span>
             </button>
             <button className={`tt-rail-btn ${section === 'calculator' ? 'on' : ''}`} onClick={() => setSection('calculator')} title="Lot Calculator">
-              <Calculator size={20} />
+              <span className="tt-rail-icon"><Calculator size={18} /></span>
               <span>Calculator</span>
             </button>
             <button className={`tt-rail-btn ${section === 'news' ? 'on' : ''}`} onClick={() => setSection('news')} title="News">
-              <Newspaper size={20} />
+              <span className="tt-rail-icon"><Newspaper size={18} /></span>
               <span>News</span>
             </button>
           </nav>
@@ -747,7 +747,7 @@ html.light .tt{
 .tt-hint{ color:var(--dim2); font-size:.72rem; }
 .tt-head-right{ display:flex; align-items:center; gap:.6rem; }
 .tt-tag{
-  font-size:.6rem; letter-spacing:.12em; font-weight:800; padding:.2rem .42rem; border-radius:5px;
+  font-size:.6rem; letter-spacing:.12em; font-weight:800; padding:.2rem .42rem; border-radius:8px;
   background:rgba(61,111,229,.18); color:#94B0F5;
 }
 .tt-refresh{
@@ -800,7 +800,7 @@ html.light .tt{
 .tt-field{ display:flex; flex-direction:column; gap:.35rem; }
 .tt-field > span{ font-size:.7rem; letter-spacing:.09em; text-transform:uppercase; color:var(--dim2); font-weight:650; }
 .tt-field input, .tt-field select{
-  background:rgba(255,255,255,.03); border:1px solid var(--line2); border-radius:9px;
+  background:rgba(255,255,255,.03); border:1px solid var(--line2); border-radius:10px;
   padding:.6rem .7rem; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:.9rem;
   transition:border-color .2s cubic-bezier(0.22,1,0.36,1), background .2s cubic-bezier(0.22,1,0.36,1); width:100%; min-width:0;
 }
@@ -838,7 +838,7 @@ html.light .tt{
 .tt-table .dim{ color:var(--dim); }
 .tt-table .pos{ color:var(--teal); }
 .tt-table .neg{ color:var(--rose); }
-.tt-side{ font-size:.64rem; font-weight:750; letter-spacing:.08em; padding:.18rem .42rem; border-radius:5px; }
+.tt-side{ font-size:.64rem; font-weight:750; letter-spacing:.08em; padding:.18rem .42rem; border-radius:8px; }
 .tt-side.buy{ background:rgba(61,111,229,.16); color:#94B0F5; }
 .tt-side.sell{ background:rgba(201,138,147,.16); color:var(--rose); }
 .tt-total{ display:flex; justify-content:space-between; align-items:center; padding-top:.8rem; margin-top:.2rem; }
@@ -850,7 +850,7 @@ html.light .tt{
 .tt-alert-form{ display:grid; grid-template-columns:1.2fr 1.3fr 1fr auto; gap:.5rem; }
 @media (max-width:640px){ .tt-alert-form{ grid-template-columns:1fr 1fr; } }
 .tt-alert-input, .tt-alert-select{
-  background:rgba(255,255,255,.03); border:1px solid var(--line2); border-radius:9px;
+  background:rgba(255,255,255,.03); border:1px solid var(--line2); border-radius:10px;
   padding:.55rem .7rem; color:var(--text); font-size:.85rem; font-family:inherit;
   min-width:0; width:100%;
 }
@@ -866,7 +866,7 @@ html.light .tt{
 .tt-watchlist-row{ width:100%; text-align:left; cursor:pointer; font-family:inherit; }
 .tt-watchlist-row:hover{ border-color:var(--teal); }
 .tt-watchlist-live{ height:220px; border-radius:10px; overflow:hidden; border:1px solid var(--line); margin-top:.9rem; }
-.tt-alert-badge{ font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.15rem .4rem; border-radius:5px; background:rgba(95,144,149,.22); color:var(--teal); }
+.tt-alert-badge{ font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.15rem .4rem; border-radius:8px; background:rgba(95,144,149,.22); color:var(--teal); }
 .tt-alert-badge-mail{ width:13px; height:13px; opacity:.7; color:var(--dim); flex-shrink:0; }
 .tt-alert-remove{ margin-left:auto; background:none; border:none; color:var(--dim2); cursor:pointer; font-size:.85rem; padding:.2rem; }
 .tt-alert-remove:hover{ color:var(--rose); }
@@ -901,6 +901,13 @@ html.light .tt{
 .tt-rail-btn:hover{ color:var(--text); border-color:var(--line2); }
 .tt-rail-btn.on{ background:linear-gradient(135deg,var(--teal),var(--blue)); border-color:transparent; color:#fff; }
 .tt-rail-btn span{ white-space:nowrap; }
+.tt-rail-icon{
+  width:28px; height:28px; border-radius:8px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.06); color:var(--teal);
+  transition:background .2s cubic-bezier(0.22,1,0.36,1), color .2s cubic-bezier(0.22,1,0.36,1);
+}
+.tt-rail-btn.on .tt-rail-icon{ background:rgba(255,255,255,.22); color:#fff; }
 @media (min-width: 860px){
   .tt-rail-layout{ flex-direction:row; align-items:flex-start; }
   .tt-rail{ flex-direction:column; overflow-x:visible; width:170px; flex-shrink:0; position:sticky; top:1rem; }
