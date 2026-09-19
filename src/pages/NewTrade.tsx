@@ -11,6 +11,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { pipsBetween } from '@/lib/pips';
 
 const NewTrade = () => {
   const { user } = useAuth();
@@ -36,6 +37,10 @@ const NewTrade = () => {
   });
 
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const entryNum = Number(form.entry_price) || 0;
+  const stopPips = entryNum > 0 && form.stop_loss ? pipsBetween(entryNum, Number(form.stop_loss), form.asset) : null;
+  const targetPips = entryNum > 0 && form.take_profit ? pipsBetween(entryNum, Number(form.take_profit), form.asset) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,10 +143,12 @@ const NewTrade = () => {
             <div className="space-y-1.5">
               <Label>Stop loss</Label>
               <Input type="number" step="any" value={form.stop_loss} onChange={e => set('stop_loss', e.target.value)} />
+              {stopPips !== null && <p className="text-xs text-muted-foreground">{stopPips.toFixed(1)} pips from entry</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Take profit</Label>
               <Input type="number" step="any" value={form.take_profit} onChange={e => set('take_profit', e.target.value)} />
+              {targetPips !== null && <p className="text-xs text-muted-foreground">{targetPips.toFixed(1)} pips from entry</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Entry time</Label>

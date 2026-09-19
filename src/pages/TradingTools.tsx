@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
 import { functionErrorMessage } from '@/lib/functionError';
+import { getPipSize, getPipValue } from '@/lib/pips';
 import { toast } from 'sonner';
 import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell, Info, CandlestickChart, Calculator, Newspaper } from 'lucide-react';
 
@@ -51,18 +52,9 @@ const TVWidget = ({
 /* ---------------- Lot size calculator ---------------- */
 
 // Pip value per 1.00 standard lot, quoted in USD (approximate for USD-quoted pairs).
-const SYMBOLS: { symbol: string; pipValue: number; pipSize: number }[] = [
-  { symbol: 'EURUSD', pipValue: 10, pipSize: 0.0001 },
-  { symbol: 'GBPUSD', pipValue: 10, pipSize: 0.0001 },
-  { symbol: 'AUDUSD', pipValue: 10, pipSize: 0.0001 },
-  { symbol: 'NZDUSD', pipValue: 10, pipSize: 0.0001 },
-  { symbol: 'USDCAD', pipValue: 7.4, pipSize: 0.0001 },
-  { symbol: 'USDCHF', pipValue: 11.2, pipSize: 0.0001 },
-  { symbol: 'USDJPY', pipValue: 6.7, pipSize: 0.01 },
-  { symbol: 'EURJPY', pipValue: 6.7, pipSize: 0.01 },
-  { symbol: 'GBPJPY', pipValue: 6.7, pipSize: 0.01 },
-  { symbol: 'EURGBP', pipValue: 12.7, pipSize: 0.0001 },
-  { symbol: 'XAUUSD', pipValue: 10, pipSize: 0.1 },
+const COMMON_SYMBOLS = [
+  'EURUSD', 'GBPUSD', 'AUDUSD', 'NZDUSD', 'USDCAD', 'USDCHF',
+  'USDJPY', 'EURJPY', 'GBPJPY', 'EURGBP', 'XAUUSD',
 ];
 
 const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }) => {
@@ -73,8 +65,8 @@ const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }
   const [symbol, setSymbol] = useState('EURUSD');
   const [customPip, setCustomPip] = useState('');
 
-  const meta = SYMBOLS.find((s) => s.symbol === symbol)!;
-  const pipValue = customPip ? Number(customPip) : meta.pipValue;
+  const pipValue = customPip ? Number(customPip) : getPipValue(symbol);
+  const pipSize = getPipSize(symbol);
 
   const b = Number(balance) || 0;
   const r = Number(risk) || 0;
@@ -84,7 +76,7 @@ const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }
   // actual pip size (0.0001 for most FX pairs, 0.01 for JPY pairs, etc.) —
   // never a manual guess, which is exactly where decimal entries like
   // 1.80083 used to get miscalculated when only whole numbers "worked".
-  const slPips = entry > 0 && stop > 0 ? Math.abs(entry - stop) / meta.pipSize : 0;
+  const slPips = entry > 0 && stop > 0 ? Math.abs(entry - stop) / pipSize : 0;
 
   const riskAmount = (b * r) / 100;
   const lots = slPips > 0 && pipValue > 0 ? riskAmount / (slPips * pipValue) : 0;
@@ -115,9 +107,15 @@ const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }
 
         <label className="tt-field">
           <span>Symbol</span>
-          <select value={symbol} onChange={(e) => { setSymbol(e.target.value); setCustomPip(''); }}>
-            {SYMBOLS.map((s) => <option key={s.symbol} value={s.symbol}>{s.symbol}</option>)}
-          </select>
+          <input
+            list="lot-calc-symbols"
+            value={symbol}
+            placeholder="e.g. EURUSD, XAUUSD, US30"
+            onChange={(e) => { setSymbol(e.target.value.toUpperCase()); setCustomPip(''); }}
+          />
+          <datalist id="lot-calc-symbols">
+            {COMMON_SYMBOLS.map((s) => <option key={s} value={s} />)}
+          </datalist>
         </label>
 
         <label className="tt-field">
@@ -134,7 +132,7 @@ const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }
           <span>Pip value / lot (USD)</span>
           <input
             inputMode="decimal"
-            placeholder={String(meta.pipValue)}
+            placeholder={String(getPipValue(symbol))}
             value={customPip}
             onChange={(e) => setCustomPip(e.target.value.replace(/[^\d.]/g, ''))}
           />

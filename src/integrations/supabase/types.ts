@@ -52,11 +52,14 @@ export type Database = {
           active_persona: string
           coaching_frequency: string
           created_at: string
+          custom_instructions: string | null
           enabled: boolean
           id: string
           life_context: string | null
           persona_description: string
           persona_name: string
+          preferred_name: string | null
+          strategy_notes: string | null
           tone: string
           updated_at: string
           user_id: string
@@ -65,11 +68,14 @@ export type Database = {
           active_persona?: string
           coaching_frequency?: string
           created_at?: string
+          custom_instructions?: string | null
           enabled?: boolean
           id?: string
           life_context?: string | null
           persona_description?: string
           persona_name?: string
+          preferred_name?: string | null
+          strategy_notes?: string | null
           tone?: string
           updated_at?: string
           user_id: string
@@ -78,11 +84,14 @@ export type Database = {
           active_persona?: string
           coaching_frequency?: string
           created_at?: string
+          custom_instructions?: string | null
           enabled?: boolean
           id?: string
           life_context?: string | null
           persona_description?: string
           persona_name?: string
+          preferred_name?: string | null
+          strategy_notes?: string | null
           tone?: string
           updated_at?: string
           user_id?: string
@@ -584,24 +593,42 @@ export type Database = {
           color: string | null
           created_at: string
           description: string | null
+          entry_rules: string | null
+          exit_rules: string | null
           id: string
+          market: string | null
           name: string
+          risk_notes: string | null
+          session: string | null
+          timeframe: string | null
           user_id: string
         }
         Insert: {
           color?: string | null
           created_at?: string
           description?: string | null
+          entry_rules?: string | null
+          exit_rules?: string | null
           id?: string
+          market?: string | null
           name: string
+          risk_notes?: string | null
+          session?: string | null
+          timeframe?: string | null
           user_id: string
         }
         Update: {
           color?: string | null
           created_at?: string
           description?: string | null
+          entry_rules?: string | null
+          exit_rules?: string | null
           id?: string
+          market?: string | null
           name?: string
+          risk_notes?: string | null
+          session?: string | null
+          timeframe?: string | null
           user_id?: string
         }
         Relationships: []
