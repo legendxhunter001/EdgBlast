@@ -143,12 +143,10 @@ const NewTrade = () => {
             <div className="space-y-1.5">
               <Label>Stop loss</Label>
               <Input type="number" step="any" value={form.stop_loss} onChange={e => set('stop_loss', e.target.value)} />
-              {stopPips !== null && <p className="text-xs text-muted-foreground">{stopPips.toFixed(1)} pips from entry</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Take profit</Label>
               <Input type="number" step="any" value={form.take_profit} onChange={e => set('take_profit', e.target.value)} />
-              {targetPips !== null && <p className="text-xs text-muted-foreground">{targetPips.toFixed(1)} pips from entry</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Entry time</Label>
@@ -157,6 +155,17 @@ const NewTrade = () => {
             <div className="space-y-1.5">
               <Label>Exit time</Label>
               <Input type="datetime-local" value={form.exit_at} onChange={e => set('exit_at', e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Stop distance</div>
+              <div className="font-mono text-lg font-semibold mt-0.5">{stopPips !== null ? `${stopPips.toFixed(1)} pips` : '—'}</div>
+            </div>
+            <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Target distance</div>
+              <div className="font-mono text-lg font-semibold mt-0.5">{targetPips !== null ? `${targetPips.toFixed(1)} pips` : '—'}</div>
             </div>
           </div>
         </section>
