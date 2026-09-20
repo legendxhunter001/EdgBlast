@@ -11,7 +11,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { pipsBetween } from '@/lib/pips';
+import { pipsBetween, getPipValue } from '@/lib/pips';
 
 const NewTrade = () => {
   const { user } = useAuth();
@@ -39,8 +39,12 @@ const NewTrade = () => {
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const entryNum = Number(form.entry_price) || 0;
+  const sizeNum = Number(form.position_size) || 0;
   const stopPips = entryNum > 0 && form.stop_loss ? pipsBetween(entryNum, Number(form.stop_loss), form.asset) : null;
   const targetPips = entryNum > 0 && form.take_profit ? pipsBetween(entryNum, Number(form.take_profit), form.asset) : null;
+  const pipValue = form.asset ? getPipValue(form.asset) : 0;
+  const riskAmount = stopPips !== null && sizeNum > 0 ? stopPips * pipValue * sizeNum : null;
+  const potentialProfit = targetPips !== null && sizeNum > 0 ? targetPips * pipValue * sizeNum : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,10 +166,14 @@ const NewTrade = () => {
             <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Stop distance</div>
               <div className="font-mono text-lg font-semibold mt-0.5">{stopPips !== null ? `${stopPips.toFixed(1)} pips` : '—'}</div>
+              {riskAmount !== null && <div className="font-mono text-xs text-bear mt-0.5">-${riskAmount.toFixed(2)} risk</div>}
+              {stopPips !== null && riskAmount === null && <div className="text-xs text-muted-foreground mt-0.5">Add position size for $ risk</div>}
             </div>
             <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Target distance</div>
               <div className="font-mono text-lg font-semibold mt-0.5">{targetPips !== null ? `${targetPips.toFixed(1)} pips` : '—'}</div>
+              {potentialProfit !== null && <div className="font-mono text-xs text-bull mt-0.5">+${potentialProfit.toFixed(2)} profit</div>}
+              {targetPips !== null && potentialProfit === null && <div className="text-xs text-muted-foreground mt-0.5">Add position size for $ profit</div>}
             </div>
           </div>
         </section>
