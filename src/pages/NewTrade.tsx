@@ -63,7 +63,8 @@ const NewTrade = () => {
 
     if (entry !== null && exit !== null && size !== null) {
       const dir = form.direction === 'long' ? 1 : -1;
-      pnl = (exit - entry) * size * dir - fees;
+      const movedPips = pipsBetween(entry, exit, form.asset) * (exit >= entry ? 1 : -1);
+      pnl = movedPips * getPipValue(form.asset) * size * dir - fees;
       pnl_pct = ((exit - entry) / entry) * 100 * dir;
     }
     if (entry !== null && exit !== null && stop !== null) {
