@@ -7,6 +7,7 @@ export interface EvaluateResponse {
   evaluation_id: string; expires_at: string; verdict: Verdict; checks: CheckResult[];
   sizing: { lots: number; riskAmount: number; riskPct: number; stopDistance: number; potentialLoss: number; potentialProfit: number | null; rr: number | null } | null;
   daily: { limit: number; used: number; remaining: number }; weekly: { limit: number; used: number; remaining: number };
+  pending_rule_changes: { id: string; rule_table: string; changes: Record<string, unknown>; effective_at: string }[]; // loosened rules waiting out the 24h delay
 }
 export interface EvaluateRequest {
   account_id: string; symbol: string; direction: "LONG" | "SHORT"; entry: number; stop?: number | null; target?: number | null;

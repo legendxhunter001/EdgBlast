@@ -36,3 +36,8 @@ Deno.test("missing stop is blocked", () => {
   const r = evaluate({ ...trade, stop: null }, DEFAULT_RULES, strat, ctx, now);
   assertEquals(r.checks.find((c) => c.rule === "require_stop_loss")!.status, "BLOCKED");
 });
+Deno.test("brand-new strategy is blocked until active_from", () => {
+  const fresh = { ...strat, active_from: new Date(now.getTime() + 3_600_000).toISOString() };
+  const r = evaluate(trade, DEFAULT_RULES, fresh, ctx, now);
+  assertEquals(r.checks.find((c) => c.rule === "strategy_active")!.status, "BLOCKED");
+});

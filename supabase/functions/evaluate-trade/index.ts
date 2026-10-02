@@ -51,6 +51,9 @@ Deno.serve(async (req) => {
   const { data: acct } = await db.from("trading_accounts").select("id,balance,equity").eq("id", inp.account_id).eq("user_id", user.id).maybeSingle();
   if (!acct) return json({ error: "account_not_found" }, 404);
 
+  // ── Apply any loosened rules whose 24h delay has passed (DB triggers queue loosening; tightening is instant)
+  await db.rpc("apply_due_rule_changes", { p_user: user.id });
+
   // ── Rules (account-specific row beats the default row, else conservative defaults)
   const { data: ruleRows } = await db.from("risk_rules").select("*").eq("user_id", user.id).or(`account_id.eq.${inp.account_id},account_id.is.null`);
   const row = ruleRows?.find((r) => r.account_id === inp.account_id) ?? ruleRows?.find((r) => r.account_id === null);
@@ -117,5 +120,8 @@ Deno.serve(async (req) => {
       detail: { evaluation_id: ev?.id, failed: result.checks.filter((c) => c.status !== "PASS").map((c) => c.rule) },
     });
 
-  return json({ evaluation_id: ev?.id, expires_at: ev?.expires_at, ...result });
+  const { data: pending } = await db.from("risk_rule_changes").select("id,rule_table,changes,effective_at").eq("user_id", user.id)
+    .is("applied_at", null).is("cancelled_at", null).order("effective_at");
+
+  return json({ evaluation_id: ev?.id, expires_at: ev?.expires_at, ...result, pending_rule_changes: pending ?? [] });
 });

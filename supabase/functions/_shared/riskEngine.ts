@@ -35,6 +35,7 @@ export interface StrategyRules {
   allowed_timeframes: string[] | null;
   required_confirmations: string[];
   require_screenshot: boolean;
+  active_from?: string | null; // new strategies can't be traded until this time
 }
 
 export interface TradeInput {
@@ -284,6 +285,8 @@ export function evaluate(
     add("strategy_rules", "BLOCKED", input.strategyId, "defined", "Strategy not found or has no rules defined.");
   } else if (!strategy.enabled) {
     add("strategy_enabled", "BLOCKED", strategy.name, "enabled", "This strategy is disabled.");
+  } else if (strategy.active_from && new Date(strategy.active_from) > now) {
+    add("strategy_active", "BLOCKED", strategy.name, "active", "New strategies unlock 24h after creation. No same-day rule-free strategies.", new Date(strategy.active_from).toISOString());
   } else {
     const sev: Verdict = strategy.enforcement === "block" ? "BLOCKED" : "WARNING";
     const sr = (rule: string, bad: boolean, current: CheckResult["current"], allowed: CheckResult["allowed"], msg: string) =>
