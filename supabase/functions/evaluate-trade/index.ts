@@ -26,7 +26,7 @@ const Input = z.object({
   timeframe: z.string().max(8).optional(),
   confirmations: z.array(z.string().max(60)).max(20).default([]),
   has_screenshot: z.boolean().default(false),
-  quote_to_account_rate: z.number().positive().default(1),
+  quote_to_account_rate: z.number().positive().optional(),
 }).refine((v) => v.risk_pct != null || v.lots != null, { message: "Provide risk_pct or lots" });
 
 Deno.serve(async (req) => {

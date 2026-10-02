@@ -1,5 +1,6 @@
 // Pure, deterministic risk + rule engine. No I/O, no AI. Same input => same verdict.
 // AI never overrides this. Edge Function loads data, calls evaluate(), stores the result.
+import { instrumentSpec } from "./instruments.ts";
 
 export type Verdict = "PASS" | "WARNING" | "BLOCKED";
 
@@ -50,7 +51,7 @@ export interface TradeInput {
   timeframe?: string;
   confirmations: string[];
   hasScreenshot: boolean;
-  quoteToAccountRate: number; // only trusted for non-USD quotes (see fx_conversion warning)
+  quoteToAccountRate?: number; // only used for FX crosses missing from the static table (flagged as unverified)
 }
 
 export interface AccountContext {
@@ -133,20 +134,6 @@ export function currentSessions(now: Date): string[] {
   return s;
 }
 
-// ───────── symbol specs ─────────
-const CCY = new Set(["USD", "EUR", "GBP", "JPY", "AUD", "NZD", "CAD", "CHF"]);
-export interface SymbolSpec { contractSize: number; lotStep: number; minLot: number; maxLot: number; quote: string }
-export function specFor(symbol: string): SymbolSpec | null {
-  const m = symbol.toUpperCase().match(/^([A-Z]{6})/);
-  if (!m) return null;
-  const base = m[1].slice(0, 3), quote = m[1].slice(3);
-  if ((base === "XAU" || base === "XAG") && quote === "USD")
-    return { contractSize: base === "XAU" ? 100 : 5000, lotStep: 0.01, minLot: 0.01, maxLot: 100, quote };
-  if (CCY.has(base) && CCY.has(quote))
-    return { contractSize: 100_000, lotStep: 0.01, minLot: 0.01, maxLot: 100, quote };
-  return null; // unsupported => blocked rather than mis-sized
-}
-
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, "_");
 const inList = (list: string[] | null | undefined, v: string) => !list || list.length === 0 || list.map(norm).includes(norm(v));
@@ -171,8 +158,8 @@ export function evaluate(
     add("trading_lock", "BLOCKED", ctx.activeLock.reason, "unlocked", `Trading is locked: ${ctx.activeLock.reason}.`, ctx.activeLock.until.toISOString());
 
   // ── 2. Symbol + structure
-  const spec = specFor(input.symbol);
-  if (!spec) add("symbol_supported", "BLOCKED", input.symbol, "FX majors/crosses, XAUUSD, XAGUSD", "Symbol not supported by the risk engine yet.");
+  const { spec, reason: specReason } = instrumentSpec(input.symbol, input.quoteToAccountRate);
+  if (!spec) add("symbol_supported", "BLOCKED", input.symbol, "supported instruments", specReason ?? "Symbol not supported by the risk engine yet.");
   if (!inList(rules.allowed_symbols, input.symbol))
     add("allowed_symbols", "BLOCKED", input.symbol, rules.allowed_symbols!.join(", "), "Symbol is not in your allowed list.");
 
@@ -189,18 +176,18 @@ export function evaluate(
   // ── 3. Sizing (needs valid stop + spec)
   let sizing: Sizing | null = null;
   if (spec && stopOk) {
-    const rate = spec.quote === "USD" ? 1 : input.quoteToAccountRate;
-    if (spec.quote !== "USD") add("fx_conversion", "WARNING", rate, "bridge-verified", "Non-USD quote: conversion rate came from the client. Use the MT5 bridge rate once connected.");
     const stopDistance = Math.abs(input.entry - input.stop!);
-    const perLotLoss = stopDistance * spec.contractSize * rate;
+    const perLotLoss = (stopDistance / spec.pipSize) * spec.pipValue * spec.riskBuffer; // padded when pip value is approximate
     let lots = input.lots ?? 0;
     if (input.lots == null && input.riskPct != null) {
       const target = (ctx.equity * input.riskPct) / 100;
-      lots = Math.floor(target / perLotLoss / spec.lotStep) * spec.lotStep;
+      lots = Math.floor(target / perLotLoss / spec.lotStep + 1e-9) * spec.lotStep;
       lots = Math.round(lots / spec.lotStep) * spec.lotStep;
     }
+    if (spec.warn) add("instrument_spec", "WARNING", spec.assetClass, "bridge-verified", spec.note ?? "Contract specs are approximate.");
+    else if (spec.note) add("instrument_spec", "PASS", spec.assetClass, "bridge-verified", spec.note);
     if (lots < spec.minLot) {
-      add("position_size", "BLOCKED", r2(lots), `>= ${spec.minLot}`, "Risk is too small for the minimum lot at this stop distance. Widen risk or tighten the stop.");
+      add("position_size", "BLOCKED", r2(lots), `>= ${spec.minLot}`, "Risk is too small for the minimum size at this stop distance. Widen risk or tighten the stop.");
     } else {
       const riskAmount = lots * perLotLoss;
       const rr = targetOk ? Math.abs(input.target! - input.entry) / stopDistance : null;
@@ -214,7 +201,7 @@ export function evaluate(
         rr: rr == null ? null : r2(rr),
       };
     }
-    if (lots > spec.maxLot) add("broker_max_lot", "BLOCKED", lots, spec.maxLot, "Exceeds max lot size.");
+    if (lots > spec.maxLot) add("broker_max_lot", "BLOCKED", lots, spec.maxLot, "Exceeds max size.");
   }
 
   // ── 4. Risk per trade (account + strategy cap, strictest wins)
