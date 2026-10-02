@@ -70,3 +70,13 @@ Deno.test("FX cross with client rate is allowed but flagged", () => {
   const r = evaluate({ ...trade, symbol: "EURAUD", quoteToAccountRate: 0.65 }, DEFAULT_RULES, strat, ctx, now);
   assertEquals(r.checks.find((c) => c.rule === "instrument_spec")!.status, "WARNING");
 });
+Deno.test("open floating loss counts toward the daily budget", () => {
+  // 3% of 10k = 300 budget. Floating -250 + this trade's 60 risk = 310 > 300 => BLOCKED
+  const r = evaluate(trade, DEFAULT_RULES, strat, { ...ctx, floatingPnl: -250 }, now);
+  assertEquals(r.checks.find((c) => c.rule === "max_daily_loss")!.status, "BLOCKED");
+  assertEquals(evaluate(trade, DEFAULT_RULES, strat, { ...ctx, floatingPnl: 100 }, now).checks.find((c) => c.rule === "max_daily_loss")!.status, "PASS");
+});
+Deno.test("non-USD account is blocked", () => {
+  const r = evaluate(trade, DEFAULT_RULES, strat, { ...ctx, currency: "EUR" }, now);
+  assertEquals(r.checks.find((c) => c.rule === "account_currency")!.status, "BLOCKED");
+});

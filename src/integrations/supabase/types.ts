@@ -7,6 +7,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -588,6 +590,177 @@ export type Database = {
         }
         Relationships: []
       }
+      risk_audit_log: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          detail: Json
+          event: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          detail?: Json
+          event: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          detail?: Json
+          event?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      risk_rule_changes: {
+        Row: {
+          applied_at: string | null
+          cancelled_at: string | null
+          changes: Json
+          effective_at: string
+          id: string
+          requested_at: string
+          rule_id: string
+          rule_table: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          cancelled_at?: string | null
+          changes: Json
+          effective_at: string
+          id?: string
+          requested_at?: string
+          rule_id: string
+          rule_table: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          cancelled_at?: string | null
+          changes?: Json
+          effective_at?: string
+          id?: string
+          requested_at?: string
+          rule_id?: string
+          rule_table?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      risk_rules: {
+        Row: {
+          account_id: string | null
+          allowed_sessions: string[] | null
+          allowed_strategy_ids: string[] | null
+          allowed_symbols: string[] | null
+          cooldown_losses: number | null
+          cooldown_minutes: number | null
+          created_at: string
+          day_reset_offset_minutes: number
+          id: string
+          max_daily_loss_pct: number
+          max_lot_size: number | null
+          max_open_positions: number | null
+          max_risk_per_trade_pct: number
+          max_trades_per_day: number | null
+          max_weekly_loss_pct: number
+          min_rr: number
+          require_stop_loss: boolean
+          require_strategy: boolean
+          updated_at: string
+          user_id: string
+          warn_at_pct: number
+        }
+        Insert: {
+          account_id?: string | null
+          allowed_sessions?: string[] | null
+          allowed_strategy_ids?: string[] | null
+          allowed_symbols?: string[] | null
+          cooldown_losses?: number | null
+          cooldown_minutes?: number | null
+          created_at?: string
+          day_reset_offset_minutes?: number
+          id?: string
+          max_daily_loss_pct?: number
+          max_lot_size?: number | null
+          max_open_positions?: number | null
+          max_risk_per_trade_pct?: number
+          max_trades_per_day?: number | null
+          max_weekly_loss_pct?: number
+          min_rr?: number
+          require_stop_loss?: boolean
+          require_strategy?: boolean
+          updated_at?: string
+          user_id: string
+          warn_at_pct?: number
+        }
+        Update: {
+          account_id?: string | null
+          allowed_sessions?: string[] | null
+          allowed_strategy_ids?: string[] | null
+          allowed_symbols?: string[] | null
+          cooldown_losses?: number | null
+          cooldown_minutes?: number | null
+          created_at?: string
+          day_reset_offset_minutes?: number
+          id?: string
+          max_daily_loss_pct?: number
+          max_lot_size?: number | null
+          max_open_positions?: number | null
+          max_risk_per_trade_pct?: number
+          max_trades_per_day?: number | null
+          max_weekly_loss_pct?: number
+          min_rr?: number
+          require_stop_loss?: boolean
+          require_strategy?: boolean
+          updated_at?: string
+          user_id?: string
+          warn_at_pct?: number
+        }
+        Relationships: []
+      }
+      rule_evaluations: {
+        Row: {
+          account_id: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          input: Json
+          result: Json
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          account_id: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          input: Json
+          result: Json
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          account_id?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          input?: Json
+          result?: Json
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
       strategies: {
         Row: {
           color: string | null
@@ -632,6 +805,74 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      strategy_rules: {
+        Row: {
+          active_from: string
+          allowed_sessions: string[] | null
+          allowed_symbols: string[] | null
+          allowed_timeframes: string[] | null
+          created_at: string
+          enabled: boolean
+          enforcement: string
+          id: string
+          max_risk_pct: number | null
+          max_trades_per_day: number | null
+          min_rr: number | null
+          name: string
+          require_screenshot: boolean
+          required_confirmations: string[]
+          strategy_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_from?: string
+          allowed_sessions?: string[] | null
+          allowed_symbols?: string[] | null
+          allowed_timeframes?: string[] | null
+          created_at?: string
+          enabled?: boolean
+          enforcement?: string
+          id?: string
+          max_risk_pct?: number | null
+          max_trades_per_day?: number | null
+          min_rr?: number | null
+          name: string
+          require_screenshot?: boolean
+          required_confirmations?: string[]
+          strategy_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_from?: string
+          allowed_sessions?: string[] | null
+          allowed_symbols?: string[] | null
+          allowed_timeframes?: string[] | null
+          created_at?: string
+          enabled?: boolean
+          enforcement?: string
+          id?: string
+          max_risk_pct?: number | null
+          max_trades_per_day?: number | null
+          min_rr?: number | null
+          name?: string
+          require_screenshot?: boolean
+          required_confirmations?: string[]
+          strategy_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_rules_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "strategies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {
@@ -870,6 +1111,36 @@ export type Database = {
           },
         ]
       }
+      trading_locks: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          id: string
+          reason: string
+          released_at: string | null
+          until: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          released_at?: string | null
+          until: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          released_at?: string | null
+          until?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trading_rules: {
         Row: {
           confirmation_tf: string | null
@@ -947,7 +1218,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      _looser_list: { Args: { n: string[]; o: string[] }; Returns: boolean }
+      _looser_max: { Args: { n: number; o: number }; Returns: boolean }
+      _looser_min: { Args: { n: number; o: number }; Returns: boolean }
+      _queue_loosening: {
+        Args: {
+          ignore: string[]
+          loosened: string[]
+          n: Json
+          o: Json
+          p_id: string
+          p_table: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      _removed_any: { Args: { n: string[]; o: string[] }; Returns: boolean }
+      _risk_loosened: {
+        Args: {
+          n: Database["public"]["Tables"]["risk_rules"]["Row"]
+          o: Database["public"]["Tables"]["risk_rules"]["Row"]
+        }
+        Returns: string[]
+      }
+      _strategy_loosened: {
+        Args: {
+          n: Database["public"]["Tables"]["strategy_rules"]["Row"]
+          o: Database["public"]["Tables"]["strategy_rules"]["Row"]
+        }
+        Returns: string[]
+      }
+      apply_due_rule_changes: { Args: { p_user?: string }; Returns: number }
+      cancel_rule_change: { Args: { p_id: string }; Returns: undefined }
+      consume_evaluation: {
+        Args: { p_id: string; p_user: string }
+        Returns: Json
+      }
+      rule_change_delay: { Args: never; Returns: string }
     }
     Enums: {
       emotional_state:
@@ -978,12 +1285,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1007,11 +1314,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1032,11 +1339,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1057,11 +1364,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1074,11 +1381,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

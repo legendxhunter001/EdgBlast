@@ -65,6 +65,8 @@ export interface AccountContext {
   consecutiveLosses: number;
   lastLossAt: Date | null;
   activeLock: { reason: string; until: Date } | null;
+  floatingPnl?: number; // open-position P/L; prop firms count it toward daily loss
+  currency?: string;    // account currency; engine sizes in USD only for now
 }
 
 export interface CheckResult {
@@ -157,6 +159,9 @@ export function evaluate(
   if (ctx.activeLock && ctx.activeLock.until > now)
     add("trading_lock", "BLOCKED", ctx.activeLock.reason, "unlocked", `Trading is locked: ${ctx.activeLock.reason}.`, ctx.activeLock.until.toISOString());
 
+  if (ctx.currency && ctx.currency.toUpperCase() !== "USD")
+    add("account_currency", "BLOCKED", ctx.currency, "USD", "Risk sizing supports USD accounts only for now.");
+
   // ── 2. Symbol + structure
   const { spec, reason: specReason } = instrumentSpec(input.symbol, input.quoteToAccountRate);
   if (!spec) add("symbol_supported", "BLOCKED", input.symbol, "supported instruments", specReason ?? "Symbol not supported by the risk engine yet.");
@@ -219,8 +224,9 @@ export function evaluate(
   const weekBase = ctx.balance - ctx.weekPnl;
   const dailyLimit = (dayBase * rules.max_daily_loss_pct) / 100;
   const weeklyLimit = (weekBase * rules.max_weekly_loss_pct) / 100;
-  const dailyUsed = Math.max(0, -ctx.todayPnl);
-  const weeklyUsed = Math.max(0, -ctx.weekPnl);
+  const floating = ctx.floatingPnl ?? 0; // an open loser eats the daily budget before it closes
+  const dailyUsed = Math.max(0, -(ctx.todayPnl + floating));
+  const weeklyUsed = Math.max(0, -(ctx.weekPnl + floating));
 
   const budget = (rule: string, label: string, used: number, limit: number, until: Date) => {
     const risk = sizing?.riskAmount ?? 0;

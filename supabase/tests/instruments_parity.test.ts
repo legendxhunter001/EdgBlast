@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import { getPipSize, getPipValue } from "../../src/lib/pips.ts";
-import { instrumentSpec } from "../functions/_shared/instruments.ts";
+import { instrumentSpec } from "../functions/evaluate-trade/_shared/instruments.ts";
 
 const SYMBOLS = [
   "EURUSD", "GBPUSD", "AUDUSD", "NZDUSD", "USDCAD", "USDCHF", "USDJPY", "EURJPY", "GBPJPY", "AUDJPY", "EURGBP",
