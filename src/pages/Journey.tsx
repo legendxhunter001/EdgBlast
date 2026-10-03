@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
   Image as ImageIcon, Images, X, Search, Loader2, Upload,
-  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus,
+  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 type Entry = {
@@ -100,7 +100,60 @@ export default function Journey() {
   const [images, setImages] = useState<JournalImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadAlbum, setUploadAlbum] = useState("entry");
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ items: { url: string; title?: string; sub?: string }[]; index: number } | null>(null);
+  const [chromeHidden, setChromeHidden] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
+  const viewerTrack = useRef<HTMLDivElement>(null);
+  const viewerThumbs = useRef<HTMLDivElement>(null);
+  const tapTimer = useRef<number | undefined>(undefined);
+  const openViewer = (items: { url: string; title?: string; sub?: string }[], index: number) => {
+    setChromeHidden(false); setZoomed(false); setViewer({ items, index });
+  };
+  const closeViewer = () => setViewer(null);
+  const goTo = (i: number) => {
+    const el = viewerTrack.current;
+    if (!el || !viewer) return;
+    const n = Math.max(0, Math.min(viewer.items.length - 1, i));
+    setZoomed(false);
+    el.scrollTo({ left: n * el.clientWidth, behavior: "smooth" });
+  };
+  const onViewerScroll = () => {
+    const el = viewerTrack.current;
+    if (!el || !viewer) return;
+    const i = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+    if (i !== viewer.index) { setViewer((v) => (v ? { ...v, index: i } : v)); setZoomed(false); }
+  };
+  const onSlideTap = () => {
+    if (tapTimer.current) {            // second tap within the window = zoom toggle
+      window.clearTimeout(tapTimer.current); tapTimer.current = undefined; setZoomed((z) => !z); return;
+    }
+    tapTimer.current = window.setTimeout(() => { tapTimer.current = undefined; setChromeHidden((h) => !h); }, 240);
+  };
+  // jump to the tapped photo when the viewer opens
+  const viewerOpen = viewer !== null;
+  useLayoutEffect(() => {
+    const el = viewerTrack.current;
+    if (el && viewer) el.scrollTo({ left: viewer.index * el.clientWidth });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewerOpen]);
+  // keep the active thumbnail centered in the filmstrip
+  useEffect(() => {
+    const c = viewerThumbs.current;
+    if (!c || !viewer) return;
+    const t = c.children[viewer.index] as HTMLElement | undefined;
+    if (t) c.scrollTo({ left: t.offsetLeft - (c.clientWidth - t.offsetWidth) / 2, behavior: "smooth" });
+  }, [viewer?.index, viewerOpen]);
+  useEffect(() => {
+    if (!viewerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeViewer();
+      if (e.key === "ArrowLeft") goTo((viewer?.index ?? 0) - 1);
+      if (e.key === "ArrowRight") goTo((viewer?.index ?? 0) + 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewerOpen, viewer?.index]);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dirty = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -586,7 +639,35 @@ export default function Journey() {
           .eb-journey .folder-grid{ grid-template-columns:1fr 1fr; gap:12px; }
           .eb-journey .gallery-fs-title{ font-size:1.5rem; font-weight:800; letter-spacing:-.03em; }
         }
-      `}</style>
+      
+        /* ---- iOS Photos-style viewer: swipe left/right, filmstrip, tap to hide chrome, double-tap zoom ---- */
+        .eb-journey .photo-viewer{ position:fixed; inset:0; z-index:300; background:#000; color:#fff; display:flex; flex-direction:column; animation:pvIn .28s cubic-bezier(.2,.8,.2,1); }
+        @keyframes pvIn{ from{ opacity:0; transform:scale(.98); } }
+        .eb-journey .pv-top{ position:absolute; top:0; left:0; right:0; z-index:5; display:flex; align-items:center; gap:10px; padding:calc(10px + env(safe-area-inset-top,0px)) 14px 12px; background:linear-gradient(to bottom, rgba(0,0,0,.65), transparent); transition:opacity .25s, transform .25s; }
+        .eb-journey .pv-done{ border:0; background:rgba(255,255,255,.18); color:#fff; font:600 .95rem inherit; padding:.45rem .95rem; border-radius:999px; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); cursor:pointer; min-height:36px; }
+        .eb-journey .pv-title{ flex:1; text-align:center; display:flex; flex-direction:column; min-width:0; }
+        .eb-journey .pv-title b{ font-size:.95rem; font-weight:700; }
+        .eb-journey .pv-title span{ font-size:.74rem; color:rgba(255,255,255,.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .eb-journey .pv-spacer{ width:64px; }
+        .eb-journey .pv-track{ flex:1; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; overscroll-behavior-x:contain; }
+        .eb-journey .pv-track::-webkit-scrollbar{ display:none; }
+        .eb-journey .pv-slide{ flex:0 0 100%; width:100%; height:100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; align-items:center; justify-content:center; padding:0; overflow:hidden; }
+        .eb-journey .pv-slide img{ max-width:100%; max-height:100%; object-fit:contain; user-select:none; -webkit-user-select:none; transition:transform .3s cubic-bezier(.2,.8,.2,1); }
+        .eb-journey .pv-slide.zoomed{ overflow:auto; align-items:flex-start; justify-content:flex-start; touch-action:pan-x pan-y; }
+        .eb-journey .pv-slide.zoomed img{ max-width:none; max-height:none; width:230%; height:auto; }
+        .eb-journey .pv-nav{ position:absolute; top:50%; transform:translateY(-50%); z-index:5; width:42px; height:42px; border-radius:50%; border:0; background:rgba(255,255,255,.16); color:#fff; display:none; place-items:center; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); cursor:pointer; transition:opacity .25s; }
+        .eb-journey .pv-nav.prev{ left:14px; } .eb-journey .pv-nav.next{ right:14px; }
+        .eb-journey .pv-nav:disabled{ opacity:.25; cursor:default; }
+        @media (min-width:768px){ .eb-journey .pv-nav{ display:grid; } }
+        .eb-journey .pv-strip{ display:flex; gap:6px; overflow-x:auto; padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px)); background:linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,.35)); scrollbar-width:none; align-items:center; transition:opacity .25s, transform .25s; -webkit-overflow-scrolling:touch; }
+        .eb-journey .pv-strip::-webkit-scrollbar{ display:none; }
+        .eb-journey .pv-thumb{ flex:0 0 auto; width:38px; height:52px; border:0; padding:0; border-radius:7px; overflow:hidden; opacity:.55; cursor:pointer; background:#222; transition:width .3s cubic-bezier(.2,.8,.2,1), opacity .25s, box-shadow .25s; }
+        .eb-journey .pv-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+        .eb-journey .pv-thumb.on{ width:56px; opacity:1; box-shadow:0 0 0 2px #fff; }
+        .eb-journey .photo-viewer.chrome-off .pv-top{ opacity:0; transform:translateY(-12px); pointer-events:none; }
+        .eb-journey .photo-viewer.chrome-off .pv-strip{ opacity:0; transform:translateY(12px); pointer-events:none; }
+        .eb-journey .photo-viewer.chrome-off .pv-nav{ opacity:0; pointer-events:none; }
+`}</style>
 
       <div className="inner">
         <h1>Journey</h1>
@@ -659,8 +740,8 @@ export default function Journey() {
                     </select>
                   </div>
                   <div className="gallery-grid">
-                    {images.map((img) => (
-                      <div key={img.id} className="gallery-item" onClick={() => setLightbox(img.url)}>
+                    {images.map((img, idx) => (
+                      <div key={img.id} className="gallery-item" onClick={() => openViewer(images.map((x) => ({ url: x.url, title: active?.title || "Entry", sub: labelFor(x.album) })), idx)}>
                         <img src={img.url} alt="" loading="lazy" />
                         <button className="gallery-remove" onClick={(e) => { e.stopPropagation(); removeImage(img); }} aria-label="Remove image">
                           <X size={11} />
@@ -699,12 +780,39 @@ export default function Journey() {
         </div>
       </div>
 
-      {lightbox && (
-        <div className="lightbox" onClick={() => setLightbox(null)}>
-          <button className="lightbox-close" onClick={() => setLightbox(null)} aria-label="Close">
-            <X size={18} />
-          </button>
-          <img src={lightbox} alt="" onClick={(e) => e.stopPropagation()} />
+      {viewer && (
+        <div className={`photo-viewer ${chromeHidden ? "chrome-off" : ""}`} role="dialog" aria-modal="true" aria-label="Photo viewer">
+          <div className="pv-top">
+            <button className="pv-done" onClick={closeViewer}>Done</button>
+            <div className="pv-title">
+              <b>{viewer.index + 1} of {viewer.items.length}</b>
+              <span>{viewer.items[viewer.index]?.sub ? `${viewer.items[viewer.index]?.sub} · ` : ""}{viewer.items[viewer.index]?.title ?? ""}</span>
+            </div>
+            <span className="pv-spacer" />
+          </div>
+
+          <div className="pv-track" ref={viewerTrack} onScroll={onViewerScroll}>
+            {viewer.items.map((it, i) => (
+              <div key={`${it.url}-${i}`} className={`pv-slide ${zoomed && i === viewer.index ? "zoomed" : ""}`} onClick={onSlideTap}>
+                <img src={it.url} alt="" draggable={false} />
+              </div>
+            ))}
+          </div>
+
+          {viewer.items.length > 1 && (
+            <>
+              <button className="pv-nav prev" onClick={() => goTo(viewer.index - 1)} disabled={viewer.index === 0} aria-label="Previous photo"><ChevronLeft size={22} /></button>
+              <button className="pv-nav next" onClick={() => goTo(viewer.index + 1)} disabled={viewer.index === viewer.items.length - 1} aria-label="Next photo"><ChevronRight size={22} /></button>
+            </>
+          )}
+
+          <div className="pv-strip" ref={viewerThumbs}>
+            {viewer.items.map((it, i) => (
+              <button key={`${it.url}-t${i}`} className={`pv-thumb ${i === viewer.index ? "on" : ""}`} onClick={() => goTo(i)} aria-label={`Photo ${i + 1}`}>
+                <img src={it.url} alt="" loading="lazy" draggable={false} />
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -772,13 +880,13 @@ export default function Journey() {
               <div className="empty">No photos in this album yet.</div>
             ) : (
               <div className="gallery-fs-grid" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${tilePx}px, 1fr))` }}>
-                {visibleGalleryImages.map((img) => {
+                {visibleGalleryImages.map((img, idx) => {
                   const isSelected = selectedIds.has(img.id);
                   return (
                     <div
                       key={img.id}
                       className={`gallery-fs-item ${isSelected ? "selected" : ""}`}
-                      onClick={() => (selectMode ? toggleSelect(img.id) : setLightbox(img.url))}
+                      onClick={() => (selectMode ? toggleSelect(img.id) : openViewer(visibleGalleryImages.map((x) => ({ url: x.url, title: x.entryTitle, sub: labelFor(x.album) })), idx))}
                     >
                       {selectMode && (
                         <div className={`select-check ${isSelected ? "on" : ""}`}>
