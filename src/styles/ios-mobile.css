@@ -128,8 +128,8 @@
   a[aria-label="New trade"]{bottom:calc(env(safe-area-inset-bottom,0px) + 94px)!important}
 
   /* ===== HabitFlow-style clean surfaces (phones only) ===== */
-  :root,.light{--ios-sh:0 1px 2px rgba(20,20,40,.04),0 8px 24px rgba(20,20,40,.06)}
-  .dark{--ios-sh:0 0 0 transparent}
+  :root,.light{--ios-sh:0 1px 1px rgba(20,20,40,.03),0 3px 8px rgba(20,20,40,.05),0 14px 28px -10px rgba(20,20,40,.10)}
+  .dark{--ios-sh:inset 0 1px 0 rgba(255,255,255,.05),0 10px 24px -10px rgba(0,0,0,.7)}
   /* sans display type instead of the serif */
   .font-display{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",system-ui,sans-serif!important;letter-spacing:-.03em}
   h1.font-display{font-size:34px!important;line-height:1.1;font-weight:800!important;letter-spacing:-.04em!important}
