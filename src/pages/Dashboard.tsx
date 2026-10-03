@@ -9,18 +9,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 
+const STAT_TONE: Record<string, string> = {
+  bull: 'text-bull', bear: 'text-bear', accent: 'text-primary', gold: 'text-gold', violet: '',
+};
+
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' | 'violet' }) => (
-  <div className={`luxe-card tint tint-bold tint-${glow ?? 'violet'} card-hover overflow-hidden`}>
-    <div className="tint-head flex items-center justify-between px-4 py-3">
-      <div className="text-caption">{label}</div>
-      <div className="tint-chip size-8 rounded-lg flex items-center justify-center shrink-0">
-        <Icon className="size-4" />
+  <div className="luxe-card card-hover p-5">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="text-caption">{label}</div>
+        <div className={`font-mono text-2xl font-semibold tracking-tight mt-1.5 ${STAT_TONE[glow ?? 'violet']}`}>{value}</div>
+        {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
       </div>
-    </div>
-    <div className="tint-body px-4 py-3.5">
-      <div className="tint-bar" />
-      <div className="font-mono text-2xl font-semibold tracking-tight">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
+      <div className="size-9 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
+        <Icon className="size-4 text-muted-foreground" />
+      </div>
     </div>
   </div>
 );
@@ -242,8 +245,8 @@ const TopList = ({ title, icon: Icon, trades, kind }: { title: string; icon: any
 );
 
 const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: number; count: number; icon: any }) => (
-  <div className={`luxe-card tint ${pnl > 0 ? 'tint-bull' : pnl < 0 ? 'tint-bear' : 'tint-flat'} tint-left card-hover p-5 flex items-center gap-4`}>
-    <div className="tint-chip size-11 rounded-xl flex items-center justify-center shrink-0">
+  <div className="luxe-card card-hover p-5 flex items-center gap-4">
+    <div className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${pnl > 0 ? 'bg-bull/10 text-bull' : pnl < 0 ? 'bg-bear/10 text-bear' : 'bg-secondary text-muted-foreground'}`}>
       <Icon className="size-5" />
     </div>
     <div className="flex-1 min-w-0">
@@ -259,7 +262,7 @@ const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: num
 const ScoreCard = ({ label, value, icon: Icon, hint }: { label: string; value: number; icon: any; hint: string }) => {
   const pct = Math.max(0, Math.min(100, value));
   return (
-    <div className="luxe-card tint tint-primary tint-left card-hover p-5">
+    <div className="luxe-card card-hover p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
