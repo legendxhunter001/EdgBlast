@@ -33,6 +33,7 @@ export const MobileDock = () => {
   const [moving, setMoving] = useState(false);
   const [scrubIndex, setScrubIndex] = useState<number | null>(null);
   const [ind, setInd] = useState({ x: 0, w: 0 });
+  const [edge, setEdge] = useState({ l: false, r: true });
 
   const lastY = useRef(0);
   const scrollTimer = useRef<number | undefined>(undefined);
@@ -58,6 +59,18 @@ export const MobileDock = () => {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // show the blurred glass edge only on the side that has more tabs
+  const updateEdges = useCallback(() => {
+    const el = track.current;
+    if (!el) return;
+    setEdge({ l: el.scrollLeft > 4, r: el.scrollLeft < el.scrollWidth - el.clientWidth - 4 });
+  }, []);
+  useEffect(() => {
+    updateEdges();
+    window.addEventListener('resize', updateEdges);
+    return () => window.removeEventListener('resize', updateEdges);
+  }, [updateEdges]);
 
   // center the active tab on route change
   useEffect(() => {
@@ -164,10 +177,10 @@ export const MobileDock = () => {
     <>
       <div className={`ios-dockfade md:hidden ${hidden ? 'hide' : ''}`} aria-hidden />
       <nav
-        className={`ios-dock md:hidden ${scrolling ? 'scrolling' : ''} ${hidden ? 'hide' : ''} ${holding ? 'hold' : ''}`}
+        className={`ios-dock md:hidden ${scrolling ? 'scrolling' : ''} ${hidden ? 'hide' : ''} ${holding ? 'hold' : ''} ${edge.l ? 'can-l' : ''} ${edge.r ? 'can-r' : ''}`}
         aria-label="Primary"
       >
-        <div className="ios-dock-track" ref={track}>
+        <div className="ios-dock-track" ref={track} onScroll={updateEdges}>
           <span
             className={`ios-dock-ind ${moving ? 'move' : ''}`}
             style={{ transform: `translateX(${ind.x}px)`, width: ind.w, opacity: shown >= 0 ? 1 : 0 }}
