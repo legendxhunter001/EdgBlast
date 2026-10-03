@@ -14,7 +14,7 @@ const STAT_TONE: Record<string, string> = {
 };
 
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' | 'violet' }) => (
-  <div className="luxe-card card-hover p-5">
+  <div className={`luxe-card ${glow && glow !== 'violet' ? `slight slight-${glow === 'accent' ? 'primary' : glow}` : ''} card-hover p-5`}>
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <div className="text-caption">{label}</div>
@@ -245,7 +245,7 @@ const TopList = ({ title, icon: Icon, trades, kind }: { title: string; icon: any
 );
 
 const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: number; count: number; icon: any }) => (
-  <div className="luxe-card card-hover p-5 flex items-center gap-4">
+  <div className={`luxe-card ${pnl > 0 ? 'slight slight-bull' : pnl < 0 ? 'slight slight-bear' : ''} card-hover p-5 flex items-center gap-4`}>
     <div className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${pnl > 0 ? 'bg-bull/10 text-bull' : pnl < 0 ? 'bg-bear/10 text-bear' : 'bg-secondary text-muted-foreground'}`}>
       <Icon className="size-5" />
     </div>

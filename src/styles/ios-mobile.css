@@ -4,23 +4,23 @@
 
 @media (max-width:767px){
   /* Edge Blast mobile color system — the iOS system palette:
-     system blue for action, green for profit, red for loss, orange for caution; grouped iOS neutrals. */
+     indigo for action, green for profit, red for loss, orange for caution; grouped iOS neutrals. */
   :root,.light{
     --background:240 24% 96%;--foreground:240 3% 11%;
     --card:0 0% 100%;--card-foreground:240 3% 11%;
     --popover:0 0% 100%;--popover-foreground:240 3% 11%;
-    --primary:211 100% 50%;--primary-foreground:0 0% 100%;--primary-glow:211 100% 60%;
+    --primary:248 85% 64%;--primary-foreground:0 0% 100%;--primary-glow:248 90% 74%;
     --secondary:240 12% 93%;--secondary-foreground:240 3% 11%;
     --muted:240 12% 93%;--muted-foreground:240 2% 43%;
-    --accent:211 100% 50%;--accent-foreground:0 0% 100%;
+    --accent:248 85% 64%;--accent-foreground:0 0% 100%;
     --destructive:3 100% 59%;--destructive-foreground:0 0% 100%;
     --success:135 59% 43%;--success-foreground:0 0% 100%;
     --bull:135 59% 43%;--bear:3 100% 59%;--gold:37 100% 50%;
     --navy:228 45% 14%;
-    --border:240 9% 90%;--input:240 9% 90%;--ring:211 100% 50%;
+    --border:240 9% 90%;--input:240 9% 90%;--ring:248 85% 64%;
     --surface-1:0 0% 100%;--surface-2:240 12% 93%;--surface-3:240 9% 90%;
     --radius:1.25rem;
-    --gradient-primary:linear-gradient(135deg,hsl(211 100% 55%),hsl(211 100% 46%));
+    --gradient-primary:linear-gradient(135deg,hsl(248 90% 70%),hsl(250 80% 58%));
     --gradient-bull:linear-gradient(135deg,hsl(135 59% 50%),hsl(135 59% 41%));
     --gradient-bear:linear-gradient(135deg,hsl(3 100% 63%),hsl(3 100% 54%));
     --cal-win-sm:135 55% 95%;--cal-win-md:135 45% 78%;--cal-win-lg:135 45% 52%;
@@ -31,14 +31,14 @@
     --background:0 0% 0%;--foreground:0 0% 100%;
     --card:240 3% 11%;--card-foreground:0 0% 100%;
     --popover:240 3% 13%;--popover-foreground:0 0% 100%;
-    --primary:211 100% 52%;--primary-foreground:0 0% 100%;--primary-glow:211 100% 62%;
+    --primary:248 100% 76%;--primary-foreground:225 40% 6%;--primary-glow:248 100% 84%;
     --secondary:240 3% 18%;--secondary-foreground:0 0% 100%;
     --muted:240 3% 18%;--muted-foreground:240 2% 61%;
-    --accent:211 100% 52%;--accent-foreground:0 0% 100%;
+    --accent:248 100% 76%;--accent-foreground:225 40% 6%;
     --destructive:4 100% 61%;--destructive-foreground:0 0% 100%;
     --success:135 64% 50%;--success-foreground:0 0% 0%;
     --bull:135 64% 50%;--bear:4 100% 61%;--gold:37 100% 55%;
-    --border:240 2% 22%;--input:240 2% 22%;--ring:211 100% 52%;
+    --border:240 2% 22%;--input:240 2% 22%;--ring:248 100% 76%;
     --surface-1:240 3% 11%;--surface-2:240 3% 18%;--surface-3:240 2% 22%;
     --cal-win-sm:135 35% 14%;--cal-win-md:135 40% 24%;--cal-win-lg:135 50% 38%;
     --cal-loss-sm:3 40% 15%;--cal-loss-md:3 45% 27%;--cal-loss-lg:3 55% 42%;
@@ -109,6 +109,8 @@
   html{scroll-padding-bottom:120px}
   [data-sonner-toaster]{bottom:calc(env(safe-area-inset-bottom,0px) + 96px)!important}
   [data-sonner-toast]{border-radius:18px!important}
+  .luxe-card.slight{border-color:hsl(var(--c)/.16)!important}
+  .dark .luxe-card.slight{border-color:hsl(var(--c)/.26)!important}
   /* FAB floats above the dock */
   a[aria-label="New trade"]{bottom:calc(env(safe-area-inset-bottom,0px) + 94px)!important}
 

@@ -470,3 +470,21 @@
     .eb-scene { transform: none !important; }
   }
 }
+
+/* ===== Slightly colored cards: a whisper of the card's own color, nothing loud ===== */
+.luxe-card.slight{
+  --c: var(--muted-foreground);
+  background:
+    linear-gradient(160deg, hsl(var(--c) / .09) 0%, hsl(var(--c) / .03) 55%, transparent 100%),
+    hsl(var(--card));
+  border-color: hsl(var(--c) / .16);
+}
+.dark .luxe-card.slight{
+  background:
+    linear-gradient(160deg, hsl(var(--c) / .17) 0%, hsl(var(--c) / .06) 55%, transparent 100%),
+    hsl(var(--card));
+  border-color: hsl(var(--c) / .26);
+}
+.luxe-card.slight:hover{ border-color: hsl(var(--c) / .32); }
+.slight-bull{ --c: var(--bull); } .slight-bear{ --c: var(--bear); }
+.slight-gold{ --c: var(--gold); } .slight-primary{ --c: var(--primary); }
