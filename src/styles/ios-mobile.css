@@ -124,6 +124,9 @@
   /* iOS-style list separators + press highlight on rows */
   [role="menuitem"],[role="option"]{border-radius:12px;min-height:44px}
   [data-radix-popper-content-wrapper] [role="menu"]{border-radius:18px;padding:6px;box-shadow:0 18px 40px -12px rgba(0,0,0,.28)}
+  /* AI Coach iframe sits above the dock instead of under it */
+  main:has(iframe[title="AI Coach"]){padding-bottom:0!important}
+  iframe[title="AI Coach"]{height:calc(100dvh - 56px - env(safe-area-inset-top,0px) - 92px - env(safe-area-inset-bottom,0px))!important}
   /* FAB floats above the dock */
   a[aria-label="New trade"]{bottom:calc(env(safe-area-inset-bottom,0px) + 94px)!important}
 
