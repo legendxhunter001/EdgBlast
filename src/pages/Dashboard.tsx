@@ -9,22 +9,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 
-const STAT_TONE: Record<string, string> = {
-  bull: '', bear: '', accent: '', gold: '', violet: '',
-};
-
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' | 'violet' }) => (
-  <div className={`luxe-card ${glow && glow !== 'violet' ? `slight slight-${glow === 'accent' ? 'primary' : glow}` : ''} card-hover p-5`}>
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <div className="text-caption">{label}</div>
-        <div className={`font-mono text-2xl font-semibold tracking-tight mt-1.5 ${STAT_TONE[glow ?? 'violet']}`}>{value}</div>
-        {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
-      </div>
-      <div className="size-9 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
-        <Icon className="size-4 text-muted-foreground" />
+  <div className={`luxe-card aurora aurora-${glow === 'accent' ? 'primary' : glow ?? 'violet'} card-hover p-4 md:p-5`}>
+    <div className="flex items-center justify-between gap-2">
+      <div className="text-caption truncate">{label}</div>
+      <div className="aurora-chip size-8 rounded-lg flex items-center justify-center shrink-0">
+        <Icon className="size-4" />
       </div>
     </div>
+    <div className="stat-value font-mono font-semibold tracking-tight mt-3">{value}</div>
+    {sub && <div className="text-xs text-muted-foreground mt-1 truncate">{sub}</div>}
   </div>
 );
 
@@ -146,7 +140,7 @@ const Dashboard = () => {
             <div className="animate-fade-up stagger-1"><Stat label="Total P&L" value={formatCurrency(stats.totalPnl, { sign: true })} sub={`${stats.totalTrades} closed trades`} icon={stats.totalPnl >= 0 ? TrendingUp : TrendingDown} glow={stats.totalPnl >= 0 ? 'bull' : 'bear'} /></div>
             <div className="animate-fade-up stagger-2"><Stat label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} sub={`${stats.wins}W · ${stats.losses}L`} icon={Target} glow="accent" /></div>
             <div className="animate-fade-up stagger-3"><Stat label="Avg R:R" value={stats.avgRR ? stats.avgRR.toFixed(2) : '—'} sub="Win/loss ratio" icon={Activity} glow="gold" /></div>
-            <div className="animate-fade-up stagger-4"><Stat label="Current Streak" value={`${stats.streak}${stats.streakKind === 'win' ? 'W' : stats.streakKind === 'loss' ? 'L' : ''}`} sub={stats.streakKind === 'win' ? 'On a roll' : stats.streakKind === 'loss' ? 'Stay disciplined' : '—'} icon={Flame} glow={stats.streakKind === 'win' ? 'bull' : stats.streakKind === 'loss' ? 'bear' : 'violet'} /></div>
+            <div className="animate-fade-up stagger-4"><Stat label="Streak" value={`${stats.streak}${stats.streakKind === 'win' ? 'W' : stats.streakKind === 'loss' ? 'L' : ''}`} sub={stats.streakKind === 'win' ? 'On a roll' : stats.streakKind === 'loss' ? 'Stay disciplined' : '—'} icon={Flame} glow={stats.streakKind === 'win' ? 'bull' : stats.streakKind === 'loss' ? 'bear' : 'violet'} /></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 animate-fade-up">
@@ -245,13 +239,13 @@ const TopList = ({ title, icon: Icon, trades, kind }: { title: string; icon: any
 );
 
 const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: number; count: number; icon: any }) => (
-  <div className={`luxe-card ${pnl > 0 ? 'slight slight-bull' : pnl < 0 ? 'slight slight-bear' : ''} card-hover p-5 flex items-center gap-4`}>
-    <div className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${pnl > 0 ? 'bg-bull/10 text-bull' : pnl < 0 ? 'bg-bear/10 text-bear' : 'bg-secondary text-muted-foreground'}`}>
+  <div className={`luxe-card aurora aurora-${pnl > 0 ? 'bull' : pnl < 0 ? 'bear' : 'violet'} card-hover p-4 md:p-5 flex items-center gap-4`}>
+    <div className="aurora-chip size-11 rounded-xl flex items-center justify-center shrink-0">
       <Icon className="size-5" />
     </div>
     <div className="flex-1 min-w-0">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={`font-mono text-xl md:text-2xl font-semibold tracking-tight mt-0.5`}>
+      <div className="stat-value font-mono font-semibold tracking-tight mt-0.5">
         {count === 0 ? '—' : formatCurrency(pnl, { sign: true })}
       </div>
       <div className="text-xs text-muted-foreground mt-0.5">{count} trade{count === 1 ? '' : 's'}</div>
@@ -262,7 +256,7 @@ const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: num
 const ScoreCard = ({ label, value, icon: Icon, hint }: { label: string; value: number; icon: any; hint: string }) => {
   const pct = Math.max(0, Math.min(100, value));
   return (
-    <div className="luxe-card card-hover p-5">
+    <div className="luxe-card aurora aurora-primary card-hover p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
