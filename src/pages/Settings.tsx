@@ -4,6 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
 import { toast } from 'sonner';
+import { FileUp, ImageDown } from 'lucide-react';
+import ImportCsvDialog from '@/components/ImportCsvDialog';
+import ImportScreenshotsDialog from '@/components/ImportScreenshotsDialog';
 
 const styles = `
 .eb-set, .eb-set *{ box-sizing:border-box; }
@@ -118,6 +121,27 @@ function useSection<T extends Record<string, any>>(table: string, defaults: T, u
   const set = (patch: Partial<T>) => setValue((v) => ({ ...v, ...patch }));
   return { value, set, save, saving, saved, loading };
 }
+
+const ImportSection = () => {
+  const [csvOpen, setCsvOpen] = useState(false);
+  const [shotsOpen, setShotsOpen] = useState(false);
+  return (
+    <section className="eb-sec">
+      <h2>Import data</h2>
+      <p className="desc">Bring in past trades from a broker CSV or from platform screenshots.</p>
+      <div className="eb-toggle-row">
+        <div><div className="t">Import CSV</div><div className="d">Upload a trade history export from your broker.</div></div>
+        <button type="button" className="eb-btn" onClick={() => setCsvOpen(true)}><FileUp size={15} /> Import CSV</button>
+      </div>
+      <div className="eb-toggle-row">
+        <div><div className="t">Import screenshots</div><div className="d">Turn trade screenshots into journal entries.</div></div>
+        <button type="button" className="eb-btn" onClick={() => setShotsOpen(true)}><ImageDown size={15} /> Import screenshots</button>
+      </div>
+      <ImportCsvDialog open={csvOpen} onOpenChange={setCsvOpen} />
+      <ImportScreenshotsDialog open={shotsOpen} onOpenChange={setShotsOpen} />
+    </section>
+  );
+};
 
 const ProfileSection = () => {
   const s = useSection('profiles', { display_name: '', avatar_url: '', timezone: 'UTC' }, 'id');
@@ -309,6 +333,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        <ImportSection />
         <ProfileSection />
         <RulesSection />
         <NotificationsSection />

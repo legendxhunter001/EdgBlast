@@ -10,7 +10,7 @@ import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' }) => (
-  <div className="luxe-card card-hover p-5 relative overflow-hidden">
+  <div className={`luxe-card tint tint-${glow ?? 'flat'} card-hover p-5 relative overflow-hidden`}>
     {glow && <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-25 ${glow === 'bull' ? 'bg-bull' : glow === 'bear' ? 'bg-bear' : glow === 'gold' ? 'bg-gold' : 'bg-primary'}`} />}
     <div className="flex items-start justify-between relative">
       <div>
@@ -18,8 +18,8 @@ const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: s
         <div className="font-mono text-2xl font-semibold mt-2 tracking-tight">{value}</div>
         {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
       </div>
-      <div className="size-9 rounded-lg bg-secondary/60 flex items-center justify-center">
-        <Icon className="size-4 text-muted-foreground" />
+      <div className="tint-chip size-9 rounded-lg flex items-center justify-center">
+        <Icon className="size-4" />
       </div>
     </div>
   </div>
@@ -142,7 +142,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <div className="animate-fade-up stagger-1"><Stat label="Total P&L" value={formatCurrency(stats.totalPnl, { sign: true })} sub={`${stats.totalTrades} closed trades`} icon={stats.totalPnl >= 0 ? TrendingUp : TrendingDown} glow={stats.totalPnl >= 0 ? 'bull' : 'bear'} /></div>
             <div className="animate-fade-up stagger-2"><Stat label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} sub={`${stats.wins}W · ${stats.losses}L`} icon={Target} glow="accent" /></div>
-            <div className="animate-fade-up stagger-3"><Stat label="Avg R:R" value={stats.avgRR ? stats.avgRR.toFixed(2) : '—'} sub="Win/loss ratio" icon={Activity} /></div>
+            <div className="animate-fade-up stagger-3"><Stat label="Avg R:R" value={stats.avgRR ? stats.avgRR.toFixed(2) : '—'} sub="Win/loss ratio" icon={Activity} glow="gold" /></div>
             <div className="animate-fade-up stagger-4"><Stat label="Current Streak" value={`${stats.streak}${stats.streakKind === 'win' ? 'W' : stats.streakKind === 'loss' ? 'L' : ''}`} sub={stats.streakKind === 'win' ? 'On a roll' : stats.streakKind === 'loss' ? 'Stay disciplined' : '—'} icon={Flame} glow={stats.streakKind === 'win' ? 'bull' : stats.streakKind === 'loss' ? 'bear' : undefined} /></div>
           </div>
 
@@ -242,8 +242,8 @@ const TopList = ({ title, icon: Icon, trades, kind }: { title: string; icon: any
 );
 
 const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: number; count: number; icon: any }) => (
-  <div className="luxe-card card-hover p-5 flex items-center gap-4">
-    <div className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${pnl > 0 ? 'bg-bull/10 text-bull' : pnl < 0 ? 'bg-bear/10 text-bear' : 'bg-secondary text-muted-foreground'}`}>
+  <div className={`luxe-card tint ${pnl > 0 ? 'tint-bull' : pnl < 0 ? 'tint-bear' : 'tint-flat'} card-hover p-5 flex items-center gap-4`}>
+    <div className="tint-chip size-11 rounded-xl flex items-center justify-center shrink-0">
       <Icon className="size-5" />
     </div>
     <div className="flex-1 min-w-0">
@@ -259,7 +259,7 @@ const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: num
 const ScoreCard = ({ label, value, icon: Icon, hint }: { label: string; value: number; icon: any; hint: string }) => {
   const pct = Math.max(0, Math.min(100, value));
   return (
-    <div className="luxe-card card-hover p-5">
+    <div className="luxe-card tint tint-primary card-hover p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">

@@ -470,3 +470,25 @@
     .eb-scene { transform: none !important; }
   }
 }
+
+
+/* ===== Half-colored calm widgets: a soft tint grows from one corner, the rest stays clean card ===== */
+.luxe-card.tint{
+  --c: var(--muted-foreground);
+  background:
+    radial-gradient(130% 105% at 0% 0%, hsl(var(--c) / .16), transparent 62%),
+    linear-gradient(180deg, hsl(var(--c) / .05), transparent 60%),
+    hsl(var(--card));
+  border-color: hsl(var(--c) / .22);
+}
+.luxe-card.tint:hover{ border-color: hsl(var(--c) / .38); }
+.dark .luxe-card.tint{
+  background:
+    radial-gradient(130% 105% at 0% 0%, hsl(var(--c) / .22), transparent 62%),
+    linear-gradient(180deg, hsl(var(--c) / .07), transparent 60%),
+    hsl(var(--card));
+}
+.tint-bull{ --c: var(--bull); } .tint-bear{ --c: var(--bear); } .tint-gold{ --c: var(--gold); }
+.tint-primary,.tint-accent{ --c: var(--primary); } .tint-flat{ --c: var(--muted-foreground); }
+.luxe-card.tint.tint-flat{ background: radial-gradient(130% 105% at 0% 0%, hsl(var(--c) / .10), transparent 62%), hsl(var(--card)); }
+.tint-chip{ background: hsl(var(--c) / .15); color: hsl(var(--c)); }
