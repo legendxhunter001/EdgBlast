@@ -10,17 +10,16 @@ import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' }) => (
-  <div className={`luxe-card tint tint-bold tint-${glow ?? 'flat'} card-hover p-5 relative overflow-hidden`}>
-    {glow && <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-25 ${glow === 'bull' ? 'bg-bull' : glow === 'bear' ? 'bg-bear' : glow === 'gold' ? 'bg-gold' : 'bg-primary'}`} />}
-    <div className="flex items-start justify-between relative">
-      <div>
-        <div className="text-caption text-muted-foreground">{label}</div>
-        <div className="font-mono text-2xl font-semibold mt-2 tracking-tight">{value}</div>
-        {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
-      </div>
-      <div className="tint-chip size-9 rounded-lg flex items-center justify-center">
+  <div className={`luxe-card tint tint-bold tint-${glow ?? 'flat'} card-hover overflow-hidden`}>
+    <div className="tint-head flex items-center justify-between px-4 py-3">
+      <div className="text-caption">{label}</div>
+      <div className="tint-chip size-8 rounded-lg flex items-center justify-center shrink-0">
         <Icon className="size-4" />
       </div>
+    </div>
+    <div className="px-4 py-3.5">
+      <div className="font-mono text-2xl font-semibold tracking-tight">{value}</div>
+      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
     </div>
   </div>
 );
