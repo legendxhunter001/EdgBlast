@@ -912,4 +912,81 @@ html.light .tt{
   .tt-rail-btn{ width:100%; }
   .tt-body{ flex:1; min-width:0; }
 }
+
+/* ======================================================================
+   iOS PHONE LAYER — same palette and structure as the rest of Edge Blast.
+   Maps this page's tokens onto the app tokens, so light/dark and colors stay in sync.
+   ====================================================================== */
+@media (max-width: 767px){
+  html .tt, html.light .tt{
+    --bg:hsl(var(--background)); --elev:hsl(var(--card));
+    --teal:hsl(var(--primary)); --blue:hsl(var(--primary-glow)); --rose:hsl(var(--bear));
+    --text:hsl(var(--foreground)); --dim:hsl(var(--muted-foreground)); --dim2:hsl(var(--muted-foreground) / .78);
+    --line:hsl(var(--border)); --line2:hsl(var(--border));
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;
+    padding-bottom:1rem;
+  }
+  .tt .mono{ font-variant-numeric:tabular-nums; }
+  .tt-inner{ padding:0 .95rem; }
+  .tt-hd{ padding:1.1rem 0 .4rem; border-bottom:0; margin-bottom:.8rem; }
+  .tt-hd h1{ font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif; font-size:34px; font-weight:800; letter-spacing:-.04em; line-height:1.1; }
+  .tt-sub{ font-size:.9rem; margin-top:.35rem; }
+
+  /* segmented control instead of pill buttons */
+  .tt-rail{ background:hsl(var(--secondary)); border-radius:14px; padding:3px; gap:2px; overflow:visible; }
+  .tt-rail-btn{ flex:1; justify-content:center; padding:.55rem .3rem; min-height:38px; border:0; background:transparent; border-radius:11px; color:var(--dim); gap:.35rem; }
+  .tt-rail-btn.on{ background:hsl(var(--card)); color:hsl(var(--foreground)); box-shadow:0 1px 3px rgba(0,0,0,.16), 0 3px 8px -3px rgba(0,0,0,.12); }
+  .tt-rail-icon{ width:auto; height:auto; background:none; color:inherit; }
+  .tt-rail-btn.on .tt-rail-icon{ background:none; color:hsl(var(--primary)); }
+
+  /* grouped, rounded cards with the soft iOS shadow */
+  .tt-card{
+    border-radius:24px; padding:1rem; border:1px solid var(--line);
+    box-shadow:0 1px 2px rgba(20,24,40,.05), 0 12px 26px -14px rgba(20,24,40,.16);
+  }
+  .tt-card:hover{ border-color:var(--line); }
+  .tt-card-head h2{ font-size:1.05rem; font-weight:700; letter-spacing:-.01em; }
+  .tt-tag{ background:hsl(var(--primary) / .14); color:hsl(var(--primary)); border-radius:8px; }
+  .tt-chart,.tt-cal,.tt-watchlist-live{ border-radius:18px; border:0; }
+
+  /* controls: 44px targets, 16px text (no iOS zoom), quiet gray fills */
+  .tt-refresh,.tt-icon-btn{ width:34px; height:34px; border-radius:11px; border:0; background:hsl(var(--secondary)); color:var(--dim); }
+  .tt-refresh:hover:not(:disabled),.tt-icon-btn:hover{ color:hsl(var(--primary)); border:0; }
+  .tt-icon-group{ border-left:0; padding-left:0; }
+  .tt-symbol-select{ border:0; background:hsl(var(--secondary)); border-radius:11px; min-height:34px; font-size:16px; }
+  .tt-chip{ border:0; background:hsl(var(--secondary)); border-radius:999px; min-height:34px; padding:.35rem .85rem; font-size:.82rem; color:var(--text); }
+  .tt-chip:hover{ transform:none; }
+  .tt-chip:active{ transform:scale(.96); }
+  .tt-chip.on{ background:hsl(var(--primary)); color:hsl(var(--primary-foreground)); }
+  .tt-field > span{ font-size:.68rem; letter-spacing:.08em; }
+  .tt-field input,.tt-field select,.tt-alert-input,.tt-alert-select{
+    background:hsl(var(--secondary)); border:1px solid transparent; border-radius:12px; min-height:46px; padding:.65rem .8rem; font-size:16px;
+  }
+  .tt-field input:focus,.tt-field select:focus,.tt-alert-input:focus,.tt-alert-select:focus{
+    border-color:hsl(var(--primary)); background:hsl(var(--card)); box-shadow:0 0 0 3px hsl(var(--primary) / .15);
+  }
+  .tt-mini{ color:hsl(var(--primary)); text-decoration:none; font-weight:600; }
+
+  /* results become little grouped tiles */
+  .tt-result{ border-top:0; padding-top:.2rem; gap:.5rem; grid-template-columns:1fr 1fr; }
+  .tt-result > div{ background:hsl(var(--secondary)); border-radius:14px; padding:.7rem .8rem; }
+  .tt-result > div:first-child{ grid-column:1 / -1; background:hsl(var(--primary) / .12); }
+  .tt-result > div:first-child b{ color:hsl(var(--primary)); font-size:1.7rem; letter-spacing:-.02em; }
+  .tt-result b{ font-size:1.1rem; }
+
+  /* lists: hairline rows, status colors from the app palette */
+  .tt-alert{ border:0; background:hsl(var(--bear) / .12); color:hsl(var(--bear)); border-radius:14px; }
+  .tt-empty{ border:1px dashed var(--line); border-radius:16px; }
+  .tt-alert-row{ border:0; background:hsl(var(--secondary)); border-radius:14px; padding:.65rem .8rem; }
+  .tt-alert-row.triggered{ background:hsl(var(--bull) / .14); }
+  .tt-alert-badge{ background:hsl(var(--bull) / .18); color:hsl(var(--bull)); }
+  .tt-watchlist-row:hover{ border-color:transparent; }
+  .tt-table td{ border-bottom:.5px solid var(--line); }
+  .tt-table .pos,.tt-total .pos{ color:hsl(var(--bull)); }
+  .tt-table .neg,.tt-total .neg{ color:hsl(var(--bear)); }
+  .tt-side.buy{ background:hsl(var(--bull) / .15); color:hsl(var(--bull)); }
+  .tt-side.sell{ background:hsl(var(--bear) / .15); color:hsl(var(--bear)); }
+  .tt-alert-remove:hover{ color:hsl(var(--bear)); }
+  .tt-order-review-backdrop{ background:rgba(0,0,0,.45); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+}
 `;
