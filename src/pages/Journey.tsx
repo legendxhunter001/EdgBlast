@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
   Image as ImageIcon, Images, X, Search, Loader2, Upload,
-  Check, Trash2, FolderInput, ZoomOut, ZoomIn,
+  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus,
 } from "lucide-react";
 
 type Entry = {
@@ -33,8 +33,11 @@ const ALBUMS: { key: string; label: string }[] = [
   { key: "general", label: "General" },
 ];
 
-function albumLabel(key: string | null): string {
-  return ALBUMS.find((a) => a.key === (key ?? "general"))?.label ?? "General";
+function albumKeyOf(label: string): string {
+  return label.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+function prettifyAlbum(key: string): string {
+  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function timeAgo(iso: string): string {
@@ -111,6 +114,19 @@ export default function Journey() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveMenuOpen, setMoveMenuOpen] = useState(false);
+  const [galleryView, setGalleryView] = useState<"photos" | "folders">("photos");
+  const [customAlbums, setCustomAlbums] = useState<string[]>([]);
+  const [newAlbumOpen, setNewAlbumOpen] = useState(false);
+  const [newAlbumName, setNewAlbumName] = useState("");
+  const albumsStorageKey = user ? `eb_albums_${user.id}` : null;
+  useEffect(() => {
+    if (!albumsStorageKey) return;
+    try { setCustomAlbums(JSON.parse(localStorage.getItem(albumsStorageKey) || "[]")); } catch { setCustomAlbums([]); }
+  }, [albumsStorageKey]);
+  const saveCustomAlbums = (next: string[]) => {
+    setCustomAlbums(next);
+    if (albumsStorageKey) { try { localStorage.setItem(albumsStorageKey, JSON.stringify(next)); } catch { /* storage unavailable */ } }
+  };
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
   const pinchDist = useRef<number | null>(null);
   const pinchStartTile = useRef(140);
@@ -332,7 +348,7 @@ export default function Journey() {
   const moveSelectedToAlbum = async (album: string) => {
     await supabase.from("journal_images").update({ album }).in("id", Array.from(selectedIds));
     setGalleryImages((prev) => prev.map((img) => (selectedIds.has(img.id) ? { ...img, album } : img)));
-    toast.success(`Moved to ${albumLabel(album)}`);
+    toast.success(`Moved to ${labelFor(album)}`);
     setSelectedIds(new Set());
     setSelectMode(false);
     setMoveMenuOpen(false);
@@ -358,6 +374,20 @@ export default function Journey() {
   const filteredEntries = entries.filter((e) =>
     !search.trim() || e.title.toLowerCase().includes(search.toLowerCase()) || e.content.toLowerCase().includes(search.toLowerCase())
   );
+  const allAlbums: { key: string; label: string }[] = [...ALBUMS];
+  customAlbums.forEach((label) => { const k = albumKeyOf(label); if (k && !allAlbums.some((a) => a.key === k)) allAlbums.push({ key: k, label }); });
+  galleryImages.forEach((img) => { const k = img.album ?? "general"; if (!allAlbums.some((a) => a.key === k)) allAlbums.push({ key: k, label: prettifyAlbum(k) }); });
+  const labelFor = (key: string | null) => allAlbums.find((a) => a.key === (key ?? "general"))?.label ?? "General";
+  const createAlbum = () => {
+    const label = newAlbumName.trim();
+    const k = albumKeyOf(label);
+    if (!label || !k) return;
+    if (allAlbums.some((a) => a.key === k)) { toast.error("That album already exists"); return; }
+    saveCustomAlbums([...customAlbums, label]);
+    setNewAlbumName(""); setNewAlbumOpen(false);
+    toast.success(`Album "${label}" created`);
+  };
+  const deleteAlbum = (label: string) => saveCustomAlbums(customAlbums.filter((l) => l !== label));
   const visibleGalleryImages = activeAlbum === "all" ? galleryImages : galleryImages.filter((img) => (img.album ?? "general") === activeAlbum);
 
   return (
@@ -501,6 +531,61 @@ export default function Journey() {
         }
         .eb-journey .move-menu-item:hover{ background:var(--accent-soft); }
         @media (max-width:880px){ .eb-journey .layout{ grid-template-columns:1fr; } .eb-journey .list{ max-height:240px; } }
+
+        /* ---- Folders (albums) ---- */
+        .eb-journey .view-seg{ display:inline-flex; margin:.7rem 1.25rem 0; background:var(--elev); border:1px solid var(--line); border-radius:12px; padding:3px; gap:2px; align-self:flex-start; }
+        .eb-journey .view-seg button{ border:0; background:transparent; color:var(--dim); font:600 .82rem inherit; padding:.42rem .9rem; border-radius:9px; display:inline-flex; align-items:center; gap:.4rem; cursor:pointer; }
+        .eb-journey .view-seg button.on{ background:var(--text); color:var(--bg); }
+        .eb-journey .folder-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
+        .eb-journey .folder-card{ position:relative; border:1px solid var(--line); background:var(--elev); border-radius:22px; padding:12px; text-align:left; cursor:pointer; color:var(--text); box-shadow:0 1px 2px rgba(20,24,40,.08), 0 14px 28px -16px rgba(20,24,40,.35); transition:transform .25s cubic-bezier(.2,.8,.2,1); outline:none; }
+        .eb-journey .folder-card:active{ transform:scale(.97); }
+        .eb-journey .folder-card:focus-visible{ box-shadow:0 0 0 3px var(--accent-soft); }
+        .eb-journey .folder-art{ position:relative; height:104px; border-radius:16px; overflow:hidden; background:linear-gradient(145deg,var(--f1,#6A55F1),var(--f2,#9B7BFF)); display:flex; align-items:center; justify-content:center; }
+        .eb-journey .folder-art::before{ content:''; position:absolute; inset:-25%; background:radial-gradient(circle at 25% 15%, rgba(255,255,255,.42), transparent 55%); filter:blur(14px); }
+        .eb-journey .folder-card[data-hue="0"]{ --f1:#6A55F1; --f2:#9B7BFF; }
+        .eb-journey .folder-card[data-hue="1"]{ --f1:#2FBF5B; --f2:#34D6B0; }
+        .eb-journey .folder-card[data-hue="2"]{ --f1:#FF9F0A; --f2:#FF6B35; }
+        .eb-journey .folder-card[data-hue="3"]{ --f1:#FF3B30; --f2:#FF6B8B; }
+        .eb-journey .folder-card[data-hue="4"]{ --f1:#0A84FF; --f2:#5AC8FA; }
+        .eb-journey .folder-card[data-hue="5"]{ --f1:#BF5AF2; --f2:#FF6BD6; }
+        .eb-journey .folder-thumb{ position:absolute; width:56%; height:72%; object-fit:cover; border-radius:10px; border:2px solid rgba(255,255,255,.92); box-shadow:0 8px 16px -6px rgba(0,0,0,.45); }
+        .eb-journey .folder-thumb.t0{ left:9%; top:14%; transform:rotate(-7deg); }
+        .eb-journey .folder-thumb.t1{ left:29%; top:9%; transform:rotate(1deg); }
+        .eb-journey .folder-thumb.t2{ right:7%; top:16%; transform:rotate(8deg); }
+        .eb-journey .folder-glyph{ position:absolute; left:8px; bottom:8px; width:28px; height:28px; border-radius:9px; background:rgba(255,255,255,.28); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:grid; place-items:center; color:#fff; z-index:2; }
+        .eb-journey .folder-meta{ padding:10px 4px 2px; display:flex; flex-direction:column; }
+        .eb-journey .folder-meta b{ font-size:.95rem; font-weight:700; letter-spacing:-.01em; }
+        .eb-journey .folder-meta span{ font-size:.78rem; color:var(--dim); }
+        .eb-journey .folder-new .folder-art{ background:transparent; border:2px dashed var(--line); color:var(--dim); }
+        .eb-journey .folder-new .folder-art::before{ display:none; }
+        .eb-journey .folder-del{ position:absolute; top:18px; right:18px; width:24px; height:24px; border-radius:50%; background:rgba(0,0,0,.5); color:#fff; display:grid; place-items:center; z-index:3; }
+        .eb-journey .album-modal{ position:absolute; inset:0; z-index:60; background:rgba(0,0,0,.45); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:flex; align-items:flex-end; justify-content:center; }
+        .eb-journey .album-sheet{ width:100%; max-width:460px; background:var(--elev); border-radius:28px 28px 0 0; padding:12px 18px calc(22px + env(safe-area-inset-bottom,0px)); border:1px solid var(--line); animation:sheetUp .3s cubic-bezier(.2,.8,.2,1); }
+        .eb-journey .sheet-grab{ width:38px; height:5px; border-radius:9px; background:var(--line); margin:0 auto 14px; }
+        .eb-journey .album-sheet h3{ margin:0 0 12px; font-size:1.15rem; font-weight:700; letter-spacing:-.02em; }
+        .eb-journey .album-sheet input{ width:100%; background:transparent; color:var(--text); border:1px solid var(--line); border-radius:14px; padding:.8rem .9rem; font-size:16px; outline:none; }
+        .eb-journey .album-sheet input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+        .eb-journey .album-sheet-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:14px; }
+        .eb-journey .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+        .eb-journey .btn.primary:disabled{ opacity:.45; }
+        @keyframes sheetUp{ from{ transform:translateY(40px); opacity:0; } }
+        @media (min-width:768px){ .eb-journey .album-modal{ align-items:center; } .eb-journey .album-sheet{ border-radius:24px; } }
+
+        /* ---- iOS phone layer: same palette as the rest of Edge Blast ---- */
+        @media (max-width:767px){
+          html .eb-journey, html.light .eb-journey{
+            --bg:hsl(var(--background)); --elev:hsl(var(--card)); --accent:hsl(var(--primary)); --accent-soft:hsl(var(--primary) / .15);
+            --text:hsl(var(--foreground)); --dim:hsl(var(--muted-foreground)); --line:hsl(var(--border));
+            font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;
+            padding:1rem .95rem 2rem;
+          }
+          .eb-journey .gallery-fs-head, .eb-journey .gallery-fs-body, .eb-journey .album-tabs{ padding-left:1rem; padding-right:1rem; }
+          .eb-journey .view-seg{ margin:.7rem 1rem 0; align-self:stretch; }
+          .eb-journey .view-seg button{ flex:1; justify-content:center; min-height:36px; }
+          .eb-journey .album-tab{ border-radius:999px; min-height:34px; }
+          .eb-journey .folder-grid{ grid-template-columns:1fr 1fr; gap:12px; }
+          .eb-journey .gallery-fs-title{ font-size:1.5rem; font-weight:800; letter-spacing:-.03em; }
+        }
       `}</style>
 
       <div className="inner">
@@ -570,7 +655,7 @@ export default function Journey() {
                   <div className="gallery-head-row">
                     <span className="meta">Photos</span>
                     <select className="album-select" value={uploadAlbum} onChange={(e) => setUploadAlbum(e.target.value)} title="New photos go to this album">
-                      {ALBUMS.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+                      {allAlbums.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
                     </select>
                   </div>
                   <div className="gallery-grid">
@@ -626,7 +711,7 @@ export default function Journey() {
       {galleryOpen && (
         <div className="gallery-fullscreen">
           <div className="gallery-fs-head">
-            <span className="gallery-fs-title">All Photos</span>
+            <span className="gallery-fs-title">{galleryView === "folders" ? "Albums" : "All Photos"}</span>
             <span className="gallery-fs-count">{visibleGalleryImages.length}</span>
             <span className="spacer" />
             <div className="zoom-row">
@@ -660,9 +745,14 @@ export default function Journey() {
             </button>
           </div>
 
-          <div className="album-tabs">
+          <div className="view-seg" role="tablist" aria-label="Gallery view">
+            <button role="tab" aria-selected={galleryView === "photos"} className={galleryView === "photos" ? "on" : ""} onClick={() => setGalleryView("photos")}><Images size={14} /> Photos</button>
+            <button role="tab" aria-selected={galleryView === "folders"} className={galleryView === "folders" ? "on" : ""} onClick={() => setGalleryView("folders")}><Folder size={14} /> Folders</button>
+          </div>
+
+          <div className="album-tabs" style={galleryView === "folders" ? { display: "none" } : undefined}>
             <button className={`album-tab ${activeAlbum === "all" ? "on" : ""}`} onClick={() => setActiveAlbum("all")}>All Photos</button>
-            {ALBUMS.map((a) => (
+            {allAlbums.map((a) => (
               <button key={a.key} className={`album-tab ${activeAlbum === a.key ? "on" : ""}`} onClick={() => setActiveAlbum(a.key)}>
                 {a.label}
               </button>
@@ -671,6 +761,7 @@ export default function Journey() {
 
           <div
             className="gallery-fs-body"
+            style={galleryView === "folders" ? { display: "none" } : undefined}
             onTouchStart={onGalleryTouchStart}
             onTouchMove={onGalleryTouchMove}
             onTouchEnd={onGalleryTouchEnd}
@@ -711,6 +802,37 @@ export default function Journey() {
             )}
           </div>
 
+          {galleryView === "folders" && (
+            <div className="gallery-fs-body">
+              <div className="folder-grid">
+                {allAlbums.map((a, i) => {
+                  const imgs = galleryImages.filter((img) => (img.album ?? "general") === a.key);
+                  const isCustom = customAlbums.some((l) => albumKeyOf(l) === a.key);
+                  return (
+                    <div
+                      key={a.key} role="button" tabIndex={0} className="folder-card" data-hue={i % 6}
+                      onClick={() => { setActiveAlbum(a.key); setGalleryView("photos"); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { setActiveAlbum(a.key); setGalleryView("photos"); } }}
+                    >
+                      <div className="folder-art">
+                        {imgs.slice(0, 3).map((im, n) => <img key={im.id} src={im.url} alt="" className={`folder-thumb t${n}`} loading="lazy" />)}
+                        <span className="folder-glyph"><Folder size={16} /></span>
+                      </div>
+                      <div className="folder-meta"><b>{a.label}</b><span>{imgs.length} photo{imgs.length === 1 ? "" : "s"}</span></div>
+                      {isCustom && imgs.length === 0 && (
+                        <span className="folder-del" role="button" aria-label="Delete album" onClick={(e) => { e.stopPropagation(); deleteAlbum(customAlbums.find((l) => albumKeyOf(l) === a.key) ?? a.label); }}><X size={12} /></span>
+                      )}
+                    </div>
+                  );
+                })}
+                <div role="button" tabIndex={0} className="folder-card folder-new" onClick={() => setNewAlbumOpen(true)} onKeyDown={(e) => { if (e.key === "Enter") setNewAlbumOpen(true); }}>
+                  <div className="folder-art"><FolderPlus size={28} /></div>
+                  <div className="folder-meta"><b>New album</b><span>Create a folder</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {selectMode && selectedIds.size > 0 && (
             <div className="select-bar">
               <span className="meta">{selectedIds.size} selected</span>
@@ -718,7 +840,7 @@ export default function Journey() {
               <div className="move-menu">
                 {moveMenuOpen && (
                   <div className="move-menu-list">
-                    {ALBUMS.map((a) => (
+                    {allAlbums.map((a) => (
                       <button key={a.key} className="move-menu-item" onClick={() => moveSelectedToAlbum(a.key)}>{a.label}</button>
                     ))}
                   </div>
@@ -730,6 +852,23 @@ export default function Journey() {
               <button className="btn danger" onClick={deleteSelected}>
                 <Trash2 size={13} style={{ marginRight: 5, display: "inline" }} /> Delete
               </button>
+            </div>
+          )}
+          {newAlbumOpen && (
+            <div className="album-modal" onClick={() => setNewAlbumOpen(false)}>
+              <div className="album-sheet" onClick={(e) => e.stopPropagation()}>
+                <div className="sheet-grab" />
+                <h3>New album</h3>
+                <input
+                  autoFocus value={newAlbumName} maxLength={30} placeholder="Album name, e.g. A+ setups"
+                  onChange={(e) => setNewAlbumName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") createAlbum(); }}
+                />
+                <div className="album-sheet-actions">
+                  <button className="btn" onClick={() => setNewAlbumOpen(false)}>Cancel</button>
+                  <button className="btn primary" disabled={!newAlbumName.trim()} onClick={createAlbum}>Create</button>
+                </div>
+              </div>
             </div>
           )}
         </div>

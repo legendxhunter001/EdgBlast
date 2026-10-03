@@ -5,7 +5,7 @@ import { useAccountScope } from '@/hooks/useAccountScope';
 import { functionErrorMessage } from '@/lib/functionError';
 import { getPipSize, getPipValue } from '@/lib/pips';
 import { toast } from 'sonner';
-import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell, Info, CandlestickChart, Calculator, Newspaper } from 'lucide-react';
+import { Moon, Sun, Maximize2, X, Mail, RefreshCw, Bell, Info, CandlestickChart, Calculator, Newspaper, Ruler, ShieldAlert, Target, Layers } from 'lucide-react';
 
 /* ---------------- TradingView embeds ---------------- */
 
@@ -141,18 +141,22 @@ const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }
 
       <div className="tt-result">
         <div className="r-pips">
+          <i className="tt-ico" aria-hidden="true"><Ruler size={16} /></i>
           <span>Stop distance</span>
           <b className="mono">{slPips > 0 ? `${slPips.toFixed(1)} pips` : '—'}</b>
         </div>
         <div className="r-hero">
+          <i className="tt-ico" aria-hidden="true"><Target size={16} /></i>
           <span>Position size</span>
           <b className="mono">{valid ? `${lots.toFixed(2)} lots` : '—'}</b>
         </div>
         <div className="r-risk">
+          <i className="tt-ico" aria-hidden="true"><ShieldAlert size={16} /></i>
           <span>Risk amount</span>
           <b className="mono">{valid ? `$${riskAmount.toFixed(2)}` : '—'}</b>
         </div>
         <div className="r-units">
+          <i className="tt-ico" aria-hidden="true"><Layers size={16} /></i>
           <span>Units</span>
           <b className="mono">{valid ? Math.round(lots * 100000).toLocaleString() : '—'}</b>
         </div>
@@ -1016,5 +1020,24 @@ html.light .tt{
   .tt-chip{ color:hsl(var(--primary)); font-weight:600; }
   .tt-refresh,.tt-icon-btn{ color:hsl(var(--primary)); }
   .tt-hint{ color:hsl(var(--primary) / .75); }
+
+  /* iOS app-icon chips + blurred color orbs behind every result tile */
+  .tt-result > div > *{ position:relative; z-index:1; }
+  .tt-result > div::before{ content:''; position:absolute; right:-18px; top:-26px; width:92px; height:92px; border-radius:50%; filter:blur(16px); opacity:.85; pointer-events:none; z-index:0; }
+  .tt-result .r-hero::before{ background:rgba(255,255,255,.38); }
+  .tt-result .r-risk::before{ background:hsl(var(--bear) / .55); }
+  .tt-result .r-pips::before{ background:hsl(var(--primary) / .55); }
+  .tt-result .r-units::before{ background:hsl(var(--gold) / .60); }
+  .tt-ico{
+    position:absolute !important; right:.8rem; top:.8rem; width:32px; height:32px; border-radius:10px;
+    display:grid; place-items:center; color:#fff; z-index:2 !important;
+    box-shadow:0 8px 16px -6px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.4);
+  }
+  .tt-result .r-hero .tt-ico{ background:rgba(255,255,255,.24); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); width:38px; height:38px; border-radius:12px; }
+  .tt-result .r-risk .tt-ico{ background:linear-gradient(135deg, hsl(var(--bear)), hsl(18 100% 60%)); }
+  .tt-result .r-pips .tt-ico{ background:linear-gradient(135deg, hsl(var(--primary)), hsl(275 78% 64%)); }
+  .tt-result .r-units .tt-ico{ background:linear-gradient(135deg, hsl(var(--gold)), hsl(24 92% 56%)); }
+  .tt-result > div{ min-height:78px; }
+  .tt-result .r-hero{ min-height:96px; }
 }
 `;
