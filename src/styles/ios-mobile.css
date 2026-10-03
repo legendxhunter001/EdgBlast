@@ -1,5 +1,5 @@
 /* Edge Blast — iOS mobile system. Phones only (<768px); desktop is untouched.
-   Own iOS color system: system blue chrome, green wins, red losses, grouped backgrounds. */
+   Own iOS color system: indigo chrome, green wins, red losses, grouped backgrounds. */
 .ios-dock,.ios-dockfade{display:none}
 
 @media (max-width:767px){
@@ -111,6 +111,19 @@
   [data-sonner-toast]{border-radius:18px!important}
   .luxe-card.slight{border-color:hsl(var(--c)/.16)!important}
   .dark .luxe-card.slight{border-color:hsl(var(--c)/.26)!important}
+
+  /* ===== Native-app feel ===== */
+  html{-webkit-text-size-adjust:100%;touch-action:manipulation;overscroll-behavior-y:contain;accent-color:hsl(var(--primary))}
+  ::selection{background:hsl(var(--primary)/.25)}
+  input,textarea,select{font-size:16px!important;caret-color:hsl(var(--primary))}   /* stops iOS zoom-on-focus */
+  button,a,[role="button"],nav,header{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  img{-webkit-user-drag:none}
+  header.sticky{padding-top:env(safe-area-inset-top,0px)}                           /* clears the notch / status bar */
+  *{scrollbar-width:none}*::-webkit-scrollbar{display:none}
+  .overflow-auto,.overflow-y-auto,.overflow-x-auto{-webkit-overflow-scrolling:touch}
+  /* iOS-style list separators + press highlight on rows */
+  [role="menuitem"],[role="option"]{border-radius:12px;min-height:44px}
+  [data-radix-popper-content-wrapper] [role="menu"]{border-radius:18px;padding:6px;box-shadow:0 18px 40px -12px rgba(0,0,0,.28)}
   /* FAB floats above the dock */
   a[aria-label="New trade"]{bottom:calc(env(safe-area-inset-bottom,0px) + 94px)!important}
 
