@@ -9,8 +9,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 
+const TONE: Record<string, string> = { bull: 'tone tone-blue', bear: 'tone tone-red', accent: 'tone tone-slate', violet: 'tone tone-slate', gold: '' };
+
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' | 'violet' }) => (
-  <div className="luxe-card stat-card card-hover p-4 md:p-5">
+  <div className={`luxe-card stat-card ${TONE[glow ?? 'violet']} card-hover p-4 md:p-5`}>
     <div className="flex items-center justify-between gap-2">
       <div className="text-caption truncate">{label}</div>
       <div className="size-8 rounded-lg bg-secondary/70 flex items-center justify-center shrink-0">
@@ -239,7 +241,7 @@ const TopList = ({ title, icon: Icon, trades, kind }: { title: string; icon: any
 );
 
 const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: number; count: number; icon: any }) => (
-  <div className="luxe-card stat-card card-hover p-4 md:p-5 flex items-center gap-4">
+  <div className={`luxe-card stat-card tone ${pnl > 0 ? 'tone-blue' : pnl < 0 ? 'tone-red' : 'tone-slate'} card-hover p-4 md:p-5 flex items-center gap-4`}>
     <div className="size-11 rounded-xl bg-secondary/70 flex items-center justify-center shrink-0">
       <Icon className="size-5 text-muted-foreground" />
     </div>
@@ -256,7 +258,7 @@ const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: num
 const ScoreCard = ({ label, value, icon: Icon, hint }: { label: string; value: number; icon: any; hint: string }) => {
   const pct = Math.max(0, Math.min(100, value));
   return (
-    <div className="luxe-card card-hover p-4 md:p-5">
+    <div className="luxe-card stat-card tone tone-slate card-hover p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">

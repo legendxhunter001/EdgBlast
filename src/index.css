@@ -471,8 +471,29 @@
   }
 }
 
-/* ===== Calm, serious cards: no color wash, no glow. Numbers are crisp and sized to fit the phone. ===== */
-.stat-value{ font-size: clamp(20px, 6.2vw, 26px); line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* ===== Soft pastel cards: a calm tint that fades into the card, iOS radius, soft layered shadow =====
+   blue = profit side, red = loss side, slate = neutral metrics. Numbers stay neutral and sized to fit. */
+.stat-value{
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif !important;
+  font-weight: 700; letter-spacing: -.02em; font-feature-settings: "tnum" 1;
+  font-size: clamp(20px, 5.8vw, 26px); line-height: 1.1; white-space: nowrap;
+}
 @media (min-width: 768px){ .stat-value{ font-size: 26px; } }
 .stat-card .text-caption{ font-size: 11px; letter-spacing: .07em; }
+.luxe-card.tone{
+  --t: 215 22% 52%;
+  background:
+    linear-gradient(145deg, hsl(var(--t) / .14) 0%, hsl(var(--t) / .06) 55%, transparent 100%),
+    hsl(var(--card));
+  border: 1px solid hsl(var(--t) / .18);
+  box-shadow: 0 1px 2px rgba(20,24,40,.05), 0 12px 26px -14px rgba(20,24,40,.18);
+}
+.dark .luxe-card.tone{
+  background:
+    linear-gradient(145deg, hsl(var(--t) / .24) 0%, hsl(var(--t) / .09) 55%, transparent 100%),
+    hsl(var(--card));
+  border-color: hsl(var(--t) / .30);
+  box-shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 12px 26px -14px rgba(0,0,0,.7);
+}
+.tone-blue{ --t: 211 80% 56%; } .tone-red{ --t: 1 80% 60%; } .tone-slate{ --t: 215 22% 52%; }
 
