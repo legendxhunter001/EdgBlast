@@ -10,11 +10,11 @@ import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' | 'violet' }) => (
-  <div className={`luxe-card aurora aurora-${glow === 'accent' ? 'primary' : glow ?? 'violet'} card-hover p-4 md:p-5`}>
+  <div className="luxe-card stat-card card-hover p-4 md:p-5">
     <div className="flex items-center justify-between gap-2">
       <div className="text-caption truncate">{label}</div>
-      <div className="aurora-chip size-8 rounded-lg flex items-center justify-center shrink-0">
-        <Icon className="size-4" />
+      <div className="size-8 rounded-lg bg-secondary/70 flex items-center justify-center shrink-0">
+        <Icon className="size-4 text-muted-foreground" />
       </div>
     </div>
     <div className="stat-value font-mono font-semibold tracking-tight mt-3">{value}</div>
@@ -239,9 +239,9 @@ const TopList = ({ title, icon: Icon, trades, kind }: { title: string; icon: any
 );
 
 const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: number; count: number; icon: any }) => (
-  <div className={`luxe-card aurora aurora-${pnl > 0 ? 'bull' : pnl < 0 ? 'bear' : 'violet'} card-hover p-4 md:p-5 flex items-center gap-4`}>
-    <div className="aurora-chip size-11 rounded-xl flex items-center justify-center shrink-0">
-      <Icon className="size-5" />
+  <div className="luxe-card stat-card card-hover p-4 md:p-5 flex items-center gap-4">
+    <div className="size-11 rounded-xl bg-secondary/70 flex items-center justify-center shrink-0">
+      <Icon className="size-5 text-muted-foreground" />
     </div>
     <div className="flex-1 min-w-0">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
@@ -256,7 +256,7 @@ const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: num
 const ScoreCard = ({ label, value, icon: Icon, hint }: { label: string; value: number; icon: any; hint: string }) => {
   const pct = Math.max(0, Math.min(100, value));
   return (
-    <div className="luxe-card aurora aurora-primary card-hover p-4 md:p-5">
+    <div className="luxe-card card-hover p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">

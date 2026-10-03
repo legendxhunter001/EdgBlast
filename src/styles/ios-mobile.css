@@ -109,8 +109,6 @@
   html{scroll-padding-bottom:120px}
   [data-sonner-toaster]{bottom:calc(env(safe-area-inset-bottom,0px) + 96px)!important}
   [data-sonner-toast]{border-radius:18px!important}
-  .luxe-card.aurora{border-color:hsl(var(--c)/.30)!important;box-shadow:var(--ios-sh),0 12px 26px -18px hsl(var(--c)/.5)!important}
-  .dark .luxe-card.aurora{border-color:hsl(var(--c)/.38)!important}
 
   /* ===== Native-app feel ===== */
   html{-webkit-text-size-adjust:100%;touch-action:manipulation;overscroll-behavior-y:contain;accent-color:hsl(var(--primary))}

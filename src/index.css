@@ -471,42 +471,8 @@
   }
 }
 
-/* ===== Aurora cards: a soft blurred color glow lives behind the numbers; the numbers stay crisp and neutral =====
-   Each tone has a hue pair so the glow feels alive. The glow never goes under 'blank', never over 'loud'. */
-.luxe-card.aurora{
-  --c: 280 68% 60%; --c2: 316 80% 62%;
-  position: relative; overflow: hidden; isolation: isolate;
-  background: linear-gradient(160deg, hsl(var(--c) / .12), hsl(var(--c2) / .05) 60%, transparent), hsl(var(--card));
-  border: 1px solid hsl(var(--c) / .30);
-  box-shadow: 0 12px 26px -18px hsl(var(--c) / .6);
-  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease;
-}
-.luxe-card.aurora::before,.luxe-card.aurora::after{
-  content:""; position:absolute; z-index:-1; pointer-events:none; border-radius:50%;
-}
-.luxe-card.aurora::before{   /* main glow, low-left, right under the number */
-  left:-24%; bottom:-52%; width:92%; height:130%;
-  background: radial-gradient(closest-side, hsl(var(--c) / .70), hsl(var(--c) / .26) 58%, transparent 100%);
-  filter: blur(18px);
-}
-.luxe-card.aurora::after{    /* second hue, high-right, behind the icon */
-  right:-26%; top:-58%; width:76%; height:120%;
-  background: radial-gradient(closest-side, hsl(var(--c2) / .58), hsl(var(--c2) / .20) 60%, transparent 100%);
-  filter: blur(20px);
-}
-.dark .luxe-card.aurora::before{ background: radial-gradient(closest-side, hsl(var(--c) / .82), hsl(var(--c) / .30) 58%, transparent 100%); }
-.dark .luxe-card.aurora::after{ background: radial-gradient(closest-side, hsl(var(--c2) / .66), hsl(var(--c2) / .22) 60%, transparent 100%); }
-.dark .luxe-card.aurora{ background: linear-gradient(160deg, hsl(var(--c) / .20), hsl(var(--c2) / .08) 60%, transparent), hsl(var(--card)); }
-.dark .luxe-card.aurora{ border-color: hsl(var(--c) / .38); }
-.luxe-card.aurora:hover{ transform: translateY(-2px); }
-.aurora-bull{ --c: var(--bull); --c2: 168 72% 42%; }
-.aurora-bear{ --c: var(--bear); --c2: 18 100% 60%; }
-.aurora-gold{ --c: var(--gold); --c2: 24 92% 56%; }
-.aurora-primary{ --c: var(--primary); --c2: 275 80% 66%; }
-.aurora-violet{ --c: 280 68% 60%; --c2: 316 80% 62%; }
-.aurora-chip{ background: hsl(var(--c) / .22); color: hsl(var(--c)); box-shadow: inset 0 0 0 1px hsl(var(--c) / .22); }
-.dark .aurora-chip{ background: hsl(var(--c) / .24); }
+/* ===== Calm, serious cards: no color wash, no glow. Numbers are crisp and sized to fit the phone. ===== */
 .stat-value{ font-size: clamp(20px, 6.2vw, 26px); line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (min-width: 768px){ .stat-value{ font-size: 26px; } }
-.luxe-card.aurora .text-caption{ font-size: 11px; letter-spacing: .07em; }
+.stat-card .text-caption{ font-size: 11px; letter-spacing: .07em; }
 
