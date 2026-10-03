@@ -4,7 +4,7 @@
 
 @media (max-width:767px){
   /* Edge Blast mobile color system
-     Cobalt for action, emerald for profit, coral for loss, amber for caution; cool ink neutrals. */
+     Cobalt for action, iOS green for profit, iOS red for loss, amber for caution; cool ink neutrals. */
   :root,.light{
     --background:228 33% 97%;--foreground:226 39% 9%;
     --card:0 0% 100%;--card-foreground:226 39% 9%;
@@ -13,19 +13,19 @@
     --secondary:226 36% 95%;--secondary-foreground:226 39% 9%;
     --muted:226 36% 95%;--muted-foreground:221 14% 45%;
     --accent:230 100% 65%;--accent-foreground:0 0% 100%;
-    --destructive:350 100% 66%;--destructive-foreground:0 0% 100%;
-    --success:157 80% 43%;--success-foreground:0 0% 100%;
-    --bull:157 80% 43%;--bear:350 100% 66%;--gold:40 90% 60%;
+    --destructive:3 100% 59%;--destructive-foreground:0 0% 100%;
+    --success:135 59% 43%;--success-foreground:0 0% 100%;
+    --bull:135 59% 43%;--bear:3 100% 59%;--gold:40 90% 60%;
     --navy:228 45% 14%;
     --border:223 31% 92%;--input:223 31% 92%;--ring:230 100% 65%;
     --surface-1:0 0% 100%;--surface-2:226 36% 95%;--surface-3:223 31% 92%;
     --radius:1.25rem;
     --gradient-primary:linear-gradient(135deg,hsl(230 100% 70%),hsl(232 90% 58%));
-    --gradient-bull:linear-gradient(135deg,hsl(157 80% 48%),hsl(157 80% 38%));
-    --gradient-bear:linear-gradient(135deg,hsl(350 100% 70%),hsl(350 90% 60%));
-    --cal-win-sm:157 70% 95%;--cal-win-md:157 55% 78%;--cal-win-lg:157 55% 52%;
-    --cal-loss-sm:350 100% 97%;--cal-loss-md:350 80% 86%;--cal-loss-lg:350 75% 70%;
-    --cal-even:224 25% 93%;--cal-win-fg-soft:157 60% 20%;--cal-loss-fg-soft:350 60% 32%;
+    --gradient-bull:linear-gradient(135deg,hsl(135 59% 50%),hsl(135 59% 41%));
+    --gradient-bear:linear-gradient(135deg,hsl(3 100% 63%),hsl(3 100% 54%));
+    --cal-win-sm:135 55% 95%;--cal-win-md:135 45% 78%;--cal-win-lg:135 45% 52%;
+    --cal-loss-sm:3 100% 97%;--cal-loss-md:3 80% 86%;--cal-loss-lg:3 75% 70%;
+    --cal-even:224 25% 93%;--cal-win-fg-soft:135 55% 20%;--cal-loss-fg-soft:3 60% 32%;
   }
   .dark{
     --background:225 40% 4%;--foreground:226 60% 98%;
@@ -35,14 +35,14 @@
     --secondary:222 31% 15%;--secondary-foreground:226 60% 98%;
     --muted:222 31% 15%;--muted-foreground:223 14% 60%;
     --accent:230 100% 74%;--accent-foreground:225 40% 6%;
-    --destructive:349 100% 71%;--destructive-foreground:225 40% 6%;
-    --success:157 79% 54%;--success-foreground:225 40% 6%;
-    --bull:157 79% 54%;--bear:349 100% 71%;--gold:40 100% 67%;
+    --destructive:4 100% 61%;--destructive-foreground:225 40% 6%;
+    --success:135 64% 50%;--success-foreground:225 40% 6%;
+    --bull:135 64% 50%;--bear:4 100% 61%;--gold:40 100% 67%;
     --border:224 26% 18%;--input:224 26% 18%;--ring:230 100% 74%;
     --surface-1:222 30% 9%;--surface-2:222 31% 15%;--surface-3:224 26% 18%;
-    --cal-win-sm:157 40% 14%;--cal-win-md:157 45% 24%;--cal-win-lg:157 55% 38%;
-    --cal-loss-sm:350 40% 15%;--cal-loss-md:350 45% 27%;--cal-loss-lg:350 55% 42%;
-    --cal-even:222 20% 16%;--cal-win-fg-soft:157 70% 80%;--cal-loss-fg-soft:350 80% 86%;
+    --cal-win-sm:135 35% 14%;--cal-win-md:135 40% 24%;--cal-win-lg:135 50% 38%;
+    --cal-loss-sm:3 40% 15%;--cal-loss-md:3 45% 27%;--cal-loss-lg:3 55% 42%;
+    --cal-even:222 20% 16%;--cal-win-fg-soft:135 65% 80%;--cal-loss-fg-soft:4 85% 86%;
   }
 
   body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
