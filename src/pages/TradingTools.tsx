@@ -140,19 +140,19 @@ const LotCalculator = ({ suggestedBalance }: { suggestedBalance: number | null }
       </div>
 
       <div className="tt-result">
-        <div>
+        <div className="r-pips">
           <span>Stop distance</span>
           <b className="mono">{slPips > 0 ? `${slPips.toFixed(1)} pips` : '—'}</b>
         </div>
-        <div>
+        <div className="r-hero">
           <span>Position size</span>
           <b className="mono">{valid ? `${lots.toFixed(2)} lots` : '—'}</b>
         </div>
-        <div>
+        <div className="r-risk">
           <span>Risk amount</span>
           <b className="mono">{valid ? `$${riskAmount.toFixed(2)}` : '—'}</b>
         </div>
-        <div>
+        <div className="r-units">
           <span>Units</span>
           <b className="mono">{valid ? Math.round(lots * 100000).toLocaleString() : '—'}</b>
         </div>
@@ -925,7 +925,9 @@ html.light .tt{
     --line:hsl(var(--border)); --line2:hsl(var(--border));
     font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;
     padding-bottom:1rem;
+    --tt-tint:hsl(var(--primary) / .09); --tt-line:hsl(var(--primary) / .20);
   }
+  html.dark .tt{ --tt-tint:hsl(var(--primary) / .17); --tt-line:hsl(var(--primary) / .32); }
   .tt .mono{ font-variant-numeric:tabular-nums; }
   .tt-inner{ padding:0 .95rem; }
   .tt-hd{ padding:1.1rem 0 .4rem; border-bottom:0; margin-bottom:.8rem; }
@@ -933,7 +935,7 @@ html.light .tt{
   .tt-sub{ font-size:.9rem; margin-top:.35rem; }
 
   /* segmented control instead of pill buttons */
-  .tt-rail{ background:hsl(var(--secondary)); border-radius:14px; padding:3px; gap:2px; overflow:visible; }
+  .tt-rail{ background:var(--tt-tint); border-radius:14px; padding:3px; gap:2px; overflow:visible; }
   .tt-rail-btn{ flex:1; justify-content:center; padding:.55rem .3rem; min-height:38px; border:0; background:transparent; border-radius:11px; color:var(--dim); gap:.35rem; }
   .tt-rail-btn.on{ background:hsl(var(--card)); color:hsl(var(--foreground)); box-shadow:0 1px 3px rgba(0,0,0,.16), 0 3px 8px -3px rgba(0,0,0,.12); }
   .tt-rail-icon{ width:auto; height:auto; background:none; color:inherit; }
@@ -950,34 +952,50 @@ html.light .tt{
   .tt-chart,.tt-cal,.tt-watchlist-live{ border-radius:18px; border:0; }
 
   /* controls: 44px targets, 16px text (no iOS zoom), quiet gray fills */
-  .tt-refresh,.tt-icon-btn{ width:34px; height:34px; border-radius:11px; border:0; background:hsl(var(--secondary)); color:var(--dim); }
+  .tt-refresh,.tt-icon-btn{ width:34px; height:34px; border-radius:11px; border:0; background:var(--tt-tint); color:var(--dim); }
   .tt-refresh:hover:not(:disabled),.tt-icon-btn:hover{ color:hsl(var(--primary)); border:0; }
   .tt-icon-group{ border-left:0; padding-left:0; }
-  .tt-symbol-select{ border:0; background:hsl(var(--secondary)); border-radius:11px; min-height:34px; font-size:16px; }
-  .tt-chip{ border:0; background:hsl(var(--secondary)); border-radius:999px; min-height:34px; padding:.35rem .85rem; font-size:.82rem; color:var(--text); }
+  .tt-symbol-select{ border:0; background:var(--tt-tint); border-radius:11px; min-height:34px; font-size:16px; }
+  .tt-chip{ border:0; background:var(--tt-tint); border-radius:999px; min-height:34px; padding:.35rem .85rem; font-size:.82rem; color:var(--text); }
   .tt-chip:hover{ transform:none; }
   .tt-chip:active{ transform:scale(.96); }
   .tt-chip.on{ background:hsl(var(--primary)); color:hsl(var(--primary-foreground)); }
   .tt-field > span{ font-size:.68rem; letter-spacing:.08em; }
   .tt-field input,.tt-field select,.tt-alert-input,.tt-alert-select{
-    background:hsl(var(--secondary)); border:1px solid transparent; border-radius:12px; min-height:46px; padding:.65rem .8rem; font-size:16px;
+    background:var(--tt-tint); border:1px solid transparent; border-radius:12px; min-height:46px; padding:.65rem .8rem; font-size:16px;
   }
   .tt-field input:focus,.tt-field select:focus,.tt-alert-input:focus,.tt-alert-select:focus{
     border-color:hsl(var(--primary)); background:hsl(var(--card)); box-shadow:0 0 0 3px hsl(var(--primary) / .15);
   }
   .tt-mini{ color:hsl(var(--primary)); text-decoration:none; font-weight:600; }
 
-  /* results become little grouped tiles */
-  .tt-result{ border-top:0; padding-top:.2rem; gap:.5rem; grid-template-columns:1fr 1fr; }
-  .tt-result > div{ background:hsl(var(--secondary)); border-radius:14px; padding:.7rem .8rem; }
-  .tt-result > div:first-child{ grid-column:1 / -1; background:hsl(var(--primary) / .12); }
-  .tt-result > div:first-child b{ color:hsl(var(--primary)); font-size:1.7rem; letter-spacing:-.02em; }
-  .tt-result b{ font-size:1.1rem; }
+  /* results: every tile owns a color from the Edge Blast palette */
+  .tt-result{ border-top:0; padding-top:.2rem; gap:.55rem; grid-template-columns:1fr 1fr; }
+  .tt-result > div{ border-radius:16px; padding:.75rem .85rem; position:relative; overflow:hidden; border:1px solid transparent; }
+  .tt-result span{ font-weight:650; letter-spacing:.07em; }
+  .tt-result b{ font-size:1.12rem; letter-spacing:-.01em; }
+  .tt-result .r-hero{
+    order:-1; grid-column:1 / -1; padding:1rem 1.1rem; color:#fff; border:0;
+    background:linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)) 55%, hsl(275 78% 64%));
+    box-shadow:0 14px 28px -14px hsl(var(--primary) / .75);
+  }
+  .tt-result .r-hero::after{ content:''; position:absolute; right:-28px; top:-40px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,.16); pointer-events:none; }
+  .tt-result .r-hero span{ color:rgba(255,255,255,.85); }
+  .tt-result .r-hero b{ color:#fff; font-size:1.9rem; letter-spacing:-.03em; }
+  .tt-result .r-risk{ background:hsl(var(--bear) / .11); border-color:hsl(var(--bear) / .22); }
+  .tt-result .r-risk span{ color:hsl(var(--bear)); }
+  .tt-result .r-pips{ background:hsl(var(--primary) / .11); border-color:hsl(var(--primary) / .22); }
+  .tt-result .r-pips span{ color:hsl(var(--primary)); }
+  .tt-result .r-units{ background:hsl(var(--gold) / .13); border-color:hsl(var(--gold) / .26); grid-column:1 / -1; }
+  .tt-result .r-units span{ color:hsl(var(--gold)); }
+  html.dark .tt-result .r-risk{ background:hsl(var(--bear) / .18); }
+  html.dark .tt-result .r-pips{ background:hsl(var(--primary) / .18); }
+  html.dark .tt-result .r-units{ background:hsl(var(--gold) / .18); }
 
   /* lists: hairline rows, status colors from the app palette */
   .tt-alert{ border:0; background:hsl(var(--bear) / .12); color:hsl(var(--bear)); border-radius:14px; }
   .tt-empty{ border:1px dashed var(--line); border-radius:16px; }
-  .tt-alert-row{ border:0; background:hsl(var(--secondary)); border-radius:14px; padding:.65rem .8rem; }
+  .tt-alert-row{ border:0; background:var(--tt-tint); border-radius:14px; padding:.65rem .8rem; }
   .tt-alert-row.triggered{ background:hsl(var(--bull) / .14); }
   .tt-alert-badge{ background:hsl(var(--bull) / .18); color:hsl(var(--bull)); }
   .tt-watchlist-row:hover{ border-color:transparent; }
@@ -988,5 +1006,15 @@ html.light .tt{
   .tt-side.sell{ background:hsl(var(--bear) / .15); color:hsl(var(--bear)); }
   .tt-alert-remove:hover{ color:hsl(var(--bear)); }
   .tt-order-review-backdrop{ background:rgba(0,0,0,.45); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+
+  /* a gentle indigo wash across each card header, and labels that carry the accent */
+  .tt-card{ background:linear-gradient(180deg, hsl(var(--primary) / .07), transparent 150px), hsl(var(--card)); }
+  html.dark .tt-card{ background:linear-gradient(180deg, hsl(var(--primary) / .14), transparent 150px), hsl(var(--card)); }
+  .tt-field > span{ color:hsl(var(--primary)); font-weight:700; }
+  .tt-field input,.tt-field select,.tt-alert-input,.tt-alert-select{ background:hsl(var(--card)); border:1px solid var(--tt-line); }
+  .tt-rail{ border:1px solid var(--tt-line); }
+  .tt-chip{ color:hsl(var(--primary)); font-weight:600; }
+  .tt-refresh,.tt-icon-btn{ color:hsl(var(--primary)); }
+  .tt-hint{ color:hsl(var(--primary) / .75); }
 }
 `;
