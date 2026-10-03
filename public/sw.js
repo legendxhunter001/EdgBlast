@@ -6,7 +6,7 @@
 // there's no staleness risk there. Supabase (API/auth/storage) is never
 // cached — trade data must always be fresh.
 
-const CACHE_VERSION = 'edge-blast-v2';
+const CACHE_VERSION = 'edge-blast-v3';
 const SHELL_URL = '/';
 
 self.addEventListener('install', (event) => {
@@ -37,7 +37,7 @@ self.addEventListener('fetch', (event) => {
   // Cross-origin requests (fonts, TradingView widgets, etc.) — just pass through.
   if (url.origin !== self.location.origin) return;
 
-  const isNavigation = request.mode === 'navigate' || request.destination === 'document';
+  const isNavigation = request.mode === 'navigate' || request.destination === 'document' || url.pathname.endsWith('.html');
 
   if (isNavigation) {
     // Network-first: always try to get the latest deploy. Only fall back to

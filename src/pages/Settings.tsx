@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
 import { toast } from 'sonner';
-import { FileUp, ImageDown } from 'lucide-react';
+import { FileUp, ImageDown, Link2, User, ShieldCheck, Bell, Sparkles, Lock } from 'lucide-react';
 import ImportCsvDialog from '@/components/ImportCsvDialog';
 import ImportScreenshotsDialog from '@/components/ImportScreenshotsDialog';
 
@@ -61,6 +61,59 @@ html.light .eb-set{
 .eb-link-row a{ color:var(--teal); font-size:.85rem; font-weight:600; text-decoration:none; }
 .eb-link-row a:hover{ text-decoration:underline; }
 .eb-mono{ font-family:'IBM Plex Mono',monospace; font-size:.85rem; color:var(--dim); }
+
+.eb-ic{ display:none; }
+/* ===== iOS phone layer: inset grouped settings in the Edge Blast palette ===== */
+@media (max-width:767px){
+  html .eb-set, html.light .eb-set{
+    --bg:hsl(var(--background)); --elev:hsl(var(--card)); --teal:hsl(var(--primary)); --blue:hsl(var(--primary-glow)); --rose:hsl(var(--bear));
+    --text:hsl(var(--foreground)); --dim:hsl(var(--muted-foreground)); --dim2:hsl(var(--muted-foreground) / .8);
+    --line:hsl(var(--border)); --line2:hsl(var(--border));
+    --tint:hsl(var(--primary) / .08);
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif; min-height:0; padding-bottom:1rem;
+  }
+  .eb-set header.hd{ border-bottom:0; padding:1.1rem 1rem .4rem; }
+  .eb-set h1{ font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif; font-size:34px; font-weight:800; letter-spacing:-.04em; line-height:1.1; }
+  .eb-set .sub{ font-size:.9rem; }
+  .eb-set .wrap{ padding:.9rem 1rem 0; gap:1rem; }
+  .eb-sec{
+    border-radius:24px; padding:1.1rem 1rem;
+    background:linear-gradient(145deg, hsl(215 22% 52% / .10), hsl(215 22% 52% / .04) 55%, transparent), hsl(var(--card));
+    border:1px solid hsl(215 22% 52% / .16);
+    box-shadow:0 1px 2px rgba(20,24,40,.05), 0 12px 26px -14px rgba(20,24,40,.18);
+  }
+  html.dark .eb-sec{ background:linear-gradient(145deg, hsl(215 22% 52% / .20), hsl(215 22% 52% / .07) 55%, transparent), hsl(var(--card)); box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 12px 26px -14px rgba(0,0,0,.7); }
+  .eb-sec h2{ display:flex; align-items:center; gap:.65rem; font-size:1.06rem; font-weight:700; letter-spacing:-.01em; }
+  .eb-ic{ display:inline-grid; place-items:center; width:30px; height:30px; border-radius:9px; color:#fff; flex:none; box-shadow:0 6px 12px -6px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35); }
+  .ic-indigo{ background:linear-gradient(135deg, hsl(248 85% 64%), hsl(275 78% 64%)); }
+  .ic-green{ background:linear-gradient(135deg, hsl(135 59% 46%), hsl(160 60% 44%)); }
+  .ic-blue{ background:linear-gradient(135deg, hsl(211 100% 52%), hsl(195 100% 56%)); }
+  .ic-orange{ background:linear-gradient(135deg, hsl(37 100% 52%), hsl(20 100% 58%)); }
+  .ic-red{ background:linear-gradient(135deg, hsl(3 100% 59%), hsl(340 90% 62%)); }
+  .ic-purple{ background:linear-gradient(135deg, hsl(280 68% 60%), hsl(316 80% 62%)); }
+  .ic-slate{ background:linear-gradient(135deg, hsl(220 12% 48%), hsl(225 14% 38%)); }
+  .eb-sec .desc{ margin-left:calc(30px + .65rem); font-size:.8rem; }
+  .eb-f{ font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; font-weight:650; }
+  .eb-f input, .eb-f select{ background:var(--tint); border:1px solid transparent; border-radius:12px; min-height:46px; padding:.65rem .85rem; font-size:16px; text-transform:none; letter-spacing:0; font-weight:500; }
+  .eb-f input:focus, .eb-f select:focus{ border-color:hsl(var(--primary)); background:hsl(var(--card)); box-shadow:0 0 0 3px hsl(var(--primary) / .15); }
+  .eb-f select option{ background:hsl(var(--card)); }
+  /* inset grouped rows + real iOS switch */
+  .eb-toggle-row{ padding:.85rem 0; border-bottom:.5px solid var(--line); min-height:52px; }
+  .eb-toggle-row .t{ font-size:1rem; font-weight:500; }
+  .eb-toggle-row .d{ font-size:.78rem; }
+  .eb-sw{ width:51px; height:31px; border:0; background:hsl(var(--muted)); }
+  .eb-sw span{ top:2px; left:2px; width:27px; height:27px; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,.28); }
+  .eb-sw.on{ background:hsl(135 59% 46%); border:0; }
+  html.dark .eb-sw.on{ background:hsl(135 64% 50%); }
+  .eb-sw.on span{ transform:translateX(20px); background:#fff; }
+  /* buttons */
+  .eb-btn{ border:0; border-radius:14px; min-height:46px; padding:.7rem 1.1rem; background:var(--tint); color:hsl(var(--primary)); font-size:.95rem; }
+  .eb-btn:hover:not(:disabled){ transform:none; color:hsl(var(--primary)); border:0; }
+  .eb-btn:active:not(:disabled){ transform:scale(.97); }
+  .eb-btn.filled, .eb-btn.filled:hover:not(:disabled){ background:hsl(var(--primary)); color:hsl(var(--primary-foreground)); }
+  .eb-ok{ color:hsl(135 59% 43%); }
+  .eb-link-row a{ color:hsl(var(--primary)); }
+}
 @media (prefers-reduced-motion: reduce){ .eb-set *{ animation:none !important; transition:none !important; } }
 `;
 
@@ -127,7 +180,7 @@ const ImportSection = () => {
   const [shotsOpen, setShotsOpen] = useState(false);
   return (
     <section className="eb-sec">
-      <h2>Import data</h2>
+      <h2><i className="eb-ic ic-green"><FileUp size={15} /></i>Import data</h2>
       <p className="desc">Bring in past trades from a broker CSV or from platform screenshots.</p>
       <div className="eb-toggle-row">
         <div><div className="t">Import CSV</div><div className="d">Upload a trade history export from your broker.</div></div>
@@ -147,7 +200,7 @@ const ProfileSection = () => {
   const s = useSection('profiles', { display_name: '', avatar_url: '', timezone: 'UTC' }, 'id');
   return (
     <section className="eb-sec">
-      <h2>Profile</h2>
+      <h2><i className="eb-ic ic-blue"><User size={15} /></i>Profile</h2>
       <p className="desc">How you appear inside Edge Blast and which timezone your sessions are grouped by.</p>
       <div className="eb-row2">
         <label className="eb-f">Display name
@@ -173,7 +226,7 @@ const RulesSection = () => {
   const num = (v: string) => (v === '' ? 0 : Number(v));
   return (
     <section className="eb-sec">
-      <h2>Trading Rules</h2>
+      <h2><i className="eb-ic ic-orange"><ShieldCheck size={15} /></i>Trading Rules</h2>
       <p className="desc">Your own playbook. Trades are reviewed against these limits to flag rule violations.</p>
       <div className="eb-row2">
         <label className="eb-f">Max risk per trade (%)
@@ -215,7 +268,7 @@ const NotificationsSection = () => {
   }, 'user_id');
   return (
     <section className="eb-sec">
-      <h2>Notifications</h2>
+      <h2><i className="eb-ic ic-red"><Bell size={15} /></i>Notifications</h2>
       <p className="desc">Choose what Edge Blast tells you about.</p>
       {NOTIFS.map((n) => (
         <div className="eb-toggle-row" key={n.key}>
@@ -239,7 +292,7 @@ const AiCoachSection = () => {
   }, 'user_id');
   return (
     <section className="eb-sec">
-      <h2>AI Coach</h2>
+      <h2><i className="eb-ic ic-purple"><Sparkles size={15} /></i>AI Coach</h2>
       <p className="desc">Automated review of your trades against your rules and psychology notes.</p>
       <div className="eb-toggle-row">
         <div>
@@ -288,7 +341,7 @@ const SecuritySection = () => {
 
   return (
     <section className="eb-sec">
-      <h2>Account &amp; Security</h2>
+      <h2><i className="eb-ic ic-slate"><Lock size={15} /></i>Account &amp; Security</h2>
       <p className="desc">Your sign-in details.</p>
       <label className="eb-f">Email
         <input value={user?.email ?? ''} readOnly />
@@ -324,7 +377,7 @@ export default function SettingsPage() {
         <section className="eb-sec">
           <div className="eb-link-row">
             <div>
-              <h2>MT5 Connections</h2>
+              <h2><i className="eb-ic ic-indigo"><Link2 size={15} /></i>MT5 Connections</h2>
               <p className="desc" style={{ marginBottom: 0 }}>
                 <span className="eb-mono">{connections.length}</span> MT5 account{connections.length === 1 ? '' : 's'} connected
               </p>
