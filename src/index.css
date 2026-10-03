@@ -472,53 +472,43 @@
 }
 
 
-/* ===== Clean color widgets: flat tinted surface, crisp tinted border, its own colored shadow ===== */
+/* ===== Colorful, calm widgets =====
+   Clean card, soft two-hue wash, gradient icon chip, and a thin gradient accent line.
+   --c is the main hue, --c2 a neighbouring hue so the color feels alive, not flat. */
 .luxe-card.tint{
-  --c: var(--muted-foreground);
+  --c: var(--muted-foreground); --c2: var(--muted-foreground);
   position: relative; overflow: hidden;
-  background: linear-gradient(180deg,
-    color-mix(in srgb, hsl(var(--c)) 17%, hsl(var(--card))),
-    color-mix(in srgb, hsl(var(--c)) 7%, hsl(var(--card))));
-  border: 1px solid hsl(var(--c) / .32);
-  box-shadow: 0 14px 28px -14px hsl(var(--c) / .50), 0 2px 6px -2px hsl(var(--c) / .20), inset 0 1px 0 rgba(255,255,255,.7);
+  background:
+    linear-gradient(145deg, hsl(var(--c) / .15) 0%, hsl(var(--c2) / .07) 52%, transparent 100%),
+    hsl(var(--card));
+  border: 1px solid hsl(var(--c) / .20);
+  box-shadow: 0 12px 26px -16px hsl(var(--c) / .45), 0 1px 2px hsl(var(--c) / .10), inset 0 1px 0 rgba(255,255,255,.6);
   transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, border-color .25s ease;
 }
-.dark .luxe-card.tint{
-  background: linear-gradient(180deg,
-    color-mix(in srgb, hsl(var(--c)) 48%, hsl(var(--card))),
-    color-mix(in srgb, hsl(var(--c)) 28%, hsl(var(--card))));
-  border-color: hsl(var(--c) / .55);
-  box-shadow: 0 14px 28px -16px hsl(var(--c) / .42), 0 2px 6px -2px hsl(var(--c) / .18);
+.luxe-card.tint::after{
+  content:""; position:absolute; left:18px; right:18px; bottom:0; height:3px; border-radius:3px 3px 0 0;
+  background: linear-gradient(90deg, hsl(var(--c)), hsl(var(--c2)));
+  opacity:.85; pointer-events:none;
 }
-.luxe-card.tint:hover{ border-color: hsl(var(--c) / .48); transform: translateY(-2px); box-shadow: 0 18px 32px -14px hsl(var(--c) / .58), 0 3px 8px -2px hsl(var(--c) / .24); }
+.dark .luxe-card.tint{
+  background:
+    linear-gradient(145deg, hsl(var(--c) / .26) 0%, hsl(var(--c2) / .12) 55%, transparent 100%),
+    hsl(var(--card));
+  border-color: hsl(var(--c) / .34);
+  box-shadow: 0 12px 26px -16px hsl(var(--c) / .5), 0 1px 2px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.luxe-card.tint:hover{ transform: translateY(-2px); border-color: hsl(var(--c) / .38); }
 .luxe-card.tint .blur-3xl{ display:none; }
-.tint-bull{ --c: var(--bull); } .tint-bear{ --c: var(--bear); } .tint-gold{ --c: var(--gold); }
-.tint-primary,.tint-accent{ --c: var(--primary); } .tint-flat{ --c: var(--muted-foreground); }
+.tint-bull{ --c: var(--bull); --c2: 162 68% 45%; }
+.tint-bear{ --c: var(--bear); --c2: 22 95% 58%; }
+.tint-gold{ --c: var(--gold); --c2: 24 92% 56%; }
+.tint-primary,.tint-accent{ --c: var(--primary); --c2: 266 82% 66%; }
+.tint-flat{ --c: var(--muted-foreground); --c2: var(--muted-foreground); }
+.luxe-card.tint.tint-flat::after{ opacity:.25; }
 .luxe-card.tint.tint-flat{ box-shadow: var(--shadow-card); }
 .tint-chip{
-  background: hsl(var(--c)); color:#fff;
-  box-shadow: 0 8px 18px -6px hsl(var(--c) / .6), inset 0 1px 0 rgba(255,255,255,.28);
+  background: linear-gradient(135deg, hsl(var(--c)), hsl(var(--c2))); color:#fff;
+  box-shadow: 0 8px 16px -8px hsl(var(--c) / .7), inset 0 1px 0 rgba(255,255,255,.35);
 }
 .tint-gold .tint-chip{ color: hsl(226 39% 9%); }
 .tint-flat .tint-chip{ background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); box-shadow:none; }
-
-/* ===== Bold blurred color shape: a saturated, soft-edged orb tucked in the corner behind the icon ===== */
-.luxe-card.tint.tint-bold{ isolation: isolate; }
-.luxe-card.tint.tint-bold::before{
-  content:""; position:absolute; z-index:-1; pointer-events:none;
-  top:-34px; right:-30px; width:104px; height:104px; border-radius:50%;
-  background: radial-gradient(circle at 42% 42%,
-    hsl(var(--c)) 0%, hsl(var(--c) / .92) 38%, hsl(var(--c) / .45) 68%, hsl(var(--c) / 0) 100%);
-  filter: blur(11px);
-  transition: transform .5s cubic-bezier(.2,.8,.2,1);
-}
-.luxe-card.tint.tint-bold:hover::before{ transform: scale(1.12); }
-.dark .luxe-card.tint.tint-bold::before{ opacity:1; }
-.luxe-card.tint.tint-bold.tint-flat::before{ display:none; }
-/* icon chip turns into frosted glass so it sits on the bold color */
-.tint-bold:not(.tint-flat) .tint-chip{
-  background: rgba(255,255,255,.26); color:#fff;
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.35), 0 6px 14px -6px hsl(var(--c) / .6);
-}
-.tint-bold.tint-gold .tint-chip{ color: hsl(226 39% 9%); }
