@@ -10,7 +10,7 @@ import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' }) => (
-  <div className={`luxe-card tint tint-${glow ?? 'flat'} card-hover p-5 relative overflow-hidden`}>
+  <div className={`luxe-card tint tint-bold tint-${glow ?? 'flat'} card-hover p-5 relative overflow-hidden`}>
     {glow && <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-25 ${glow === 'bull' ? 'bg-bull' : glow === 'bear' ? 'bg-bear' : glow === 'gold' ? 'bg-gold' : 'bg-primary'}`} />}
     <div className="flex items-start justify-between relative">
       <div>
