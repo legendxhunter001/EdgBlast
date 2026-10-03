@@ -65,6 +65,14 @@ export const MobileDock = () => {
     const el = track.current;
     if (!el) return;
     setEdge({ l: el.scrollLeft > 4, r: el.scrollLeft < el.scrollWidth - el.clientWidth - 4 });
+    // icons blur + fade in proportion to how much of them is clipped by the glass edge
+    const box = el.getBoundingClientRect();
+    items.current.forEach((a) => {
+      if (!a) return;
+      const r = a.getBoundingClientRect();
+      const hidden = Math.max(0, box.left - r.left, r.right - box.right) / r.width;
+      a.style.setProperty('--eb', Math.min(1, hidden * 1.15).toFixed(3));
+    });
   }, []);
   useEffect(() => {
     updateEdges();

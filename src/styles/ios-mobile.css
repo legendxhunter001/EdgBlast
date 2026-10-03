@@ -3,37 +3,46 @@
 .ios-dock,.ios-dockfade{display:none}
 
 @media (max-width:767px){
+  /* Edge Blast mobile color system
+     Cobalt for action, emerald for profit, coral for loss, amber for caution; cool ink neutrals. */
   :root,.light{
-    --background:240 24% 96%;--foreground:240 3% 11%;
-    --card:0 0% 100%;--card-foreground:240 3% 11%;
-    --popover:0 0% 100%;--popover-foreground:240 3% 11%;
-    --primary:211 100% 50%;--primary-foreground:0 0% 100%;--primary-glow:211 100% 60%;
-    --secondary:240 12% 93%;--secondary-foreground:240 3% 11%;
-    --muted:240 12% 93%;--muted-foreground:240 2% 43%;
-    --accent:211 100% 50%;--accent-foreground:0 0% 100%;
-    --destructive:3 100% 59%;--destructive-foreground:0 0% 100%;
-    --success:135 59% 43%;--success-foreground:0 0% 100%;
-    --bull:135 59% 43%;--bear:3 100% 59%;--gold:37 100% 50%;
-    --border:240 9% 90%;--input:240 9% 90%;--ring:211 100% 50%;
-    --surface-1:0 0% 100%;--surface-2:240 12% 93%;--surface-3:240 9% 90%;
+    --background:228 33% 97%;--foreground:226 39% 9%;
+    --card:0 0% 100%;--card-foreground:226 39% 9%;
+    --popover:0 0% 100%;--popover-foreground:226 39% 9%;
+    --primary:230 100% 65%;--primary-foreground:0 0% 100%;--primary-glow:230 100% 74%;
+    --secondary:226 36% 95%;--secondary-foreground:226 39% 9%;
+    --muted:226 36% 95%;--muted-foreground:221 14% 45%;
+    --accent:230 100% 65%;--accent-foreground:0 0% 100%;
+    --destructive:350 100% 66%;--destructive-foreground:0 0% 100%;
+    --success:157 80% 43%;--success-foreground:0 0% 100%;
+    --bull:157 80% 43%;--bear:350 100% 66%;--gold:40 90% 60%;
+    --navy:228 45% 14%;
+    --border:223 31% 92%;--input:223 31% 92%;--ring:230 100% 65%;
+    --surface-1:0 0% 100%;--surface-2:226 36% 95%;--surface-3:223 31% 92%;
     --radius:1.25rem;
-    --gradient-primary:linear-gradient(135deg,hsl(211 100% 55%),hsl(211 100% 46%));
-    --gradient-bull:linear-gradient(135deg,hsl(135 59% 50%),hsl(135 59% 41%));
-    --gradient-bear:linear-gradient(135deg,hsl(3 100% 63%),hsl(3 100% 54%));
+    --gradient-primary:linear-gradient(135deg,hsl(230 100% 70%),hsl(232 90% 58%));
+    --gradient-bull:linear-gradient(135deg,hsl(157 80% 48%),hsl(157 80% 38%));
+    --gradient-bear:linear-gradient(135deg,hsl(350 100% 70%),hsl(350 90% 60%));
+    --cal-win-sm:157 70% 95%;--cal-win-md:157 55% 78%;--cal-win-lg:157 55% 52%;
+    --cal-loss-sm:350 100% 97%;--cal-loss-md:350 80% 86%;--cal-loss-lg:350 75% 70%;
+    --cal-even:224 25% 93%;--cal-win-fg-soft:157 60% 20%;--cal-loss-fg-soft:350 60% 32%;
   }
   .dark{
-    --background:0 0% 0%;--foreground:0 0% 100%;
-    --card:240 3% 11%;--card-foreground:0 0% 100%;
-    --popover:240 3% 13%;--popover-foreground:0 0% 100%;
-    --primary:211 100% 52%;--primary-foreground:0 0% 100%;--primary-glow:211 100% 62%;
-    --secondary:240 3% 18%;--secondary-foreground:0 0% 100%;
-    --muted:240 3% 18%;--muted-foreground:240 2% 61%;
-    --accent:211 100% 52%;--accent-foreground:0 0% 100%;
-    --destructive:4 100% 61%;--destructive-foreground:0 0% 100%;
-    --success:135 64% 50%;--success-foreground:0 0% 0%;
-    --bull:135 64% 50%;--bear:4 100% 61%;--gold:50 100% 52%;
-    --border:240 2% 22%;--input:240 2% 22%;--ring:211 100% 52%;
-    --surface-1:240 3% 11%;--surface-2:240 3% 18%;--surface-3:240 2% 22%;
+    --background:225 40% 4%;--foreground:226 60% 98%;
+    --card:222 30% 9%;--card-foreground:226 60% 98%;
+    --popover:222 26% 12%;--popover-foreground:226 60% 98%;
+    --primary:230 100% 74%;--primary-foreground:225 40% 6%;--primary-glow:230 100% 82%;
+    --secondary:222 31% 15%;--secondary-foreground:226 60% 98%;
+    --muted:222 31% 15%;--muted-foreground:223 14% 60%;
+    --accent:230 100% 74%;--accent-foreground:225 40% 6%;
+    --destructive:349 100% 71%;--destructive-foreground:225 40% 6%;
+    --success:157 79% 54%;--success-foreground:225 40% 6%;
+    --bull:157 79% 54%;--bear:349 100% 71%;--gold:40 100% 67%;
+    --border:224 26% 18%;--input:224 26% 18%;--ring:230 100% 74%;
+    --surface-1:222 30% 9%;--surface-2:222 31% 15%;--surface-3:224 26% 18%;
+    --cal-win-sm:157 40% 14%;--cal-win-md:157 45% 24%;--cal-win-lg:157 55% 38%;
+    --cal-loss-sm:350 40% 15%;--cal-loss-md:350 45% 27%;--cal-loss-lg:350 55% 42%;
+    --cal-even:222 20% 16%;--cal-win-fg-soft:157 70% 80%;--cal-loss-fg-soft:350 80% 86%;
   }
 
   body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
@@ -50,7 +59,7 @@
     pointer-events:none;z-index:40;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
     -webkit-mask-image:linear-gradient(transparent,#000 70%);mask-image:linear-gradient(transparent,#000 70%);transition:opacity .35s}
   .ios-dockfade.hide{opacity:0}
-  .ios-dock{display:block;position:fixed;z-index:50;left:12px;right:12px;max-width:460px;margin:0 auto;
+  .ios-dock{display:block;position:fixed;z-index:45;left:12px;right:12px;max-width:460px;margin:0 auto;
     bottom:calc(env(safe-area-inset-bottom,0px) + 12px);padding:6px;border-radius:999px;
     background:color-mix(in srgb,hsl(var(--card)) 70%,transparent);
     backdrop-filter:blur(26px) saturate(190%);-webkit-backdrop-filter:blur(26px) saturate(190%);
@@ -76,6 +85,7 @@
   .ios-dock-track>a{position:relative;z-index:1;flex:0 0 20%;width:20%;min-height:54px;scroll-snap-align:center;border-radius:999px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     font-size:10px;font-weight:600;color:hsl(var(--muted-foreground));text-decoration:none;
+    filter:blur(calc(var(--eb,0) * 5px));opacity:calc(1 - var(--eb,0) * .6);
     transition:color .25s,transform .2s}
   .ios-dock-track>a svg{width:22px;height:22px;transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
   .ios-dock-track>a[aria-current="page"]{color:hsl(var(--primary))}
@@ -91,6 +101,10 @@
   .ios-dock-track>a[aria-current="page"] svg{transform:translateY(-1px) scale(1.12)}
   .ios-dock:not(.hold) .ios-dock-track>a:active{transform:scale(.93)}
 
+  /* everything else makes room for the dock */
+  html{scroll-padding-bottom:120px}
+  [data-sonner-toaster]{bottom:calc(env(safe-area-inset-bottom,0px) + 96px)!important}
+  [data-sonner-toast]{border-radius:18px!important}
   /* FAB floats above the dock */
   a[aria-label="New trade"]{bottom:calc(env(safe-area-inset-bottom,0px) + 94px)!important}
 
