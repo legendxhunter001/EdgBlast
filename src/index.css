@@ -479,9 +479,9 @@
   --c: var(--muted-foreground); --c2: var(--muted-foreground);
   position: relative; overflow: hidden;
   background:
-    linear-gradient(145deg, hsl(var(--c) / .15) 0%, hsl(var(--c2) / .07) 52%, transparent 100%),
+    linear-gradient(145deg, hsl(var(--c) / .24) 0%, hsl(var(--c2) / .12) 55%, hsl(var(--c2) / .03) 100%),
     hsl(var(--card));
-  border: 1px solid hsl(var(--c) / .20);
+  border: 1px solid hsl(var(--c) / .28);
   box-shadow: 0 12px 26px -16px hsl(var(--c) / .45), 0 1px 2px hsl(var(--c) / .10), inset 0 1px 0 rgba(255,255,255,.6);
   transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, border-color .25s ease;
 }
@@ -492,9 +492,9 @@
 }
 .dark .luxe-card.tint{
   background:
-    linear-gradient(145deg, hsl(var(--c) / .26) 0%, hsl(var(--c2) / .12) 55%, transparent 100%),
+    linear-gradient(145deg, hsl(var(--c) / .38) 0%, hsl(var(--c2) / .18) 55%, hsl(var(--c2) / .05) 100%),
     hsl(var(--card));
-  border-color: hsl(var(--c) / .34);
+  border-color: hsl(var(--c) / .50);
   box-shadow: 0 12px 26px -16px hsl(var(--c) / .5), 0 1px 2px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.07);
 }
 .luxe-card.tint:hover{ transform: translateY(-2px); border-color: hsl(var(--c) / .38); }
@@ -502,7 +502,7 @@
 .tint-bull{ --c: var(--bull); --c2: 162 68% 45%; }
 .tint-bear{ --c: var(--bear); --c2: 22 95% 58%; }
 .tint-gold{ --c: var(--gold); --c2: 24 92% 56%; }
-.tint-primary,.tint-accent{ --c: var(--primary); --c2: 266 82% 66%; }
+.tint-primary,.tint-accent{ --c: var(--primary); --c2: 258 85% 66%; }
 .tint-flat{ --c: var(--muted-foreground); --c2: var(--muted-foreground); }
 .luxe-card.tint.tint-flat::after{ opacity:.25; }
 .luxe-card.tint.tint-flat{ box-shadow: var(--shadow-card); }
@@ -512,3 +512,6 @@
 }
 .tint-gold .tint-chip{ color: hsl(226 39% 9%); }
 .tint-flat .tint-chip{ background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); box-shadow:none; }
+
+/* tone-colored headline numbers on the tinted widgets */
+.luxe-card.tint:is(.tint-bull,.tint-bear,.tint-primary) .font-mono{ color: hsl(var(--c)); }
