@@ -10,7 +10,7 @@ import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 
 const STAT_TONE: Record<string, string> = {
-  bull: 'text-bull', bear: 'text-bear', accent: 'text-primary', gold: 'text-gold', violet: '',
+  bull: '', bear: '', accent: '', gold: '', violet: '',
 };
 
 const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' | 'violet' }) => (
@@ -251,7 +251,7 @@ const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: num
     </div>
     <div className="flex-1 min-w-0">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={`font-mono text-xl md:text-2xl font-semibold tracking-tight mt-0.5 ${pnlClass(pnl)}`}>
+      <div className={`font-mono text-xl md:text-2xl font-semibold tracking-tight mt-0.5`}>
         {count === 0 ? '—' : formatCurrency(pnl, { sign: true })}
       </div>
       <div className="text-xs text-muted-foreground mt-0.5">{count} trade{count === 1 ? '' : 's'}</div>

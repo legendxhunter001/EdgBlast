@@ -475,13 +475,13 @@
 .luxe-card.slight{
   --c: var(--muted-foreground);
   background:
-    linear-gradient(160deg, hsl(var(--c) / .09) 0%, hsl(var(--c) / .03) 55%, transparent 100%),
+    linear-gradient(160deg, hsl(var(--c) / .15) 0%, hsl(var(--c) / .06) 55%, transparent 100%),
     hsl(var(--card));
-  border-color: hsl(var(--c) / .16);
+  border-color: hsl(var(--c) / .24);
 }
 .dark .luxe-card.slight{
   background:
-    linear-gradient(160deg, hsl(var(--c) / .17) 0%, hsl(var(--c) / .06) 55%, transparent 100%),
+    linear-gradient(160deg, hsl(var(--c) / .26) 0%, hsl(var(--c) / .10) 55%, transparent 100%),
     hsl(var(--card));
   border-color: hsl(var(--c) / .26);
 }

@@ -109,7 +109,7 @@
   html{scroll-padding-bottom:120px}
   [data-sonner-toaster]{bottom:calc(env(safe-area-inset-bottom,0px) + 96px)!important}
   [data-sonner-toast]{border-radius:18px!important}
-  .luxe-card.slight{border-color:hsl(var(--c)/.16)!important}
+  .luxe-card.slight{border-color:hsl(var(--c)/.24)!important}
   .dark .luxe-card.slight{border-color:hsl(var(--c)/.26)!important}
 
   /* ===== Native-app feel ===== */
