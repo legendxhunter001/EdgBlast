@@ -472,23 +472,32 @@
 }
 
 
-/* ===== Half-colored calm widgets: a soft tint grows from one corner, the rest stays clean card ===== */
+/* ===== Bold-color widgets: a saturated glow sits behind the icon and melts into the clean card ===== */
 .luxe-card.tint{
   --c: var(--muted-foreground);
-  background:
-    radial-gradient(130% 105% at 0% 0%, hsl(var(--c) / .16), transparent 62%),
-    linear-gradient(180deg, hsl(var(--c) / .05), transparent 60%),
-    hsl(var(--card));
-  border-color: hsl(var(--c) / .22);
+  position: relative; overflow: hidden; isolation: isolate;
+  background: hsl(var(--card));
+  border-color: hsl(var(--c) / .28);
 }
-.luxe-card.tint:hover{ border-color: hsl(var(--c) / .38); }
-.dark .luxe-card.tint{
-  background:
-    radial-gradient(130% 105% at 0% 0%, hsl(var(--c) / .22), transparent 62%),
-    linear-gradient(180deg, hsl(var(--c) / .07), transparent 60%),
-    hsl(var(--card));
+.luxe-card.tint::before{
+  content:""; position:absolute; z-index:-1; pointer-events:none;
+  top:-45%; right:-26%; width:72%; height:160%;
+  background: radial-gradient(closest-side, hsl(var(--c) / .78), hsl(var(--c) / .30) 58%, transparent 100%);
+  filter: blur(18px);
+  transition: opacity .3s ease, transform .5s cubic-bezier(.2,.8,.2,1);
 }
+.luxe-card.tint.tint-left::before{ right:auto; left:-26%; }
+.luxe-card.tint:hover::before{ transform: scale(1.08); }
+.luxe-card.tint .blur-3xl{ display:none; }
+.dark .luxe-card.tint::before{ background: radial-gradient(closest-side, hsl(var(--c) / .62), hsl(var(--c) / .24) 58%, transparent 100%); }
+.luxe-card.tint:hover{ border-color: hsl(var(--c) / .45); }
 .tint-bull{ --c: var(--bull); } .tint-bear{ --c: var(--bear); } .tint-gold{ --c: var(--gold); }
 .tint-primary,.tint-accent{ --c: var(--primary); } .tint-flat{ --c: var(--muted-foreground); }
-.luxe-card.tint.tint-flat{ background: radial-gradient(130% 105% at 0% 0%, hsl(var(--c) / .10), transparent 62%), hsl(var(--card)); }
-.tint-chip{ background: hsl(var(--c) / .15); color: hsl(var(--c)); }
+.luxe-card.tint.tint-flat::before{ opacity:.45; }
+/* solid bold icon chip with a soft colored lift */
+.tint-chip{
+  background: hsl(var(--c)); color:#fff;
+  box-shadow: 0 8px 18px -6px hsl(var(--c) / .6), inset 0 1px 0 rgba(255,255,255,.28);
+}
+.tint-gold .tint-chip{ color: hsl(226 39% 9%); }
+.tint-flat .tint-chip{ background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); box-shadow:none; }

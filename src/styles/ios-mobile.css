@@ -121,7 +121,6 @@
     box-shadow:var(--ios-sh)!important;background:hsl(var(--card))}
   .luxe-card:hover{border-color:hsl(var(--border))!important}
   .luxe-card.tint{border-color:hsl(var(--c)/.22)!important}
-  .luxe-card .blur-3xl{opacity:.16}
   .card-hover:hover{transform:none}
   /* controls */
   button,[role="button"]{-webkit-tap-highlight-color:transparent}
