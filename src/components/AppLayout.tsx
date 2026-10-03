@@ -1,50 +1,11 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
-import { Sidebar, MobileSidebar } from './Sidebar';
+import { ReactNode, useEffect, useState } from 'react';
+import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { MobileDock } from './MobileDock';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SidebarProvider, useSidebarState } from '@/hooks/useSidebar';
-
-const EdgeSwipe = () => {
-  const { setMobileOpen, mobileOpen } = useSidebarState();
-  const startX = useRef<number | null>(null);
-  const startY = useRef<number | null>(null);
-  const tracking = useRef(false);
-
-  useEffect(() => {
-    const onStart = (e: TouchEvent) => {
-      const t = e.touches[0];
-      if (mobileOpen) return;
-      if (window.innerWidth >= 768) return;
-      if (t.clientX <= 24) {
-        startX.current = t.clientX;
-        startY.current = t.clientY;
-        tracking.current = true;
-      }
-    };
-    const onMove = (e: TouchEvent) => {
-      if (!tracking.current || startX.current == null || startY.current == null) return;
-      const t = e.touches[0];
-      const dx = t.clientX - startX.current;
-      const dy = Math.abs(t.clientY - startY.current);
-      if (dx > 60 && dy < 40) {
-        setMobileOpen(true);
-        tracking.current = false;
-      }
-    };
-    const onEnd = () => { tracking.current = false; startX.current = null; startY.current = null; };
-    window.addEventListener('touchstart', onStart, { passive: true });
-    window.addEventListener('touchmove', onMove, { passive: true });
-    window.addEventListener('touchend', onEnd, { passive: true });
-    return () => {
-      window.removeEventListener('touchstart', onStart);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onEnd);
-    };
-  }, [mobileOpen, setMobileOpen]);
-  return null;
-};
+import { SidebarProvider } from '@/hooks/useSidebar';
 
 const LayoutInner = ({ children }: { children: ReactNode }) => {
   const { pathname } = useLocation();
@@ -62,8 +23,7 @@ const LayoutInner = ({ children }: { children: ReactNode }) => {
   return (
     <div className="min-h-screen flex w-full bg-background">
       <Sidebar />
-      <MobileSidebar />
-      <EdgeSwipe />
+      <MobileDock />
       <main className="flex-1 min-w-0 flex flex-col">
         <TopBar />
         <div key={pathname} className="animate-fade-up flex-1">{children}</div>

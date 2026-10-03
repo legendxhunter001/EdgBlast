@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MoreVertical, Settings, Sun, Moon, Monitor, HelpCircle, Download, User, LogOut, Menu } from 'lucide-react';
+import { MoreVertical, Settings, Sun, Moon, Monitor, HelpCircle, Download, User, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -9,7 +9,6 @@ import {
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrades } from '@/hooks/useTrades';
-import { useSidebarState } from '@/hooks/useSidebar';
 import { toast } from 'sonner';
 import { Logo } from './Logo';
 
@@ -36,7 +35,6 @@ export const TopBar = () => {
   const { mode, setMode } = useTheme();
   const { user, signOut } = useAuth();
   const { data: trades } = useTrades();
-  const { setMobileOpen } = useSidebarState();
 
   const handleExport = () => {
     if (!trades?.length) return toast.error('No trades to export');
@@ -61,15 +59,6 @@ export const TopBar = () => {
     <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/60">
       <div className="flex items-center justify-between px-3 md:px-6 h-14">
         <div className="flex items-center gap-2 min-w-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden size-9 rounded-lg -ml-1"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open menu"
-          >
-            <Menu className="size-5" />
-          </Button>
           <div className="md:hidden"><Logo size={26} /></div>
           <div className="font-display text-base md:text-lg font-semibold truncate">{titleFor(pathname)}</div>
         </div>
