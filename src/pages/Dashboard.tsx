@@ -9,15 +9,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 
-const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' }) => (
-  <div className={`luxe-card tint tint-bold tint-${glow ?? 'flat'} card-hover overflow-hidden`}>
+const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' | 'violet' }) => (
+  <div className={`luxe-card tint tint-bold tint-${glow ?? 'violet'} card-hover overflow-hidden`}>
     <div className="tint-head flex items-center justify-between px-4 py-3">
       <div className="text-caption">{label}</div>
       <div className="tint-chip size-8 rounded-lg flex items-center justify-center shrink-0">
         <Icon className="size-4" />
       </div>
     </div>
-    <div className="px-4 py-3.5">
+    <div className="tint-body px-4 py-3.5">
+      <div className="tint-bar" />
       <div className="font-mono text-2xl font-semibold tracking-tight">{value}</div>
       {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
     </div>
@@ -142,7 +143,7 @@ const Dashboard = () => {
             <div className="animate-fade-up stagger-1"><Stat label="Total P&L" value={formatCurrency(stats.totalPnl, { sign: true })} sub={`${stats.totalTrades} closed trades`} icon={stats.totalPnl >= 0 ? TrendingUp : TrendingDown} glow={stats.totalPnl >= 0 ? 'bull' : 'bear'} /></div>
             <div className="animate-fade-up stagger-2"><Stat label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} sub={`${stats.wins}W · ${stats.losses}L`} icon={Target} glow="accent" /></div>
             <div className="animate-fade-up stagger-3"><Stat label="Avg R:R" value={stats.avgRR ? stats.avgRR.toFixed(2) : '—'} sub="Win/loss ratio" icon={Activity} glow="gold" /></div>
-            <div className="animate-fade-up stagger-4"><Stat label="Current Streak" value={`${stats.streak}${stats.streakKind === 'win' ? 'W' : stats.streakKind === 'loss' ? 'L' : ''}`} sub={stats.streakKind === 'win' ? 'On a roll' : stats.streakKind === 'loss' ? 'Stay disciplined' : '—'} icon={Flame} glow={stats.streakKind === 'win' ? 'bull' : stats.streakKind === 'loss' ? 'bear' : undefined} /></div>
+            <div className="animate-fade-up stagger-4"><Stat label="Current Streak" value={`${stats.streak}${stats.streakKind === 'win' ? 'W' : stats.streakKind === 'loss' ? 'L' : ''}`} sub={stats.streakKind === 'win' ? 'On a roll' : stats.streakKind === 'loss' ? 'Stay disciplined' : '—'} icon={Flame} glow={stats.streakKind === 'win' ? 'bull' : stats.streakKind === 'loss' ? 'bear' : 'violet'} /></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 animate-fade-up">
