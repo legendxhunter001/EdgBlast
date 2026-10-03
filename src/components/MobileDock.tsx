@@ -23,6 +23,7 @@ const tabs = [
 const HOLD_MS = 350;
 const MOVE_CANCEL_PX = 10;
 const EDGE_PX = 44;
+const BLUR_ZONE = 52; // px from each glass edge where moving icons start to dissolve
 
 export const MobileDock = () => {
   const { pathname } = useLocation();
@@ -35,6 +36,8 @@ export const MobileDock = () => {
   const [ind, setInd] = useState({ x: 0, w: 0 });
   const [edge, setEdge] = useState({ l: false, r: true });
 
+  const flowing = useRef(false);
+  const flowTimer = useRef<number | undefined>(undefined);
   const lastY = useRef(0);
   const scrollTimer = useRef<number | undefined>(undefined);
   const moveTimer = useRef<number | undefined>(undefined);
@@ -70,10 +73,23 @@ export const MobileDock = () => {
     items.current.forEach((a) => {
       if (!a) return;
       const r = a.getBoundingClientRect();
-      const hidden = Math.max(0, box.left - r.left, r.right - box.right) / r.width;
-      a.style.setProperty('--eb', Math.min(1, hidden * 1.15).toFixed(3));
+      const clipped = Math.max(0, box.left - r.left, r.right - box.right) / r.width;
+      let t = Math.min(1, clipped * 1.15);
+      if (flowing.current) {
+        // while moving, every icon softens as it nears either edge
+        const cx = r.left + r.width / 2;
+        const nearest = Math.min(cx - box.left, box.right - cx);
+        t = Math.max(t, Math.min(1, Math.max(0, (BLUR_ZONE - nearest) / BLUR_ZONE)));
+      }
+      a.style.setProperty('--eb', t.toFixed(3));
     });
   }, []);
+  const onTrackScroll = useCallback(() => {
+    flowing.current = true;
+    updateEdges();
+    window.clearTimeout(flowTimer.current);
+    flowTimer.current = window.setTimeout(() => { flowing.current = false; updateEdges(); }, 180);
+  }, [updateEdges]);
   useEffect(() => {
     updateEdges();
     window.addEventListener('resize', updateEdges);
@@ -121,7 +137,9 @@ export const MobileDock = () => {
     const reset = () => {
       window.clearTimeout(timer);
       held = false; current = null;
+      flowing.current = false;
       setHolding(false); setScrubIndex(null);
+      updateEdges();
     };
 
     const onStart = (e: TouchEvent) => {
@@ -132,8 +150,10 @@ export const MobileDock = () => {
         held = true;
         const i = indexAt(sx, sy);
         current = i >= 0 ? i : null;
+        flowing.current = true;
         setHolding(true);
         setScrubIndex(current);
+        updateEdges();
         navigator.vibrate?.(14);
       }, HOLD_MS);
     };
@@ -152,6 +172,7 @@ export const MobileDock = () => {
         current = i;
         setScrubIndex(i);
         navigator.vibrate?.(8);
+        updateEdges();
       }
     };
     const onEnd = (e: TouchEvent) => {
@@ -188,7 +209,7 @@ export const MobileDock = () => {
         className={`ios-dock md:hidden ${scrolling ? 'scrolling' : ''} ${hidden ? 'hide' : ''} ${holding ? 'hold' : ''} ${edge.l ? 'can-l' : ''} ${edge.r ? 'can-r' : ''}`}
         aria-label="Primary"
       >
-        <div className="ios-dock-track" ref={track} onScroll={updateEdges}>
+        <div className="ios-dock-track" ref={track} onScroll={onTrackScroll}>
           <span
             className={`ios-dock-ind ${moving ? 'move' : ''}`}
             style={{ transform: `translateX(${ind.x}px)`, width: ind.w, opacity: shown >= 0 ? 1 : 0 }}
