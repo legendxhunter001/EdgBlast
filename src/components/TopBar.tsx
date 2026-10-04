@@ -1,5 +1,5 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-import { MoreVertical, Settings, Sun, Moon, Monitor, HelpCircle, Download, User, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Plus, MoreVertical, Settings, Sun, Moon, Monitor, HelpCircle, Download, User, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -56,13 +56,20 @@ export const TopBar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/60">
+    <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/60 eb-toolbar">
       <div className="flex items-center justify-between px-3 md:px-6 h-14">
         <div className="flex items-center gap-2 min-w-0">
           <div className="md:hidden"><Logo size={26} /></div>
           <div className="font-display text-base md:text-lg font-semibold truncate">{titleFor(pathname)}</div>
         </div>
 
+        <div className="flex items-center gap-2">
+        <button type="button" className="eb-spot hidden md:flex" onClick={() => window.dispatchEvent(new Event('eb:palette'))} aria-label="Search or jump to">
+          <Search className="size-3.5" /><span>Search or jump to…</span><kbd>⌘K</kbd>
+        </button>
+        <Button asChild size="sm" className="hidden md:inline-flex h-8 rounded-md px-3 text-[13px]">
+          <Link to="/trades/new"><Plus className="size-3.5 mr-1" />New trade</Link>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="size-9 rounded-lg" aria-label="Menu">
@@ -114,6 +121,7 @@ export const TopBar = () => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
     </header>
   );

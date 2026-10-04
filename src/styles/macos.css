@@ -1,0 +1,108 @@
+/* Edge Blast — macOS-style desktop & tablet shell (>= 768px). Phones keep the iOS layer.
+   Source-list sidebar with vibrancy, traffic lights, unified toolbar, Spotlight jump menu (⌘K). */
+.eb-traffic,.eb-spot,.eb-palette-scrim{display:none}
+
+@media (min-width:768px){
+  /* ---------- Apple palette, same family as the phone UI ---------- */
+  :root,.light{
+    --background:240 14% 96%;--foreground:240 5% 12%;
+    --card:0 0% 100%;--card-foreground:240 5% 12%;
+    --popover:0 0% 100%;--popover-foreground:240 5% 12%;
+    --primary:248 85% 64%;--primary-foreground:0 0% 100%;--primary-glow:248 90% 74%;
+    --secondary:240 10% 93%;--secondary-foreground:240 5% 12%;
+    --muted:240 10% 93%;--muted-foreground:240 3% 43%;
+    --accent:248 85% 64%;--accent-foreground:0 0% 100%;
+    --destructive:3 100% 59%;--destructive-foreground:0 0% 100%;
+    --success:135 59% 43%;--success-foreground:0 0% 100%;
+    --bull:135 59% 43%;--bear:3 100% 59%;--gold:37 100% 50%;
+    --border:240 6% 89%;--input:240 6% 89%;--ring:248 85% 64%;
+    --radius:.75rem;
+    --sidebar-background:240 12% 93%;--sidebar-foreground:240 4% 30%;
+    --sidebar-primary:248 85% 64%;--sidebar-primary-foreground:0 0% 100%;
+    --sidebar-accent:0 0% 100%;--sidebar-accent-foreground:240 5% 12%;
+    --sidebar-border:240 6% 86%;--sidebar-ring:248 85% 64%;
+    --cal-win-sm:135 55% 95%;--cal-win-md:135 45% 78%;--cal-win-lg:135 45% 52%;
+    --cal-loss-sm:3 100% 97%;--cal-loss-md:3 80% 86%;--cal-loss-lg:3 75% 70%;
+    --cal-even:240 10% 93%;--cal-win-fg-soft:135 55% 20%;--cal-loss-fg-soft:3 60% 32%;
+  }
+  .dark{
+    --background:240 4% 10%;--foreground:0 0% 96%;
+    --card:240 3% 14%;--card-foreground:0 0% 96%;
+    --popover:240 3% 16%;--popover-foreground:0 0% 96%;
+    --primary:248 100% 76%;--primary-foreground:240 10% 8%;--primary-glow:248 100% 84%;
+    --secondary:240 3% 19%;--secondary-foreground:0 0% 96%;
+    --muted:240 3% 19%;--muted-foreground:240 2% 62%;
+    --accent:248 100% 76%;--accent-foreground:240 10% 8%;
+    --destructive:4 100% 61%;--destructive-foreground:0 0% 100%;
+    --success:135 64% 50%;--success-foreground:0 0% 0%;
+    --bull:135 64% 50%;--bear:4 100% 61%;--gold:37 100% 55%;
+    --border:240 3% 22%;--input:240 3% 22%;--ring:248 100% 76%;
+    --sidebar-background:240 4% 15%;--sidebar-foreground:240 2% 72%;
+    --sidebar-primary:248 100% 76%;--sidebar-primary-foreground:240 10% 8%;
+    --sidebar-accent:240 3% 20%;--sidebar-accent-foreground:0 0% 96%;
+    --sidebar-border:240 3% 22%;--sidebar-ring:248 100% 76%;
+    --cal-win-sm:135 35% 14%;--cal-win-md:135 40% 24%;--cal-win-lg:135 50% 38%;
+    --cal-loss-sm:3 40% 15%;--cal-loss-md:3 45% 27%;--cal-loss-lg:3 55% 42%;
+    --cal-even:240 3% 19%;--cal-win-fg-soft:135 65% 80%;--cal-loss-fg-soft:4 85% 86%;
+  }
+
+  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .font-display{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",system-ui,sans-serif!important;letter-spacing:-.02em}
+  h1.font-display{font-size:30px!important;font-weight:700!important;letter-spacing:-.03em!important}
+
+  /* ---------- window "wallpaper" so the glass has something to blur ---------- */
+  .eb-mac-shell{
+    background:
+      radial-gradient(900px 520px at 0% 0%,hsl(var(--primary)/.11),transparent 60%),
+      radial-gradient(760px 520px at 100% 100%,hsl(280 70% 62%/.08),transparent 60%),
+      hsl(var(--background));
+  }
+
+  /* ---------- sidebar: source list with vibrancy ---------- */
+  .eb-mac-sidebar{background:hsl(var(--sidebar-background)/.70)!important;backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%)}
+  aside{border-right-width:.5px}
+  .eb-mac-sidebar .border-b,.eb-mac-sidebar .border-t{border-color:transparent}
+  .eb-traffic{display:flex;gap:8px;padding:14px 16px 2px}
+  .tl{width:12px;height:12px;border-radius:50%;border:.5px solid rgba(0,0,0,.2);padding:0;cursor:pointer;transition:filter .15s}
+  .tl:hover{filter:brightness(1.08)}
+  .tl-r{background:#FF5F57}.tl-y{background:#FEBC2E}.tl-g{background:#28C840}
+
+  /* ---------- unified toolbar ---------- */
+  header.eb-toolbar{background:hsl(var(--background)/.70)!important;backdrop-filter:blur(26px) saturate(180%);-webkit-backdrop-filter:blur(26px) saturate(180%);border-bottom:.5px solid hsl(var(--border))!important}
+  header.eb-toolbar>div{height:52px}
+  header.eb-toolbar .font-display{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .eb-spot{display:flex;align-items:center;gap:8px;height:30px;min-width:240px;padding:0 10px;border-radius:8px;background:hsl(var(--foreground)/.06);border:.5px solid hsl(var(--border));color:hsl(var(--muted-foreground));font-size:13px;cursor:pointer;transition:background .15s,border-color .15s}
+  .eb-spot:hover{background:hsl(var(--foreground)/.09);border-color:hsl(var(--primary)/.35)}
+  .eb-spot kbd{margin-left:auto;font:600 11px -apple-system,system-ui,sans-serif;padding:1px 6px;border-radius:5px;background:hsl(var(--foreground)/.08)}
+
+  /* ---------- cards: soft pastel tint, Mac radius, layered shadow ---------- */
+  .luxe-card:not(.tone),.glass.rounded-xl,.glass.rounded-2xl{
+    background:linear-gradient(145deg,hsl(215 22% 52%/.09),hsl(215 22% 52%/.03) 55%,transparent),hsl(var(--card))!important;
+    border:1px solid hsl(215 22% 52%/.15)!important;border-radius:16px!important;
+    box-shadow:0 1px 2px rgba(20,24,40,.05),0 10px 24px -14px rgba(20,24,40,.16)!important}
+  .dark .luxe-card:not(.tone),.dark .glass.rounded-xl,.dark .glass.rounded-2xl{
+    background:linear-gradient(145deg,hsl(215 22% 52%/.18),hsl(215 22% 52%/.06) 55%,transparent),hsl(var(--card))!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 24px -14px rgba(0,0,0,.7)!important}
+  .luxe-card.tone{border-radius:16px!important}
+
+  /* ---------- controls ---------- */
+  input,select,textarea{border-radius:8px}
+  :focus-visible{outline:3px solid hsl(var(--primary)/.35);outline-offset:1px}
+  a[aria-label="New trade"]{display:none!important}   /* the toolbar has a New trade button */
+  ::selection{background:hsl(var(--primary)/.25)}
+  *{scrollbar-width:thin;scrollbar-color:hsl(var(--foreground)/.22) transparent}
+
+  /* ---------- Spotlight-style jump menu ---------- */
+  .eb-palette-scrim{display:flex;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding-top:14vh}
+  .eb-palette{width:min(560px,92vw);border-radius:16px;overflow:hidden;background:hsl(var(--popover)/.88);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border:.5px solid hsl(var(--border));box-shadow:0 30px 70px -20px rgba(0,0,0,.45);animation:ebpal .18s cubic-bezier(.2,.8,.2,1)}
+  @keyframes ebpal{from{opacity:0;transform:scale(.97) translateY(-6px)}}
+  .eb-palette-input{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:.5px solid hsl(var(--border));color:hsl(var(--muted-foreground))}
+  .eb-palette-input input{flex:1;background:transparent;border:0;outline:0;color:hsl(var(--foreground));font-size:17px;min-height:0;padding:0}
+  .eb-palette-input kbd{font:600 11px -apple-system,system-ui,sans-serif;padding:2px 7px;border-radius:5px;background:hsl(var(--foreground)/.08)}
+  .eb-palette-list{max-height:340px;overflow:auto;padding:6px}
+  .eb-palette-list button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:hsl(var(--foreground));font-size:14px;text-align:left;cursor:pointer}
+  .eb-palette-list button em{margin-left:auto;font-style:normal;font-size:12px;color:hsl(var(--muted-foreground))}
+  .eb-palette-list button.on{background:hsl(var(--primary));color:hsl(var(--primary-foreground))}
+  .eb-palette-list button.on em{color:hsl(var(--primary-foreground)/.8)}
+  .eb-palette-empty{padding:18px;text-align:center;color:hsl(var(--muted-foreground));font-size:14px}
+}

@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileDock } from './MobileDock';
+import { CommandPalette } from './CommandPalette';
 import { Link, useLocation } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,7 +22,8 @@ const LayoutInner = ({ children }: { children: ReactNode }) => {
   const hideFab = pathname !== '/' || focusActive;
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="min-h-screen flex w-full bg-background eb-mac-shell">
+      <CommandPalette />
       <Sidebar />
       <MobileDock />
       <main className="flex-1 min-w-0 flex flex-col">
