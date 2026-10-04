@@ -176,3 +176,6 @@
   @keyframes ios-rise{from{opacity:0;transform:translateY(14px)}}
 }
 @media (prefers-reduced-motion:reduce){.ios-dock,.ios-dock *,.ios-dockfade{transition:none!important}}
+
+/* while a Journey photo is open: nothing but the photo */
+body.pv-open .ios-dock,body.pv-open .ios-dockfade,body.pv-open header.sticky,body.pv-open [data-sonner-toaster]{display:none!important}

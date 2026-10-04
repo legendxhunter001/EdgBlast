@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -573,6 +574,13 @@ export default function Journey() {
   const deleteAlbum = (label: string) => saveCustomAlbums(customAlbums.filter((l) => l !== label));
   const visibleGalleryImages = activeAlbum === "all" ? galleryImages : galleryImages.filter((img) => (img.album ?? "general") === activeAlbum);
 
+  // photo open = pure photo: hide the app's top bar and navigation dock underneath
+  useEffect(() => {
+    if (!viewerOpen) return;
+    document.body.classList.add("pv-open");
+    return () => document.body.classList.remove("pv-open");
+  }, [viewerOpen]);
+
   // render photos in chunks as you scroll, so a big library opens instantly
   useEffect(() => {
     const el = sentinelRef.current;
@@ -1026,6 +1034,8 @@ export default function Journey() {
           .eb-journey .gallery-fs-body:not(.albums-body){ padding-bottom:84px; }
           .eb-journey .albums-body{ padding-bottom:84px; }
         }
+
+        .eb-journey.pv-portal{ padding:0 !important; margin:0 !important; min-height:0 !important; background:transparent !important; width:0; height:0; overflow:visible; }
 `}</style>
 
       <div className="inner">
@@ -1250,7 +1260,8 @@ export default function Journey() {
         </div>
       )}
 
-      {viewer && (
+      {viewer && createPortal(
+        <div className="eb-journey pv-portal">
         <div className={`photo-viewer ${chromeHidden ? "chrome-off" : ""}`} role="dialog" aria-modal="true" aria-label="Photo viewer">
           <div className="pv-top">
             <button className="pv-done" onClick={closeViewer}>Done</button>
@@ -1284,6 +1295,8 @@ export default function Journey() {
             ))}
           </div>
         </div>
+        </div>,
+        document.body
       )}
 
       {galleryOpen && (
