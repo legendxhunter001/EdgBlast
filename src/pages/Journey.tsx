@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
   Image as ImageIcon, Images, X, Search, Loader2, Upload,
-  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus, ChevronLeft, ChevronRight, BookOpen, Palette, LayoutGrid,
+  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus, ChevronLeft, ChevronRight, BookOpen, Palette, LayoutGrid, FileText, Heading1, Heading2, Bold, Italic, List, ListOrdered, ListChecks, Quote, Minus, Code, Clock,
 } from "lucide-react";
 
 type Entry = {
@@ -57,6 +57,68 @@ function touchDist(touches: React.TouchList): number {
   const dx = touches[0].clientX - touches[1].clientX;
   const dy = touches[0].clientY - touches[1].clientY;
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+
+// ---- tiny, safe markdown renderer for Read mode: headings, bold/italic/code, lists, checklists, quotes, code, dividers
+function renderInline(text: string, keyBase: string): React.ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g).filter(Boolean).map((part, i) => {
+    const k = `${keyBase}-${i}`;
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) return <strong key={k}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("`") && part.endsWith("`") && part.length > 2) return <code key={k}>{part.slice(1, -1)}</code>;
+    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) return <em key={k}>{part.slice(1, -1)}</em>;
+    return <span key={k}>{part}</span>;
+  });
+}
+function renderMarkdown(src: string, onToggle: (lineIndex: number) => void): React.ReactNode[] {
+  const lines = src.split("\n");
+  const out: React.ReactNode[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.trim() === "") { i++; continue; }
+    if (line.startsWith("```")) {
+      const buf: string[] = []; i++;
+      while (i < lines.length && !lines[i].startsWith("```")) { buf.push(lines[i]); i++; }
+      i++; out.push(<pre key={`c${i}`}><code>{buf.join("\n")}</code></pre>); continue;
+    }
+    const h = /^(#{1,3})\s+(.*)$/.exec(line);
+    if (h) {
+      const lvl = h[1].length; const Tag = (`h${lvl}`) as "h1" | "h2" | "h3";
+      out.push(<Tag key={`h${i}`}>{renderInline(h[2], `h${i}`)}</Tag>); i++; continue;
+    }
+    if (/^---+$/.test(line.trim())) { out.push(<hr key={`r${i}`} />); i++; continue; }
+    if (/^>\s?/.test(line)) {
+      const buf: string[] = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^>\s?/, "")); i++; }
+      out.push(<blockquote key={`q${i}`}>{renderInline(buf.join(" "), `q${i}`)}</blockquote>); continue;
+    }
+    if (/^[-*]\s+\[( |x)\]\s/.test(line)) {
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && /^[-*]\s+\[( |x)\]\s/.test(lines[i])) {
+        const idx = i; const done = /\[x\]/.test(lines[i]); const txt = lines[i].replace(/^[-*]\s+\[( |x)\]\s/, "");
+        items.push(
+          <li key={`t${idx}`} className={done ? "done" : ""}>
+            <button type="button" className="todo-box" aria-pressed={done} onClick={() => onToggle(idx)}>{done ? "✓" : ""}</button>
+            <span>{renderInline(txt, `t${idx}`)}</span>
+          </li>
+        ); i++;
+      }
+      out.push(<ul key={`tl${i}`} className="todo">{items}</ul>); continue;
+    }
+    if (/^[-*]\s+/.test(line)) {
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && /^[-*]\s+/.test(lines[i]) && !/^[-*]\s+\[( |x)\]\s/.test(lines[i])) { items.push(<li key={`u${i}`}>{renderInline(lines[i].replace(/^[-*]\s+/, ""), `u${i}`)}</li>); i++; }
+      out.push(<ul key={`ul${i}`}>{items}</ul>); continue;
+    }
+    if (/^\d+\.\s+/.test(line)) {
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i])) { items.push(<li key={`o${i}`}>{renderInline(lines[i].replace(/^\d+\.\s+/, ""), `o${i}`)}</li>); i++; }
+      out.push(<ol key={`ol${i}`}>{items}</ol>); continue;
+    }
+    out.push(<p key={`p${i}`}>{renderInline(line, `p${i}`)}</p>); i++;
+  }
+  return out;
 }
 
 const ImportedDataBlock = ({ raw }: { raw: Record<string, string> | null | undefined }) => {
@@ -191,6 +253,9 @@ export default function Journey() {
   };
 
   // Journey folders: notebooks that group entries (stored on the entry, so they sync everywhere)
+  const [mobilePage, setMobilePage] = useState(false);
+  const [readMode, setReadMode] = useState(false);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
   const [folders, setFolders] = useState<{ name: string; color: string }[]>([]);
   const [activeFolder, setActiveFolder] = useState<string>("all");
   const [folderSheet, setFolderSheet] = useState(false);
@@ -255,6 +320,7 @@ export default function Journey() {
     setActiveId(e.id);
     setTitle(e.title);
     setContent(e.content);
+    setMobilePage(true);
   };
 
   const persist = useCallback(async (id: string, patch: Partial<Entry>) => {
@@ -291,6 +357,7 @@ export default function Journey() {
 
   const deleteEntry = async (id: string) => {
     setError(null);
+    setMobilePage(false);
     const { error: err } = await supabase.from("journal_entries").delete().eq("id", id);
     if (err) { setError(err.message); return; }
     dirty.current = false;
@@ -502,6 +569,48 @@ export default function Journey() {
     return () => io.disconnect();
   }, [galleryOpen, galleryView, activeAlbum, visibleCount, galleryImages.length]);
   useEffect(() => { setVisibleCount(60); galleryBodyRef.current?.scrollTo({ top: 0 }); }, [activeAlbum, galleryView]);
+
+  // ---- Notion-style formatting helpers (markdown under the hood)
+  const commitContent = (next: string, selStart?: number, selEnd?: number) => {
+    setContent(next); queueSave({ content: next });
+    requestAnimationFrame(() => {
+      const el = bodyRef.current;
+      if (el && selStart !== undefined) { el.focus(); el.setSelectionRange(selStart, selEnd ?? selStart); }
+    });
+  };
+  const applyFormat = (kind: "h1" | "h2" | "bold" | "italic" | "code" | "bullet" | "number" | "todo" | "quote" | "divider") => {
+    const el = bodyRef.current; if (!el) return;
+    const a = el.selectionStart, b = el.selectionEnd, text = content;
+    if (kind === "bold" || kind === "italic" || kind === "code") {
+      const m = kind === "bold" ? "**" : kind === "italic" ? "*" : "`";
+      const sel = text.slice(a, b) || "text";
+      const next = text.slice(0, a) + m + sel + m + text.slice(b);
+      commitContent(next, a + m.length, a + m.length + sel.length); return;
+    }
+    if (kind === "divider") {
+      const next = text.slice(0, a) + (a > 0 && text[a - 1] !== "\n" ? "\n" : "") + "---\n" + text.slice(b);
+      commitContent(next, a + 5); return;
+    }
+    const prefix = { h1: "# ", h2: "## ", bullet: "- ", number: "1. ", todo: "- [ ] ", quote: "> " }[kind];
+    const ls = text.lastIndexOf("\n", a - 1) + 1;
+    let le = text.indexOf("\n", b); if (le === -1) le = text.length;
+    const block = text.slice(ls, le).split("\n");
+    const strip = (l: string) => l.replace(/^(#{1,3}\s+|[-*]\s+\[( |x)\]\s+|[-*]\s+|\d+\.\s+|>\s?)/, "");
+    const allHave = block.every((l) => l.startsWith(prefix));
+    const nextBlock = block.map((l) => (allHave ? l.slice(prefix.length) : prefix + strip(l))).join("\n");
+    const next = text.slice(0, ls) + nextBlock + text.slice(le);
+    commitContent(next, ls + nextBlock.length);
+  };
+  const toggleCheck = (lineIndex: number) => {
+    const lines = content.split("\n");
+    lines[lineIndex] = /\[x\]/.test(lines[lineIndex]) ? lines[lineIndex].replace("[x]", "[ ]") : lines[lineIndex].replace("[ ]", "[x]");
+    commitContent(lines.join("\n"));
+  };
+  // the page grows with the writing, like a real document (no inner scrollbar)
+  useEffect(() => {
+    const el = bodyRef.current; if (!el) return;
+    el.style.height = "auto"; el.style.height = `${el.scrollHeight}px`;
+  }, [content, activeId, readMode, mobilePage]);
 
   return (
     <div className="eb-journey">
@@ -769,6 +878,90 @@ export default function Journey() {
           .eb-journey .albums-body{ padding:.8rem 1rem calc(104px + env(safe-area-inset-bottom,0px)); }
           .eb-journey .gal-tab{ min-width:104px; }
         }
+
+        /* ======== NOTION-STYLE JOURNEY ======== */
+        @media (min-width:768px){
+          html .eb-journey{ --bg:#191919; --elev:#202020; --text:#ECECEB; --dim:#9B9A97; --line:rgba(255,255,255,.09); --accent:#9585FF; --accent-soft:rgba(149,133,255,.14); }
+          html.light .eb-journey{ --bg:#FFFFFF; --elev:#F7F7F5; --text:#37352F; --dim:#787774; --line:rgba(55,53,47,.10); --accent:#6A55F1; --accent-soft:rgba(106,85,241,.10); }
+        }
+        .eb-journey{ font-family:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif; }
+        .eb-journey .inner{ max-width:1240px; }
+        .eb-journey h1{ font-family:inherit; font-size:1.7rem; font-weight:800; letter-spacing:-.03em; }
+        .eb-journey .layout{ grid-template-columns:290px minmax(0,1fr); gap:0; margin-top:1.4rem; border:1px solid var(--line); border-radius:18px; overflow:hidden; background:var(--bg); min-height:70vh; }
+        .eb-journey .col{ border:0; border-radius:0; background:transparent; }
+        .eb-journey .list-col{ background:var(--elev); border-right:1px solid var(--line); display:flex; flex-direction:column; }
+        .eb-journey .list-head{ border-bottom:0; padding:1rem 1rem .5rem; }
+        .eb-journey .list{ max-height:none; flex:1; padding:.35rem .5rem 1rem; }
+        .eb-journey .item{ border:0; border-radius:8px; padding:.5rem .6rem; }
+        .eb-journey .item .t{ display:flex; align-items:center; gap:.5rem; font-weight:600; font-size:.9rem; }
+        .eb-journey .item .t svg{ flex:none; color:var(--dim); }
+        .eb-journey .item.active{ background:var(--accent-soft); }
+        .eb-journey .item.active .t svg{ color:var(--accent); }
+        .eb-journey .item .m{ margin-left:calc(14px + .5rem); font-family:inherit; }
+        .eb-journey .page-col{ min-width:0; }
+        .eb-journey .editor{ max-width:780px; margin:0 auto; padding:1.6rem 2.6rem 3rem; min-height:70vh; }
+        .eb-journey .page-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:1.2rem; }
+        .eb-journey .back-btn{ display:none; border:0; background:transparent; color:var(--accent); font:600 1rem inherit; align-items:center; gap:.1rem; cursor:pointer; padding:.3rem .2rem; }
+        .eb-journey .seg-mini{ display:inline-flex; background:var(--elev); border:1px solid var(--line); border-radius:10px; padding:2px; margin-left:auto; }
+        .eb-journey .seg-mini button{ border:0; background:transparent; color:var(--dim); font:600 .78rem inherit; padding:.32rem .8rem; border-radius:8px; cursor:pointer; }
+        .eb-journey .seg-mini button.on{ background:var(--bg); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.18); }
+        .eb-journey .title-input{ font-family:inherit; font-size:2.5rem; font-weight:800; letter-spacing:-.035em; line-height:1.15; }
+        .eb-journey .title-input::placeholder{ color:var(--dim); opacity:.55; }
+        .eb-journey .props{ display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .9rem; margin:1rem 0 .4rem; padding-bottom:1rem; border-bottom:1px solid var(--line); color:var(--dim); font-size:.84rem; }
+        .eb-journey .prop{ display:inline-flex; align-items:center; gap:.35rem; }
+        .eb-journey .prop-v{ color:var(--text); }
+        .eb-journey .props .folder-row{ margin:0; padding:.15rem .55rem; border-radius:8px; background:transparent; border:1px solid transparent; }
+        .eb-journey .props .folder-row:hover{ background:var(--elev); border-color:var(--line); }
+        .eb-journey .fmt-bar{ position:sticky; top:calc(3.5rem + env(safe-area-inset-top,0px)); z-index:6; display:flex; gap:2px; align-items:center; overflow-x:auto; padding:.4rem .35rem; margin:.5rem 0 .2rem; background:color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--line); border-radius:12px; scrollbar-width:none; }
+        .eb-journey .fmt-bar::-webkit-scrollbar{ display:none; }
+        .eb-journey .fmt-bar button{ flex:none; width:34px; height:34px; border:0; border-radius:8px; background:transparent; color:var(--dim); display:grid; place-items:center; cursor:pointer; transition:background .15s, color .15s, transform .15s; }
+        .eb-journey .fmt-bar button:hover{ background:var(--elev); color:var(--text); }
+        .eb-journey .fmt-bar button:active{ transform:scale(.92); }
+        .eb-journey .fmt-bar .sep{ width:1px; height:18px; background:var(--line); margin:0 4px; flex:none; }
+        .eb-journey .body-input{ margin-top:.8rem; padding:0; border-left:0; background-image:none; font-size:1.06rem; line-height:1.75; min-height:46vh; overflow:hidden; }
+        .eb-journey .body-input::placeholder{ color:var(--dim); opacity:.6; }
+        .eb-journey .doc-read{ margin-top:.8rem; font-size:1.06rem; line-height:1.75; min-height:46vh; }
+        .eb-journey .doc-read h1{ font-size:1.9rem; margin:1.4rem 0 .5rem; }
+        .eb-journey .doc-read h2{ font-size:1.45rem; font-weight:750; letter-spacing:-.02em; margin:1.2rem 0 .4rem; }
+        .eb-journey .doc-read h3{ font-size:1.15rem; font-weight:700; margin:1rem 0 .3rem; }
+        .eb-journey .doc-read p{ margin:.35rem 0; }
+        .eb-journey .doc-read ul,.eb-journey .doc-read ol{ margin:.35rem 0 .35rem 1.3rem; }
+        .eb-journey .doc-read li{ margin:.2rem 0; }
+        .eb-journey .doc-read blockquote{ margin:.7rem 0; padding:.2rem 1rem; border-left:3px solid var(--text); color:var(--text); opacity:.85; }
+        .eb-journey .doc-read code{ background:var(--elev); border:1px solid var(--line); border-radius:6px; padding:.08rem .35rem; font-size:.9em; font-family:'IBM Plex Mono',monospace; }
+        .eb-journey .doc-read pre{ background:var(--elev); border:1px solid var(--line); border-radius:12px; padding:.9rem 1rem; overflow-x:auto; }
+        .eb-journey .doc-read pre code{ border:0; padding:0; background:transparent; }
+        .eb-journey .doc-read hr{ border:0; border-top:1px solid var(--line); margin:1.2rem 0; }
+        .eb-journey .doc-read .muted{ color:var(--dim); }
+        .eb-journey .doc-read ul.todo{ list-style:none; margin-left:0; padding:0; }
+        .eb-journey .doc-read ul.todo li{ display:flex; gap:.6rem; align-items:flex-start; }
+        .eb-journey .doc-read ul.todo li.done span{ color:var(--dim); text-decoration:line-through; }
+        .eb-journey .todo-box{ flex:none; width:20px; height:20px; margin-top:.28rem; border-radius:6px; border:1.5px solid var(--dim); background:transparent; color:#fff; font-size:.8rem; line-height:1; display:grid; place-items:center; cursor:pointer; padding:0; }
+        .eb-journey li.done .todo-box{ background:var(--accent); border-color:var(--accent); }
+        .eb-journey .gallery{ margin-top:2rem; padding-top:1rem; border-top:1px solid var(--line); }
+        .eb-journey .bar{ margin-top:1.2rem; }
+
+        /* phone: iOS Notes style — list first, tap into a full page, back chevron */
+        @media (max-width:767px){
+          .eb-journey{ padding-bottom:calc(120px + env(safe-area-inset-bottom,0px)); }
+          .eb-journey .sub{ display:none; }
+          .eb-journey h1{ font-size:34px; letter-spacing:-.04em; }
+          .eb-journey .layout{ display:block; border:0; border-radius:0; background:transparent; margin-top:.6rem; min-height:0; }
+          .eb-journey .list-col{ display:block; background:transparent; border-right:0; }
+          .eb-journey .page-col{ display:none; }
+          .eb-journey .layout.show-page .list-col{ display:none; }
+          .eb-journey .layout.show-page .page-col{ display:block; }
+          .eb-journey .list-head{ padding:.4rem 0 .5rem; }
+          .eb-journey .list{ background:hsl(var(--card)); border:1px solid hsl(var(--border)); border-radius:20px; padding:.25rem .5rem; box-shadow:var(--ios-sh, none); }
+          .eb-journey .item{ border-radius:12px; padding:.8rem .6rem; border-bottom:.5px solid hsl(var(--border)); }
+          .eb-journey .item:last-child{ border-bottom:0; }
+          .eb-journey .item.active{ background:transparent; }
+          .eb-journey .item .t{ font-size:1rem; }
+          .eb-journey .editor{ padding:.2rem 0 1rem; min-height:0; max-width:none; }
+          .eb-journey .back-btn{ display:inline-flex; }
+          .eb-journey .title-input{ font-size:2rem; }
+          .eb-journey .body-input,.eb-journey .doc-read{ font-size:1.05rem; }
+        }
 `}</style>
 
       <div className="inner">
@@ -780,8 +973,8 @@ export default function Journey() {
 
         {error && <div className="err">{error}</div>}
 
-        <div className="layout">
-          <div className="col">
+        <div className={`layout ${mobilePage ? "show-page" : ""}`}>
+          <div className="col list-col">
             <div className="list-head">
               <div className="list-head-top">
                 <span>Entries</span>
@@ -814,7 +1007,7 @@ export default function Journey() {
               ) : (
                 filteredEntries.map((e) => (
                   <button key={e.id} className={`item ${e.id === activeId ? "active" : ""}`} onClick={() => selectEntry(e)}>
-                    <div className="t">{e.title || "Untitled Entry"}</div>
+                    <div className="t"><FileText size={14} />{e.title || "Untitled Entry"}</div>
                     <div className="m">{timeAgo(e.updated_at)}{e.is_shared ? " · shared" : ""}</div>
                   </button>
                 ))
@@ -822,41 +1015,76 @@ export default function Journey() {
             </div>
           </div>
 
-          <div className="col">
+          <div className="col page-col">
             {!active ? (
               <div className="empty">Select an entry, or create a new one to begin writing.</div>
             ) : (
               <div className="editor">
-                <label className="folder-row">
-                  <BookOpen size={14} />
-                  <select
-                    value={entryFolderOf(active) ?? ""}
-                    onChange={(ev) => {
-                      if (ev.target.value === "__new__") { setAssignAfter(true); setFolderSheet(true); return; }
-                      setEntryFolder(active.id, ev.target.value || null);
-                    }}
-                    aria-label="Entry folder"
-                  >
-                    <option value="">No folder</option>
-                    {allFolders.map((f) => <option key={f.name} value={f.name}>{f.name}</option>)}
-                    <option value="__new__">+ New folder…</option>
-                  </select>
-                </label>
+                <div className="page-top">
+                  <button className="back-btn" onClick={() => setMobilePage(false)}><ChevronLeft size={18} /> Journey</button>
+                  <div className="seg-mini" role="tablist" aria-label="Mode">
+                    <button role="tab" aria-selected={!readMode} className={!readMode ? "on" : ""} onClick={() => setReadMode(false)}>Edit</button>
+                    <button role="tab" aria-selected={readMode} className={readMode ? "on" : ""} onClick={() => setReadMode(true)}>Read</button>
+                  </div>
+                </div>
+
                 <input
                   className="title-input"
                   value={title}
                   aria-label="Entry title"
-                  placeholder="Untitled Entry"
+                  placeholder="Untitled"
                   onChange={(ev) => { setTitle(ev.target.value); queueSave({ title: ev.target.value || "Untitled Entry" }); }}
                 />
 
-                <textarea
-                  className="body-input"
-                  value={content}
-                  aria-label="Entry content"
-                  placeholder="What happened today? What did you see, feel, and decide?"
-                  onChange={(ev) => { setContent(ev.target.value); queueSave({ content: ev.target.value }); }}
-                />
+                <div className="props">
+                  <span className="prop"><BookOpen size={13} /> Folder</span>
+                  <label className="folder-row">
+                    <select
+                      value={entryFolderOf(active) ?? ""}
+                      onChange={(ev) => {
+                        if (ev.target.value === "__new__") { setAssignAfter(true); setFolderSheet(true); return; }
+                        setEntryFolder(active.id, ev.target.value || null);
+                      }}
+                      aria-label="Entry folder"
+                    >
+                      <option value="">Empty</option>
+                      {allFolders.map((f) => <option key={f.name} value={f.name}>{f.name}</option>)}
+                      <option value="__new__">+ New folder…</option>
+                    </select>
+                  </label>
+                  <span className="prop"><Clock size={13} /> Updated</span>
+                  <span className="prop-v">{timeAgo(active.updated_at)}</span>
+                </div>
+
+                {!readMode && (
+                  <div className="fmt-bar" role="toolbar" aria-label="Formatting">
+                    <button onClick={() => applyFormat("h1")} aria-label="Heading 1"><Heading1 size={16} /></button>
+                    <button onClick={() => applyFormat("h2")} aria-label="Heading 2"><Heading2 size={16} /></button>
+                    <span className="sep" />
+                    <button onClick={() => applyFormat("bold")} aria-label="Bold"><Bold size={16} /></button>
+                    <button onClick={() => applyFormat("italic")} aria-label="Italic"><Italic size={16} /></button>
+                    <button onClick={() => applyFormat("code")} aria-label="Code"><Code size={16} /></button>
+                    <span className="sep" />
+                    <button onClick={() => applyFormat("bullet")} aria-label="Bullet list"><List size={16} /></button>
+                    <button onClick={() => applyFormat("number")} aria-label="Numbered list"><ListOrdered size={16} /></button>
+                    <button onClick={() => applyFormat("todo")} aria-label="Checklist"><ListChecks size={16} /></button>
+                    <button onClick={() => applyFormat("quote")} aria-label="Quote"><Quote size={16} /></button>
+                    <button onClick={() => applyFormat("divider")} aria-label="Divider"><Minus size={16} /></button>
+                  </div>
+                )}
+
+                {readMode ? (
+                  <div className="doc-read">{content.trim() ? renderMarkdown(content, toggleCheck) : <p className="muted">Nothing written yet.</p>}</div>
+                ) : (
+                  <textarea
+                    ref={bodyRef}
+                    className="body-input"
+                    value={content}
+                    aria-label="Entry content"
+                    placeholder="Write your thoughts, plans and lessons. Use the toolbar for headings, lists and checklists."
+                    onChange={(ev) => { setContent(ev.target.value); queueSave({ content: ev.target.value }); }}
+                  />
+                )}
 
                 <div className="gallery">
                   <div className="gallery-head-row">
