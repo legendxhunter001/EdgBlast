@@ -55,6 +55,7 @@
     border-bottom:0!important}
 
   main:has(h1) header.sticky .eb-title{display:none}   /* no repeated title above the page heading */
+  .animate-fade-up{animation-duration:.22s!important}
   /* soft fade + floating glass dock */
   .ios-dockfade{display:block;position:fixed;left:0;right:0;bottom:0;height:calc(150px + env(safe-area-inset-bottom,0px));
     pointer-events:none;z-index:40;

@@ -1,7 +1,10 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { prefetch } from '@/lib/routes';
 import {
   LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen,
   Settings, LogOut, PanelLeftClose, PanelLeftOpen, Plug, Compass, Wrench, LineChart, Sparkles,
+  ChevronRight, CandlestickChart, Calculator, Newspaper,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSidebarState } from '@/hooks/useSidebar';
@@ -12,7 +15,8 @@ import { ThemeToggle } from './ThemeToggle';
 import { Sheet, SheetContent } from './ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
-type Item = { to: string; label: string; icon: any };
+type Child = { key: string; to: string; label: string; icon: any };
+type Item = { to: string; label: string; icon: any; children?: Child[] };
 type Entry = Item | { divider: string };
 
 const items: Entry[] = [
@@ -28,43 +32,100 @@ const items: Entry[] = [
   { to: '/connections', label: 'Connections', icon: Plug },
   { divider: 'Trading Tools' },
   { to: '/mt5', label: 'MT5', icon: LineChart },
-  { to: '/trading-tools', label: 'Trading Tools', icon: Wrench },
+  { to: '/trading-tools', label: 'Trading Tools', icon: Wrench, children: [
+    { key: 'chart', to: '/trading-tools?tool=chart', label: 'Chart', icon: CandlestickChart },
+    { key: 'calculator', to: '/trading-tools?tool=calculator', label: 'Calculator', icon: Calculator },
+    { key: 'news', to: '/trading-tools?tool=news', label: 'News', icon: Newspaper },
+  ] },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
+const rowClass = (active: boolean, collapsed: boolean) => cn(
+  'group flex items-center rounded-[10px] text-[13px] font-medium press relative transition-colors duration-150 w-full',
+  collapsed ? 'justify-center h-9 w-9 mx-auto' : 'gap-2.5 px-2.5 h-9',
+  active ? 'bg-primary/15 text-primary' : 'text-sidebar-foreground hover:bg-foreground/[0.06]'
+);
+
 const NavItems = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) => {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
+  const [toolsOpen, setToolsOpen] = useState(true);
+  const tool = new URLSearchParams(search).get('tool') ?? 'chart';
+
   return (
-    <nav className={cn('flex-1 py-3 space-y-0.5', collapsed ? 'px-2' : 'px-2.5')}>
+    <nav className={cn('flex-1 py-2 space-y-0.5 overflow-y-auto', collapsed ? 'px-2' : 'px-2.5')}>
       {items.map((entry) => {
         if ('divider' in entry) {
           return collapsed ? (
             <div key={entry.divider} className="my-2 mx-auto h-px w-6 bg-sidebar-border" />
           ) : (
-            <div
-              key={entry.divider}
-              className="px-2.5 pt-4 pb-1 text-[11px] font-semibold text-sidebar-foreground/50"
-            >
+            <div key={entry.divider} className="px-2.5 pt-4 pb-1 text-[11px] font-semibold text-sidebar-foreground/50">
               {entry.divider}
             </div>
           );
         }
-        const { to, label, icon: Icon } = entry;
+        const { to, label, icon: Icon, children } = entry;
         const active = to === '/' ? pathname === '/' : pathname.startsWith(to);
+
+        if (children) {
+          const open = toolsOpen && !collapsed;
+          if (collapsed) {
+            return (
+              <Tooltip key={to} delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <NavLink to={children[0].to} onClick={onNavigate} onMouseEnter={() => prefetch(to)} className={rowClass(active, true)}>
+                    <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-sidebar-foreground/70')} />
+                  </NavLink>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">{label}</TooltipContent>
+              </Tooltip>
+            );
+          }
+          return (
+            <div key={to}>
+              <button
+                type="button"
+                className={rowClass(active && !open, false)}
+                aria-expanded={open}
+                onMouseEnter={() => prefetch(to)}
+                onClick={() => {
+                  if (!active) { navigate(children[0].to); setToolsOpen(true); onNavigate?.(); }
+                  else setToolsOpen((o) => !o);
+                }}
+              >
+                <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-sidebar-foreground/70')} />
+                <span className="flex-1 truncate text-left">{label}</span>
+                <ChevronRight className={cn('size-3.5 text-sidebar-foreground/50 transition-transform duration-200', open && 'rotate-90')} />
+              </button>
+              <div className={cn('eb-branch grid transition-[grid-template-rows] duration-200 ease-out', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+                <div className="overflow-hidden">
+                  <div className="ml-[19px] pl-2.5 border-l border-sidebar-border/80 py-0.5 space-y-0.5">
+                    {children.map((c) => {
+                      const childActive = active && tool === c.key;
+                      return (
+                        <NavLink
+                          key={c.key} to={c.to} onClick={onNavigate} tabIndex={open ? 0 : -1}
+                          onMouseEnter={() => prefetch(c.to)}
+                          className={cn(
+                            'flex items-center gap-2 rounded-lg h-8 px-2 text-[12.5px] font-medium press transition-colors duration-150',
+                            childActive ? 'bg-primary/15 text-primary' : 'text-sidebar-foreground hover:bg-foreground/[0.06]'
+                          )}
+                        >
+                          <c.icon className={cn('size-3.5 shrink-0', childActive ? 'text-primary' : 'text-sidebar-foreground/60')} />
+                          {c.label}
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         const link = (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onNavigate}
-            className={cn(
-              'group flex items-center rounded-md text-[13px] font-medium press relative transition-colors duration-150',
-              collapsed ? 'justify-center h-9 w-9 mx-auto' : 'gap-2.5 px-2.5 h-8',
-              active
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-sidebar-foreground hover:bg-foreground/[0.06]'
-            )}
-          >
-            <Icon className={cn('size-4 shrink-0', active ? 'text-primary-foreground' : 'text-sidebar-foreground/70')} />
+          <NavLink key={to} to={to} onClick={onNavigate} onMouseEnter={() => prefetch(to)} onFocus={() => prefetch(to)} className={rowClass(active, collapsed)}>
+            <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-sidebar-foreground/70')} />
             {!collapsed && <span className="flex-1 truncate">{label}</span>}
           </NavLink>
         );
@@ -154,7 +215,7 @@ export const Sidebar = () => {
   return (
     <aside
       className={cn(
-        'hidden md:flex shrink-0 border-r border-sidebar-border h-screen sticky top-0 transition-[width] duration-300 ease-out',
+        'hidden md:flex shrink-0 border-r border-sidebar-border h-screen sticky top-0 transition-[width] duration-300 ease-out eb-dock-aside',
         collapsed ? 'w-16' : 'w-60'
       )}
     >

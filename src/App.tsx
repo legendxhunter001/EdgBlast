@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -10,23 +11,25 @@ import { AppLayout } from "./components/AppLayout";
 import { AccountScopeProvider } from "./contexts/AccountScopeContext";
 import { BrandLoading } from "./components/BrandLoading";
 
-import Landing from "./pages/Landing";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
+const Landing = lazy(() => import("./pages/Landing"));
+const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 import Dashboard from "./pages/Dashboard";
-import Trades from "./pages/Trades";
-import NewTrade from "./pages/NewTrade";
-import TradeDetail from "./pages/TradeDetail";
-import Calendar from "./pages/Calendar";
-import Analytics from "./pages/Analytics";
-import Reviews from "./pages/Reviews";
-import Settings from "./pages/Settings";
-import Connections from "./pages/Connections";
-import TradingTools from "./pages/TradingTools";
-import MT5 from "./pages/MT5";
-import AICoach from "./pages/AICoach";
-import Journey from "./pages/Journey";
-import NotFound from "./pages/NotFound";
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+import { loaders } from "./lib/routes";
+const Trades = lazy(loaders.trades);
+const NewTrade = lazy(loaders.newTrade);
+const TradeDetail = lazy(loaders.tradeDetail);
+const Calendar = lazy(loaders.calendar);
+const Analytics = lazy(loaders.analytics);
+const Reviews = lazy(loaders.reviews);
+const Settings = lazy(loaders.settings);
+const Connections = lazy(loaders.connections);
+const TradingTools = lazy(loaders.tools);
+const MT5 = lazy(loaders.mt5);
+const AICoach = lazy(loaders.coach);
+const Journey = lazy(loaders.journey);
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } },
@@ -50,6 +53,7 @@ const App = () => (
         <Sonner position="top-right" />
         <BrowserRouter>
           <AuthProvider>
+            <Suspense fallback={<BrandLoading />}>
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
@@ -68,6 +72,7 @@ const App = () => (
               <Route path="/journey" element={<Shell><Journey /></Shell>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

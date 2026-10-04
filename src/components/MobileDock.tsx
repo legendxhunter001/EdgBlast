@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { prefetch } from '@/lib/routes';
 import {
   LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen,
   Sparkles, Compass, LineChart, Wrench, Plug,
@@ -222,6 +223,7 @@ export const MobileDock = () => {
               ref={(n) => { items.current[i] = n; }}
               aria-current={i === shown ? 'page' : undefined}
               draggable={false}
+              onPointerDown={() => prefetch(to)}
             >
               <Icon strokeWidth={1.9} />
               {label}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
+import { useSearchParams } from 'react-router-dom';
 import { functionErrorMessage } from '@/lib/functionError';
 import { getPipSize, getPipValue } from '@/lib/pips';
 import { toast } from 'sonner';
@@ -476,7 +477,11 @@ export default function TradingTools() {
   const [chartTheme, setChartTheme] = useState<'dark' | 'light'>('dark');
   const [themeLoaded, setThemeLoaded] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [section, setSection] = useState<'tradingview' | 'calculator' | 'news'>('tradingview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const toolParam = searchParams.get('tool');
+  const section: 'tradingview' | 'calculator' | 'news' = toolParam === 'calculator' ? 'calculator' : toolParam === 'news' ? 'news' : 'tradingview';
+  const setSection = (sec: 'tradingview' | 'calculator' | 'news') =>
+    setSearchParams({ tool: sec === 'tradingview' ? 'chart' : sec }, { replace: true });
   const [focusBarVisible, setFocusBarVisible] = useState(true);
   const focusBarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
