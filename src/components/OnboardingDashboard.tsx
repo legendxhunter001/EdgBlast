@@ -1,3 +1,4 @@
+import { GreetingTitle } from './Greeting';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Camera, CheckCircle2, Circle, LineChart, Repeat, Sparkles, Target, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium uppercase tracking-wider mb-4">
               <Sparkles className="size-3.5" /> Welcome to Edge Blast
             </div>
+            <div className="text-lg md:text-xl font-display font-semibold tracking-tight mb-2"><GreetingTitle /></div>
             <h1 className="font-display text-3xl md:text-5xl font-semibold tracking-tight mb-3">
               Your trading journal,<br className="hidden md:block" /> elevated.
             </h1>

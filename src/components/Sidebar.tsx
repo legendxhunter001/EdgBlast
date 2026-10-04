@@ -53,7 +53,7 @@ const NavItems = ({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
   const tool = new URLSearchParams(search).get('tool') ?? 'chart';
 
   return (
-    <nav className={cn('flex-1 py-2 space-y-0.5 overflow-y-auto', collapsed ? 'px-2' : 'px-2.5')}>
+    <nav className={cn('flex-1 min-h-0 py-2 space-y-0.5 overflow-y-auto eb-side-scroll', collapsed ? 'px-2' : 'px-2.5')}>
       {items.map((entry) => {
         if ('divider' in entry) {
           return collapsed ? (
@@ -152,9 +152,9 @@ const SidebarInner = ({ collapsed, onNavigate, showCollapseBtn = true }: {
   const { toggleCollapsed } = useSidebarState();
 
   return (
-    <div className="flex flex-col h-full bg-sidebar eb-mac-sidebar">
+    <div className="flex flex-col h-full min-h-0 w-full bg-sidebar eb-mac-sidebar">
       <div className={cn(
-        'flex items-center border-b border-sidebar-border py-4',
+        'shrink-0 flex items-center border-b border-sidebar-border py-4',
         collapsed ? 'px-2 flex-col gap-3' : 'px-4 gap-3'
       )}>
         {!collapsed ? (
@@ -184,7 +184,7 @@ const SidebarInner = ({ collapsed, onNavigate, showCollapseBtn = true }: {
 
       <NavItems collapsed={collapsed} onNavigate={onNavigate} />
 
-      <div className={cn('border-t border-sidebar-border', collapsed ? 'p-2' : 'p-3')}>
+      <div className={cn('shrink-0 border-t border-sidebar-border', collapsed ? 'p-2' : 'p-3')}>
         {!collapsed && (
           <div className="px-3 py-2 mb-2">
             <div className="text-xs text-sidebar-foreground/60">Signed in as</div>

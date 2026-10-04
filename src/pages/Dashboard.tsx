@@ -8,6 +8,7 @@ import { format, parseISO, isToday, isThisWeek, isThisMonth } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
+import { GreetingTitle, MotivationLine, NamePrompt } from '@/components/Greeting';
 
 const TONE: Record<string, string> = { bull: 'tone tone-blue', bear: 'tone tone-red', accent: 'tone tone-slate', violet: 'tone tone-slate', gold: '' };
 
@@ -115,6 +116,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 md:p-8 space-y-8 max-w-[1400px] mx-auto">
+      <NamePrompt />
       {empty && !onboardingSkipped ? (
         <OnboardingDashboard onSkip={() => {
           localStorage.setItem(ONBOARDING_KEY, '1');
@@ -124,8 +126,8 @@ const Dashboard = () => {
         <>
           <header className="flex flex-wrap items-end justify-between gap-4 animate-fade-up">
             <div>
-              <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight">Dashboard</h1>
-              <p className="text-sm text-muted-foreground mt-1.5">Your performance at a glance.</p>
+              <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight"><GreetingTitle /></h1>
+              <p className="text-sm text-muted-foreground mt-1.5"><MotivationLine /></p>
             </div>
             <Link to="/trades/new" className="press tap inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:opacity-95 transition-all">
               Log new trade <ArrowUpRight className="size-4" />

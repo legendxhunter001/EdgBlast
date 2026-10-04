@@ -497,3 +497,13 @@
 }
 .tone-blue{ --t: 211 80% 56%; } .tone-red{ --t: 1 80% 60%; } .tone-slate{ --t: 215 22% 52%; }
 
+/* living gradient for the person's name */
+.eb-name{
+  background: linear-gradient(100deg, hsl(var(--primary)) 0%, hsl(280 72% 62%) 45%, hsl(330 82% 62%) 75%, hsl(var(--primary)) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  animation: eb-name-flow 9s ease-in-out infinite;
+}
+@keyframes eb-name-flow{ 0%,100%{ background-position: 0% 50%; } 50%{ background-position: 100% 50%; } }
+@media (prefers-reduced-motion: reduce){ .eb-name{ animation:none; } }
+
