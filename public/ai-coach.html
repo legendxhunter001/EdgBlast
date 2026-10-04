@@ -513,9 +513,10 @@ a{ color:inherit; text-decoration:none; }
 .conversation{ display:flex; flex-direction:column; min-height:0; min-width:0; }
 .conv-scroll{
   flex:1; overflow-y:auto;
-  scroll-behavior: smooth;
-  mask-image: linear-gradient(to bottom, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 28px, black calc(100% - 28px), transparent 100%);
+  scroll-behavior: smooth; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  --edge: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.18) 10px, rgba(0,0,0,.6) 26px, #000 52px, #000 calc(100% - 78px), rgba(0,0,0,.6) calc(100% - 44px), rgba(0,0,0,.18) calc(100% - 20px), transparent 100%);
+  mask-image: var(--edge);
+  -webkit-mask-image: var(--edge);
 }
 .conv-inner{ max-width:720px; margin:0 auto; padding:24px 28px 8px; }
 
@@ -1140,7 +1141,6 @@ a{ color:inherit; text-decoration:none; }
   html{ touch-action:manipulation; -webkit-text-size-adjust:100%; }
 
   /* Messages-style bubbles */
-  .conv-scroll{ -webkit-mask-image:none; mask-image:none; }
   .conv-inner{ padding:56px 14px 8px; }
   .msg{ margin-bottom:12px; }
   .msg.user .msg-body{ max-width:82%; }
@@ -1213,6 +1213,13 @@ a{ color:inherit; text-decoration:none; }
 /* phone: keep the writing box above the floating navigation dock */
 html.with-dock .composer-wrap{ padding-bottom:calc(98px + env(safe-area-inset-bottom,0px)) !important; }
 html.with-dock.typing .composer-wrap{ padding-bottom:12px !important; }
+
+/* smooth reply reveal: each word fades and un-blurs in on one clock */
+.sw{ display:inline-block; animation: swIn .5s cubic-bezier(.2,.7,.2,1) both; }
+.sw-hide{ display:none; }
+.sw-pending{ display:none !important; }
+@keyframes swIn{ from{ opacity:0; filter:blur(6px); transform:translateY(4px); } to{ opacity:1; filter:blur(0); transform:none; } }
+@media (prefers-reduced-motion: reduce){ .sw{ animation:none; } }
 </style>
 </head>
 <body>
@@ -1819,6 +1826,7 @@ function sendMessage(){
 function stopGeneration(){
   clearTimeout(window._genTimeout);
   clearTimeout(window._streamTimeout);
+  if(window._streamCancel) window._streamCancel();
   const gen = document.getElementById('genIndicator');
   if(gen) gen.remove();
   if(window._streamingMsg){
@@ -1868,49 +1876,84 @@ function finishGeneration(inner, gen){
   });
 }
 function streamWords(container, text, onDone){
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const paragraphs = text.split('\n\n');
-  if(prefersReduced){
-    container.innerHTML = paragraphs.map(p => '<p>' + p + '</p>').join('');
-    if(onDone) onDone();
-    return;
+  // Renders the reply with real formatting first, then reveals it word by word on one smooth clock:
+  // each word fades + un-blurs in, pace adapts to the reply length, and the view glides along with it.
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const render = window.renderRichText || function(c, t){ t.split(/\n{2,}/).forEach(function(b){ var p = document.createElement('p'); p.textContent = b; c.appendChild(p); }); };
+  container.innerHTML = '';
+  render(container, text);
+  if(reduced){ if(onDone) onDone(); return; }
+
+  const words = [];
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while(walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(function(node){
+    const frag = document.createDocumentFragment();
+    node.nodeValue.split(/(\s+)/).forEach(function(part){
+      if(!part) return;
+      if(/^\s+$/.test(part)){ frag.appendChild(document.createTextNode(part)); return; }
+      const sp = document.createElement('span');
+      sp.className = 'sw sw-hide';
+      sp.textContent = part;
+      frag.appendChild(sp);
+      words.push(sp);
+    });
+    node.parentNode.replaceChild(frag, node);
+  });
+  const blocks = container.querySelectorAll('p,ul,ol,li,h1,h2,h3,pre,blockquote');
+  blocks.forEach(function(b){ b.classList.add('sw-pending'); });
+
+  const N = words.length;
+  if(!N){ if(onDone) onDone(); return; }
+  const seconds = Math.min(9, Math.max(1.8, N * 0.055));
+  const rate = N / seconds;
+
+  const sc = document.getElementById('convScroll');
+  const prevBehavior = sc ? sc.style.scrollBehavior : '';
+  if(sc) sc.style.scrollBehavior = 'auto';
+  let stick = sc ? (sc.scrollHeight - sc.scrollTop - sc.clientHeight < 180) : false;
+  let lastTop = sc ? sc.scrollTop : 0;
+  let start = null, shown = 0, raf = 0, cancelled = false;
+
+  function reveal(w, k){
+    w.classList.remove('sw-hide');
+    w.style.animationDelay = (k * 26) + 'ms';
+    let el = w.parentElement;
+    while(el && el !== container){ el.classList.remove('sw-pending'); el = el.parentElement; }
   }
-  let pi = 0;
-  function nextParagraph(){
-    if(pi >= paragraphs.length){
-      if(onDone) onDone();
-      return;
+  function follow(){
+    if(!sc) return;
+    if(sc.scrollTop < lastTop - 3) stick = false;      // the reader scrolled up: stop pulling them down
+    if(stick){
+      const gap = sc.scrollHeight - sc.scrollTop - sc.clientHeight;
+      if(gap > 1) sc.scrollTop += Math.max(1, gap * 0.22);
     }
-    const words = paragraphs[pi].split(' ');
-    const p = document.createElement('p');
-    container.appendChild(p);
-    let i = 0;
-    function nextWord(){
-      if(i >= words.length){
-        pi++;
-        window._streamTimeout = setTimeout(nextParagraph, 280); // breathing room between paragraphs
-        return;
-      }
-      if(i > 0){
-        p.appendChild(document.createTextNode(' '));
-      }
-      const span = document.createElement('span');
-      span.className = 'stream-word';
-      span.textContent = words[i];
-      p.appendChild(span);
-      i++;
-      scrollConvToBottom();
-      let delay;
-      if(Math.random() < 0.22){
-        delay = 16 + Math.random() * 14; // a couple words landing almost together
-      } else {
-        delay = 64 + Math.random() * 30; // calm resting pace between bursts
-      }
-      window._streamTimeout = setTimeout(nextWord, delay);
-    }
-    nextWord();
+    lastTop = sc.scrollTop;
   }
-  nextParagraph();
+  function restore(){ if(sc) sc.style.scrollBehavior = prevBehavior; }
+  function finish(){
+    window._streamCancel = null;
+    window._streamTimeout = setTimeout(function(){ restore(); if(onDone) onDone(); }, 520);
+  }
+  function frame(ts){
+    if(cancelled) return;
+    if(start === null) start = ts;
+    const t = (ts - start) / 1000;
+    const eased = t < 0.5 ? (t * t) : (t - 0.25);       // soft ease-in, then steady
+    const target = Math.min(N, Math.floor(eased * rate));
+    let k = 0;
+    while(shown < target){ reveal(words[shown], k++); shown++; }
+    follow();
+    if(shown < N) raf = requestAnimationFrame(frame); else finish();
+  }
+  window._streamCancel = function(){
+    cancelled = true; cancelAnimationFrame(raf);
+    words.forEach(function(w){ w.classList.remove('sw-hide'); w.style.animation = 'none'; });
+    blocks.forEach(function(b){ b.classList.remove('sw-pending'); });
+    restore(); window._streamCancel = null;
+  };
+  raf = requestAnimationFrame(frame);
 }
 function scrollConvToBottom(force){
   const s = document.getElementById('convScroll');
@@ -2413,6 +2456,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
       }
     });
   }
+
+  window.renderRichText = renderRichText;
 
   window.realSignOut = function(){
     window.parent.postMessage({ type: 'edgeblast-signout' }, '*');
