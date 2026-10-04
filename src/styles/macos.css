@@ -85,6 +85,7 @@
   /* ---------- controls ---------- */
   input,select,textarea{border-radius:8px}
   :focus-visible{outline:3px solid hsl(var(--primary)/.35);outline-offset:1px}
+  iframe[title="AI Coach"]{height:calc(100vh - 52px)!important}
   a[aria-label="New trade"]{display:none!important}   /* the toolbar has a New trade button */
   ::selection{background:hsl(var(--primary)/.25)}
   *{scrollbar-width:thin;scrollbar-color:hsl(var(--foreground)/.22) transparent}

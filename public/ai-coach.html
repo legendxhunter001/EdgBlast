@@ -1209,6 +1209,10 @@ a{ color:inherit; text-decoration:none; }
   .composer{ border-radius:22px; }
   .send-btn{ background:var(--bubble-user); color:#fff; }
 }
+
+/* phone: keep the writing box above the floating navigation dock */
+html.with-dock .composer-wrap{ padding-bottom:calc(98px + env(safe-area-inset-bottom,0px)) !important; }
+html.with-dock.typing .composer-wrap{ padding-bottom:12px !important; }
 </style>
 </head>
 <body>
@@ -2603,6 +2607,16 @@ document.addEventListener('DOMContentLoaded', ()=>{
     document.getElementById('convInner').innerHTML = '';
     document.querySelectorAll('.conv-item').forEach(c => c.classList.remove('active'));
   };
+})();
+</script>
+
+<script>
+(function(){
+  var q = new URLSearchParams(location.search);
+  if (q.get('m') === '1') document.documentElement.classList.add('with-dock');
+  function tell(on){ document.documentElement.classList.toggle('typing', on); try { parent.postMessage({ type: 'eb-composing', on: on }, '*'); } catch(e){} }
+  document.addEventListener('focusin', function(e){ if (e.target && e.target.classList && e.target.classList.contains('composer-textarea')) tell(true); });
+  document.addEventListener('focusout', function(e){ if (e.target && e.target.classList && e.target.classList.contains('composer-textarea')) tell(false); });
 })();
 </script>
 </body>

@@ -37,6 +37,9 @@ export default function AICoach() {
     const { data: sub } = supabase.auth.onAuthStateChange(() => sendAuth());
 
     const onMessage = async (ev: MessageEvent) => {
+      if (ev.data?.type === 'eb-composing') {
+        document.body.classList.toggle('ac-typing', !!ev.data.on);
+      }
       if (ev.data?.type === 'edgeblast-signout') {
         await supabase.auth.signOut();
         navigate('/');
@@ -49,6 +52,7 @@ export default function AICoach() {
       frame?.removeEventListener('load', onLoad);
       sub.subscription.unsubscribe();
       window.removeEventListener('message', onMessage);
+      document.body.classList.remove('ac-typing');
     };
   }, [navigate]);
 
@@ -61,7 +65,7 @@ export default function AICoach() {
   return (
     <iframe
       ref={frameRef}
-      src="/ai-coach.html"
+      src={typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? '/ai-coach.html?m=1' : '/ai-coach.html'}
       title="AI Coach"
       style={{ width: '100%', height: 'calc(100vh - 56px)', border: 'none', display: 'block' }}
     />
