@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
   Image as ImageIcon, Images, X, Search, Loader2, Upload,
-  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus, ChevronLeft, ChevronRight, BookOpen, Palette, LayoutGrid, FileText, Heading1, Heading2, Bold, Italic, List, ListOrdered, ListChecks, Quote, Minus, Code, Clock,
+  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus, ChevronLeft, ChevronRight, BookOpen, Palette, LayoutGrid, FileText, ImagePlus, Heading1, Heading2, Bold, Italic, List, ListOrdered, ListChecks, Quote, Minus, Code, Clock,
 } from "lucide-react";
 
 type Entry = {
@@ -70,7 +70,7 @@ function renderInline(text: string, keyBase: string): React.ReactNode[] {
     return <span key={k}>{part}</span>;
   });
 }
-function renderMarkdown(src: string, onToggle: (lineIndex: number) => void): React.ReactNode[] {
+function renderMarkdown(src: string, onToggle: (lineIndex: number) => void, imgOf: (prefix: string) => { url: string; index: number } | null, onOpenImg: (index: number) => void): React.ReactNode[] {
   const lines = src.split("\n");
   const out: React.ReactNode[] = [];
   let i = 0;
@@ -86,6 +86,14 @@ function renderMarkdown(src: string, onToggle: (lineIndex: number) => void): Rea
     if (h) {
       const lvl = h[1].length; const Tag = (`h${lvl}`) as "h1" | "h2" | "h3";
       out.push(<Tag key={`h${i}`}>{renderInline(h[2], `h${i}`)}</Tag>); i++; continue;
+    }
+    const im = /^!\[[^\]]*\]\(eb:([0-9a-f]+)\)\s*$/.exec(line.trim());
+    if (im) {
+      const hit = imgOf(im[1]);
+      out.push(hit
+        ? <figure key={`i${i}`} className="doc-img"><img src={hit.url} alt="" loading="lazy" onClick={() => onOpenImg(hit.index)} /></figure>
+        : <p key={`i${i}`} className="muted">[image no longer available]</p>);
+      i++; continue;
     }
     if (/^---+$/.test(line.trim())) { out.push(<hr key={`r${i}`} />); i++; continue; }
     if (/^>\s?/.test(line)) {
@@ -255,6 +263,10 @@ export default function Journey() {
   // Journey folders: notebooks that group entries (stored on the entry, so they sync everywhere)
   const [mobilePage, setMobilePage] = useState(false);
   const [readMode, setReadMode] = useState(false);
+  const TEXT_SIZES = [0.9, 1, 1.06, 1.2, 1.38, 1.6];
+  const [textSize, setTextSize] = useState<number>(() => { try { const v = Number(localStorage.getItem("eb_text_size")); return Number.isInteger(v) && v >= 0 && v < 6 ? v : 2; } catch { return 2; } });
+  const changeTextSize = (d: number) => setTextSize((v) => { const n = Math.max(0, Math.min(TEXT_SIZES.length - 1, v + d)); try { localStorage.setItem("eb_text_size", String(n)); } catch { /* ignore */ } return n; });
+  const inlineInputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const [folders, setFolders] = useState<{ name: string; color: string }[]>([]);
   const [activeFolder, setActiveFolder] = useState<string>("all");
@@ -373,19 +385,20 @@ export default function Journey() {
 
   const toggleShare = async () => { if (active) await persist(active.id, { is_shared: !active.is_shared }); };
 
-  const handleUpload = async (file: File) => {
-    if (!user || !activeId) return;
-    if (!file.type.startsWith("image/")) { toast.error("Only image files are supported."); return; }
-    if (file.size > 8 * 1024 * 1024) { toast.error("Image must be under 8MB."); return; }
+  const handleUpload = async (file: File): Promise<string | null> => {
+    if (!user || !activeId) return null;
+    if (!file.type.startsWith("image/")) { toast.error("Only image files are supported."); return null; }
+    if (file.size > 8 * 1024 * 1024) { toast.error("Image must be under 8MB."); return null; }
     setUploading(true);
     const ext = file.name.split(".").pop() || "jpg";
     const path = `${user.id}/${activeId}/${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("journal-images").upload(path, file, { contentType: file.type });
-    if (upErr) { toast.error(upErr.message); setUploading(false); return; }
-    const { error: insErr } = await supabase.from("journal_images").insert({ user_id: user.id, entry_id: activeId, storage_path: path, album: uploadAlbum });
+    if (upErr) { toast.error(upErr.message); setUploading(false); return null; }
+    const { data: ins, error: insErr } = await supabase.from("journal_images").insert({ user_id: user.id, entry_id: activeId, storage_path: path, album: uploadAlbum }).select("id").single();
     setUploading(false);
-    if (insErr) { toast.error(insErr.message); return; }
+    if (insErr || !ins) { toast.error(insErr?.message ?? "Upload failed"); return null; }
     loadImages(activeId);
+    return ins.id as string;
   };
 
   const handleMultiEntryUpload = async (files: FileList) => {
@@ -601,6 +614,28 @@ export default function Journey() {
     const next = text.slice(0, ls) + nextBlock + text.slice(le);
     commitContent(next, ls + nextBlock.length);
   };
+  const insertAtCursor = (text: string) => {
+    const el = bodyRef.current;
+    if (el && !readMode) {
+      const a = el.selectionStart, b = el.selectionEnd;
+      commitContent(content.slice(0, a) + text + content.slice(b), a + text.length);
+    } else {
+      commitContent(content + (content.endsWith("\n") || !content ? "" : "\n") + text.replace(/^\n/, ""));
+    }
+  };
+  const tokenFor = (id: string) => `\n![img](eb:${id.slice(0, 8)})\n`;
+  const handleInlineUpload = async (files: FileList) => {
+    const toks: string[] = [];
+    for (const f of Array.from(files)) { const id = await handleUpload(f); if (id) toks.push(tokenFor(id)); }
+    if (toks.length) insertAtCursor(toks.join(""));
+  };
+  const imgOf = (prefix: string) => {
+    const index = images.findIndex((x) => x.id.startsWith(prefix));
+    return index >= 0 ? { url: images[index].url, index } : null;
+  };
+  const openInlineImage = (index: number) => openViewer(images.map((x) => ({ url: x.url, title: active?.title || "Page", sub: labelFor(x.album) })), index);
+  const inlineIds = Array.from(content.matchAll(/\(eb:([0-9a-f]+)\)/g)).map((m) => m[1]);
+  const removeInline = (prefix: string) => commitContent(content.split("\n").filter((l) => !l.includes(`(eb:${prefix})`)).join("\n"));
   const toggleCheck = (lineIndex: number) => {
     const lines = content.split("\n");
     lines[lineIndex] = /\[x\]/.test(lines[lineIndex]) ? lines[lineIndex].replace("[x]", "[ ]") : lines[lineIndex].replace("[ ]", "[x]");
@@ -962,6 +997,35 @@ export default function Journey() {
           .eb-journey .title-input{ font-size:2rem; }
           .eb-journey .body-input,.eb-journey .doc-read{ font-size:1.05rem; }
         }
+
+        /* ---- text size, inline pictures, folder pages ---- */
+        .eb-journey .body-input,.eb-journey .doc-read{ font-size:var(--ts,1.06rem) !important; }
+        .eb-journey .title-input{ font-size:calc(var(--ts,1.06rem) * 2.1); }
+        .eb-journey .ts-btn{ width:auto !important; padding:0 .6rem; font-weight:800; font-size:.95rem; display:inline-flex !important; align-items:baseline; justify-content:center; gap:1px; }
+        .eb-journey .ts-btn.big{ font-size:1.2rem; }
+        .eb-journey .ts-btn small{ font-size:.65em; font-weight:700; }
+        .eb-journey .ts-btn:disabled{ opacity:.3; cursor:default; }
+        .eb-journey .fmt-bar.ts-only{ justify-content:flex-end; }
+        .eb-journey .doc-img{ margin:.9rem 0; }
+        .eb-journey .doc-img img{ width:100%; max-height:70vh; object-fit:contain; border-radius:14px; border:1px solid var(--line); background:var(--elev); cursor:zoom-in; display:block; }
+        .eb-journey .inline-strip{ margin-top:1rem; padding:.7rem .8rem; border:1px dashed var(--line); border-radius:14px; }
+        .eb-journey .inline-strip > div{ display:flex; gap:8px; overflow-x:auto; margin-top:.5rem; scrollbar-width:none; }
+        .eb-journey .inline-chip{ position:relative; flex:none; width:64px; height:64px; border-radius:10px; overflow:hidden; }
+        .eb-journey .inline-chip img{ width:100%; height:100%; object-fit:cover; display:block; }
+        .eb-journey .inline-chip button{ position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%; border:0; background:rgba(0,0,0,.6); color:#fff; display:grid; place-items:center; cursor:pointer; }
+        .eb-journey .gallery-insert{ position:absolute; top:6px; left:6px; width:24px; height:24px; border-radius:50%; border:0; background:rgba(0,0,0,.6); color:#fff; display:grid; place-items:center; cursor:pointer; z-index:2; }
+        .eb-journey .folder-banner{ --fc:var(--accent); display:flex; align-items:center; gap:.5rem; margin:.7rem 0 .2rem; padding:.65rem .8rem; border-radius:14px; background:color-mix(in srgb, var(--fc) 13%, var(--elev)); border:1px solid color-mix(in srgb, var(--fc) 35%, transparent); }
+        .eb-journey .folder-banner svg{ color:var(--fc); }
+        .eb-journey .folder-banner b{ font-weight:700; }
+        .eb-journey .folder-banner span{ margin-left:auto; color:var(--dim); font-size:.8rem; }
+
+        /* ---- gallery sits ABOVE the navigation dock on phones, scrolls to its last photo ---- */
+        @media (max-width:767px){
+          .eb-journey .gallery-fullscreen{ bottom:calc(92px + env(safe-area-inset-bottom,0px)); border-bottom:.5px solid var(--line); }
+          .eb-journey .gal-tabbar{ bottom:10px; }
+          .eb-journey .gallery-fs-body:not(.albums-body){ padding-bottom:84px; }
+          .eb-journey .albums-body{ padding-bottom:84px; }
+        }
 `}</style>
 
       <div className="inner">
@@ -977,7 +1041,7 @@ export default function Journey() {
           <div className="col list-col">
             <div className="list-head">
               <div className="list-head-top">
-                <span>Entries</span>
+                <span>Pages</span>
                 <div style={{ display: "flex", gap: ".4rem" }}>
                   <button className="btn icon-btn" onClick={openGallery} title="View all photos" aria-label="View all photos">
                     <Images size={14} />
@@ -998,12 +1062,17 @@ export default function Journey() {
                 ))}
                 <button className="fchip add" onClick={() => { setAssignAfter(false); setFolderSheet(true); }}><FolderPlus size={12} /> Folder</button>
               </div>
+              {activeFolder !== "all" && (
+                <div className="folder-banner" style={{ "--fc": allFolders.find((f) => f.name === activeFolder)?.color ?? "#6A55F1" } as React.CSSProperties}>
+                  <BookOpen size={16} /><b>{activeFolder}</b><span>{folderCount(activeFolder)} page{folderCount(activeFolder) === 1 ? "" : "s"}</span>
+                </div>
+              )}
             </div>
             <div className="list">
               {loading ? (
                 <div className="empty">Loading…</div>
               ) : filteredEntries.length === 0 ? (
-                <div className="empty">{search ? "No entries match your search." : "No entries yet. Start your first one."}</div>
+                <div className="empty">{search ? "No pages match your search." : "No pages yet. Start your first one."}</div>
               ) : (
                 filteredEntries.map((e) => (
                   <button key={e.id} className={`item ${e.id === activeId ? "active" : ""}`} onClick={() => selectEntry(e)}>
@@ -1019,7 +1088,7 @@ export default function Journey() {
             {!active ? (
               <div className="empty">Select an entry, or create a new one to begin writing.</div>
             ) : (
-              <div className="editor">
+              <div className="editor" style={{ "--ts": `${TEXT_SIZES[textSize]}rem` } as React.CSSProperties}>
                 <div className="page-top">
                   <button className="back-btn" onClick={() => setMobilePage(false)}><ChevronLeft size={18} /> Journey</button>
                   <div className="seg-mini" role="tablist" aria-label="Mode">
@@ -1070,11 +1139,22 @@ export default function Journey() {
                     <button onClick={() => applyFormat("todo")} aria-label="Checklist"><ListChecks size={16} /></button>
                     <button onClick={() => applyFormat("quote")} aria-label="Quote"><Quote size={16} /></button>
                     <button onClick={() => applyFormat("divider")} aria-label="Divider"><Minus size={16} /></button>
+                    <span className="sep" />
+                    <button onClick={() => inlineInputRef.current?.click()} aria-label="Add picture to this page"><ImagePlus size={16} /></button>
+                    <span className="sep" />
+                    <button className="ts-btn" onClick={() => changeTextSize(-1)} disabled={textSize === 0} aria-label="Smaller text">A<small>−</small></button>
+                    <button className="ts-btn big" onClick={() => changeTextSize(1)} disabled={textSize === TEXT_SIZES.length - 1} aria-label="Larger text">A<small>+</small></button>
                   </div>
                 )}
 
+                {readMode && (
+                  <div className="fmt-bar ts-only" role="toolbar" aria-label="Text size">
+                    <button className="ts-btn" onClick={() => changeTextSize(-1)} disabled={textSize === 0} aria-label="Smaller text">A<small>−</small></button>
+                    <button className="ts-btn big" onClick={() => changeTextSize(1)} disabled={textSize === TEXT_SIZES.length - 1} aria-label="Larger text">A<small>+</small></button>
+                  </div>
+                )}
                 {readMode ? (
-                  <div className="doc-read">{content.trim() ? renderMarkdown(content, toggleCheck) : <p className="muted">Nothing written yet.</p>}</div>
+                  <div className="doc-read">{content.trim() ? renderMarkdown(content, toggleCheck, imgOf, openInlineImage) : <p className="muted">Nothing written yet.</p>}</div>
                 ) : (
                   <textarea
                     ref={bodyRef}
@@ -1085,10 +1165,22 @@ export default function Journey() {
                     onChange={(ev) => { setContent(ev.target.value); queueSave({ content: ev.target.value }); }}
                   />
                 )}
+                {!readMode && inlineIds.length > 0 && (
+                  <div className="inline-strip">
+                    <span className="meta">Pictures in this page · shown in place in Read mode</span>
+                    <div>
+                      {inlineIds.map((pid, n) => { const h = imgOf(pid); return h ? (
+                        <div key={`${pid}-${n}`} className="inline-chip"><img src={h.url} alt="" /><button onClick={() => removeInline(pid)} aria-label="Remove from page"><X size={11} /></button></div>
+                      ) : null; })}
+                    </div>
+                  </div>
+                )}
+                <input ref={inlineInputRef} type="file" accept="image/*" multiple style={{ display: "none" }}
+                  onChange={(e) => { if (e.target.files?.length) handleInlineUpload(e.target.files); e.target.value = ""; }} />
 
                 <div className="gallery">
                   <div className="gallery-head-row">
-                    <span className="meta">Photos</span>
+                    <span className="meta">Photos under this page</span>
                     <select className="album-select" value={uploadAlbum} onChange={(e) => setUploadAlbum(e.target.value)} title="New photos go to this album">
                       {allAlbums.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
                     </select>
@@ -1097,6 +1189,9 @@ export default function Journey() {
                     {images.map((img, idx) => (
                       <div key={img.id} className="gallery-item" onClick={() => openViewer(images.map((x) => ({ url: x.url, title: active?.title || "Entry", sub: labelFor(x.album) })), idx)}>
                         <img src={img.url} alt="" loading="lazy" />
+                        <button className="gallery-insert" onClick={(e) => { e.stopPropagation(); insertAtCursor(tokenFor(img.id)); toast.success("Added to the page"); }} aria-label="Insert into page" title="Insert into page">
+                          <FileText size={11} />
+                        </button>
                         <button className="gallery-remove" onClick={(e) => { e.stopPropagation(); removeImage(img); }} aria-label="Remove image">
                           <X size={11} />
                         </button>
