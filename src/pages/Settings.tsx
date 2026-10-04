@@ -64,7 +64,7 @@ html.light .eb-set{
 
 .eb-ic{ display:none; }
 /* ===== iOS phone layer: inset grouped settings in the Edge Blast palette ===== */
-@media (max-width:767px){
+@media (min-width:0px){
   html .eb-set, html.light .eb-set{
     --bg:hsl(var(--background)); --elev:hsl(var(--card)); --teal:hsl(var(--primary)); --blue:hsl(var(--primary-glow)); --rose:hsl(var(--bear));
     --text:hsl(var(--foreground)); --dim:hsl(var(--muted-foreground)); --dim2:hsl(var(--muted-foreground) / .8);
@@ -72,12 +72,11 @@ html.light .eb-set{
     --tint:hsl(var(--primary) / .08);
     font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif; min-height:0; padding-bottom:1rem;
   }
-  .eb-set header.hd{ border-bottom:0; padding:1.1rem 1rem .4rem; }
+  .eb-set header.hd{ border-bottom:0; }
   .eb-set h1{ font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif; font-size:34px; font-weight:800; letter-spacing:-.04em; line-height:1.1; }
   .eb-set .sub{ font-size:.9rem; }
-  .eb-set .wrap{ padding:.9rem 1rem 0; gap:1rem; }
   .eb-sec{
-    border-radius:24px; padding:1.1rem 1rem;
+    border-radius:20px; padding:1.2rem 1.1rem;
     background:linear-gradient(145deg, hsl(215 22% 52% / .10), hsl(215 22% 52% / .04) 55%, transparent), hsl(var(--card));
     border:1px solid hsl(215 22% 52% / .16);
     box-shadow:0 1px 2px rgba(20,24,40,.05), 0 12px 26px -14px rgba(20,24,40,.18);
@@ -114,6 +113,13 @@ html.light .eb-set{
   .eb-ok{ color:hsl(135 59% 43%); }
   .eb-link-row a{ color:hsl(var(--primary)); }
 }
+
+@media (max-width:767px){
+  .eb-set header.hd{ padding:1.1rem 1rem .4rem; }
+  .eb-set .wrap{ padding:.9rem 1rem 0; gap:1rem; }
+  .eb-sec{ border-radius:24px; padding:1.1rem 1rem; }
+}
+@media (min-width:768px){ .eb-set h1{ font-size:30px; } .eb-set header.hd{ padding:2rem 1.5rem 1rem; } }
 @media (prefers-reduced-motion: reduce){ .eb-set *{ animation:none !important; transition:none !important; } }
 `;
 

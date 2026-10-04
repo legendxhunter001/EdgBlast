@@ -60,7 +60,7 @@ export const TopBar = () => {
       <div className="flex items-center justify-between px-3 md:px-6 h-14">
         <div className="flex items-center gap-2 min-w-0">
           <div className="md:hidden"><Logo size={26} /></div>
-          <div className="font-display text-base md:text-lg font-semibold truncate">{titleFor(pathname)}</div>
+          <div className="font-display text-base md:text-lg font-semibold truncate eb-title">{titleFor(pathname)}</div>
         </div>
 
         <div className="flex items-center gap-2">

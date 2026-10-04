@@ -92,14 +92,6 @@ const SidebarInner = ({ collapsed, onNavigate, showCollapseBtn = true }: {
 
   return (
     <div className="flex flex-col h-full bg-sidebar eb-mac-sidebar">
-      {!collapsed && showCollapseBtn && (
-        <div className="eb-traffic">
-          <button type="button" className="tl tl-r" aria-label="Close (disabled)" tabIndex={-1} />
-          <button type="button" className="tl tl-y" onClick={toggleCollapsed} aria-label="Collapse sidebar" />
-          <button type="button" className="tl tl-g" aria-label="Toggle full screen"
-            onClick={() => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.())} />
-        </div>
-      )}
       <div className={cn(
         'flex items-center border-b border-sidebar-border py-4',
         collapsed ? 'px-2 flex-col gap-3' : 'px-4 gap-3'

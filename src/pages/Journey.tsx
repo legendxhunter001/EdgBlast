@@ -924,8 +924,10 @@ export default function Journey() {
 
         /* ======== NOTION-STYLE JOURNEY ======== */
         @media (min-width:768px){
-          html .eb-journey{ --bg:#191919; --elev:#202020; --text:#ECECEB; --dim:#9B9A97; --line:rgba(255,255,255,.09); --accent:#9585FF; --accent-soft:rgba(149,133,255,.14); }
-          html.light .eb-journey{ --bg:#FFFFFF; --elev:#F7F7F5; --text:#37352F; --dim:#787774; --line:rgba(55,53,47,.10); --accent:#6A55F1; --accent-soft:rgba(106,85,241,.10); }
+          html .eb-journey, html.light .eb-journey{ --bg:hsl(var(--background)); --elev:hsl(var(--card)); --text:hsl(var(--foreground)); --dim:hsl(var(--muted-foreground)); --line:hsl(var(--border)); --accent:hsl(var(--primary)); --accent-soft:hsl(var(--primary) / .14); }
+          .eb-journey .layout{ border-radius:16px; background:transparent; box-shadow:0 1px 2px rgba(20,24,40,.05), 0 12px 28px -16px rgba(20,24,40,.2); }
+          .eb-journey .list-col{ background:hsl(var(--card) / .6); backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%); }
+          .eb-journey .page-col{ background:hsl(var(--card)); }
         }
         .eb-journey{ font-family:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif; }
         .eb-journey .inner{ max-width:1240px; }

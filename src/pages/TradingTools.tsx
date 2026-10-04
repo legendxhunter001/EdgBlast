@@ -921,20 +921,18 @@ html.light .tt{
    iOS PHONE LAYER — same palette and structure as the rest of Edge Blast.
    Maps this page's tokens onto the app tokens, so light/dark and colors stay in sync.
    ====================================================================== */
-@media (max-width: 767px){
+@media (min-width: 0px){
   html .tt, html.light .tt{
     --bg:hsl(var(--background)); --elev:hsl(var(--card));
     --teal:hsl(var(--primary)); --blue:hsl(var(--primary-glow)); --rose:hsl(var(--bear));
     --text:hsl(var(--foreground)); --dim:hsl(var(--muted-foreground)); --dim2:hsl(var(--muted-foreground) / .78);
     --line:hsl(var(--border)); --line2:hsl(var(--border));
     font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;
-    padding-bottom:1rem;
     --tt-tint:hsl(var(--primary) / .09); --tt-line:hsl(var(--primary) / .20);
   }
   html.dark .tt{ --tt-tint:hsl(var(--primary) / .17); --tt-line:hsl(var(--primary) / .32); }
   .tt .mono{ font-variant-numeric:tabular-nums; }
-  .tt-inner{ padding:0 .95rem; }
-  .tt-hd{ padding:1.1rem 0 .4rem; border-bottom:0; margin-bottom:.8rem; }
+  .tt-hd{ border-bottom:0; }
   .tt-hd h1{ font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif; font-size:34px; font-weight:800; letter-spacing:-.04em; line-height:1.1; }
   .tt-sub{ font-size:.9rem; margin-top:.35rem; }
 
@@ -1039,5 +1037,15 @@ html.light .tt{
   .tt-result .r-units .tt-ico{ background:linear-gradient(135deg, hsl(var(--gold)), hsl(24 92% 56%)); }
   .tt-result > div{ min-height:78px; }
   .tt-result .r-hero{ min-height:96px; }
+}
+
+@media (max-width: 767px){
+  .tt-inner{ padding:0 .95rem; }
+  .tt-hd{ padding:1.1rem 0 .4rem; margin-bottom:.8rem; }
+  html .tt, html.light .tt{ padding-bottom:1rem; }
+}
+@media (min-width: 768px){
+  .tt-hd h1{ font-size:30px; }
+  .tt-hd{ padding:2rem 0 1rem; }
 }
 `;
