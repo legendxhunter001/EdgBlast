@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
   Image as ImageIcon, Images, X, Search, Loader2, Upload,
-  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus, ChevronLeft, ChevronRight, BookOpen, Palette, LayoutGrid, FileText, ImagePlus, Heading1, Heading2, Bold, Italic, List, ListOrdered, ListChecks, Quote, Minus, Code, Clock,
+  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus, ChevronLeft, ChevronRight, BookOpen, Palette, LayoutGrid, FileText, FilePlus, ImagePlus, Heading1, Heading2, Bold, Italic, List, ListOrdered, ListChecks, Quote, Minus, Code, Clock,
 } from "lucide-react";
 
 type Entry = {
@@ -92,7 +92,7 @@ function renderMarkdown(src: string, onToggle: (lineIndex: number) => void, imgO
     if (im) {
       const hit = imgOf(im[1]);
       out.push(hit
-        ? <figure key={`i${i}`} className="doc-img"><img src={hit.url} alt="" loading="lazy" onClick={() => onOpenImg(hit.index)} /></figure>
+        ? <figure key={`i${i}`} className="doc-img"><img src={hit.url} alt="" loading="lazy" onClick={(ev) => { ev.stopPropagation(); onOpenImg(hit.index); }} /></figure>
         : <p key={`i${i}`} className="muted">[image no longer available]</p>);
       i++; continue;
     }
@@ -108,7 +108,7 @@ function renderMarkdown(src: string, onToggle: (lineIndex: number) => void, imgO
         const idx = i; const done = /\[x\]/.test(lines[i]); const txt = lines[i].replace(/^[-*]\s+\[( |x)\]\s/, "");
         items.push(
           <li key={`t${idx}`} className={done ? "done" : ""}>
-            <button type="button" className="todo-box" aria-pressed={done} onClick={() => onToggle(idx)}>{done ? "✓" : ""}</button>
+            <button type="button" className="todo-box" aria-pressed={done} onClick={(ev) => { ev.stopPropagation(); onToggle(idx); }}>{done ? "✓" : ""}</button>
             <span>{renderInline(txt, `t${idx}`)}</span>
           </li>
         ); i++;
@@ -129,6 +129,24 @@ function renderMarkdown(src: string, onToggle: (lineIndex: number) => void, imgO
   }
   return out;
 }
+
+
+// ---- Book model: an entry is a stack of PAGES, each page is a list of text BLOCKS (paragraph, list, heading...)
+const PAGE_RE = /\n*§§page§§\n*/;
+const PAGE_MARK = "\n\n§§page§§\n\n";
+function splitBlocks(text: string): string[] {
+  if (!text.trim()) return [""];
+  const out: string[] = []; let cur: string[] = []; let fence = false;
+  for (const line of text.split("\n")) {
+    if (line.trim().startsWith("```")) fence = !fence;
+    if (!fence && line.trim() === "" ) { if (cur.length) { out.push(cur.join("\n")); cur = []; } }
+    else cur.push(line);
+  }
+  if (cur.length) out.push(cur.join("\n"));
+  return out.length ? out : [""];
+}
+const parseDoc = (text: string): string[][] => text.split(PAGE_RE).map(splitBlocks);
+const serializeDoc = (doc: string[][]): string => doc.map((blocks) => blocks.filter((b, i) => b.trim() !== "" || (blocks.length === 1 && i === 0)).join("\n\n")).join(PAGE_MARK);
 
 const ImportedDataBlock = ({ raw }: { raw: Record<string, string> | null | undefined }) => {
   const [open, setOpen] = useState(false);
@@ -269,6 +287,10 @@ export default function Journey() {
   const changeTextSize = (d: number) => setTextSize((v) => { const n = Math.max(0, Math.min(TEXT_SIZES.length - 1, v + d)); try { localStorage.setItem("eb_text_size", String(n)); } catch { /* ignore */ } return n; });
   const inlineInputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const [doc, setDoc] = useState<string[][]>([[""]]);
+  const [editing, setEditing] = useState<{ p: number; b: number } | null>(null);
+  const [pageIdx, setPageIdx] = useState(0);
+  const bookRef = useRef<HTMLDivElement>(null);
   const [folders, setFolders] = useState<{ name: string; color: string }[]>([]);
   const [activeFolder, setActiveFolder] = useState<string>("all");
   const [folderSheet, setFolderSheet] = useState(false);
@@ -591,69 +613,151 @@ export default function Journey() {
   }, [galleryOpen, galleryView, activeAlbum, visibleCount, galleryImages.length]);
   useEffect(() => { setVisibleCount(60); galleryBodyRef.current?.scrollTo({ top: 0 }); }, [activeAlbum, galleryView]);
 
-  // ---- Notion-style formatting helpers (markdown under the hood)
-  const commitContent = (next: string, selStart?: number, selEnd?: number) => {
-    setContent(next); queueSave({ content: next });
-    requestAnimationFrame(() => {
-      const el = bodyRef.current;
-      if (el && selStart !== undefined) { el.focus(); el.setSelectionRange(selStart, selEnd ?? selStart); }
-    });
+  // ---- the book: pages of live-rendered blocks. Tap a block to edit it; it shows as formatted text otherwise.
+  useEffect(() => {
+    setDoc(parseDoc(content)); setEditing(null); setPageIdx(0);
+    bookRef.current?.scrollTo({ left: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
+
+  const commitDoc = (next: string[][]) => {
+    setDoc(next);
+    const c = serializeDoc(next);
+    setContent(c); queueSave({ content: c });
   };
+  const cloneDoc = () => doc.map((pg) => [...pg]);
+  const setBlockText = (p: number, b: number, text: string) => { const n = cloneDoc(); n[p][b] = text; commitDoc(n); };
+  const startEdit = (p: number, b: number) => { if (readMode) return; setEditing({ p, b }); setPageIdx(p); };
+  const goPage = (i: number) => {
+    const el = bookRef.current; if (!el) return;
+    const n = Math.max(0, Math.min(doc.length - 1, i));
+    el.scrollTo({ left: n * el.clientWidth, behavior: "smooth" });
+  };
+  const onBookScroll = () => {
+    const el = bookRef.current; if (!el) return;
+    const i = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+    if (i !== pageIdx) { setPageIdx(i); if (editing && editing.p !== i) setEditing(null); }
+  };
+  const addPage = () => {
+    const n = [...cloneDoc(), [""]];
+    commitDoc(n);
+    const idx = n.length - 1;
+    setTimeout(() => { goPage(idx); setEditing({ p: idx, b: 0 }); }, 60);
+  };
+  const deletePage = (i: number) => {
+    if (doc.length < 2) return;
+    if (!window.confirm(`Delete page ${i + 1}? This can't be undone.`)) return;
+    const n = cloneDoc(); n.splice(i, 1);
+    commitDoc(n); setEditing(null);
+    setTimeout(() => goPage(Math.min(i, n.length - 1)), 30);
+  };
+  const addBlock = (p: number) => {
+    const n = cloneDoc();
+    if (n[p][n[p].length - 1]?.trim() !== "") n[p].push("");
+    commitDoc(n); setEditing({ p, b: n[p].length - 1 });
+  };
+  const toggleCheckAt = (p: number, b: number, lineIndex: number) => {
+    const lines = doc[p][b].split("\n");
+    lines[lineIndex] = /\[x\]/.test(lines[lineIndex]) ? lines[lineIndex].replace("[x]", "[ ]") : lines[lineIndex].replace("[ ]", "[x]");
+    setBlockText(p, b, lines.join("\n"));
+  };
+  const onBlockBlur = (p: number, b: number) => {
+    const text = doc[p]?.[b];
+    setEditing(null);
+    if (text === undefined) return;
+    const n = cloneDoc();
+    if (/\n\s*\n/.test(text)) { n[p].splice(b, 1, ...splitBlocks(text)); commitDoc(n); }                // pasted a gap: becomes separate blocks
+    else if (text.trim() === "" && b === n[p].length - 1 && n[p].length > 1) { n[p].pop(); commitDoc(n); } // drop a trailing empty block
+  };
+  const onBlockKey = (e: React.KeyboardEvent<HTMLTextAreaElement>, p: number, b: number) => {
+    const el = e.currentTarget;
+    const atEnd = el.selectionStart === el.value.length && el.selectionEnd === el.value.length;
+    if (e.key === "Escape") { el.blur(); return; }
+    if (e.key === "Enter" && !e.shiftKey && atEnd) {
+      const lastLine = el.value.split("\n").pop() ?? "";
+      const li = /^(\s*)(- \[[ x]\] |[-*] |\d+\. )(.*)$/.exec(lastLine);
+      if (li && li[3].trim() === "") {                                  // empty list item: leave the list
+        e.preventDefault();
+        const lines = el.value.split("\n"); lines.pop();
+        const n = cloneDoc(); n[p][b] = lines.join("\n"); n[p].splice(b + 1, 0, "");
+        commitDoc(n); setEditing({ p, b: b + 1 }); return;
+      }
+      if (li) {                                                          // keep the list going
+        e.preventDefault();
+        const next = /^\d+\./.test(li[2]) ? `${parseInt(li[2], 10) + 1}. ` : li[2].startsWith("- [") ? "- [ ] " : li[2];
+        setBlockText(p, b, `${el.value}\n${li[1]}${next}`); return;
+      }
+      if (/\n$/.test(el.value)) {                                       // Enter on an empty line: new paragraph
+        e.preventDefault();
+        const n = cloneDoc(); n[p][b] = el.value.replace(/\n+$/, ""); n[p].splice(b + 1, 0, "");
+        commitDoc(n); setEditing({ p, b: b + 1 }); return;
+      }
+    }
+    if (e.key === "Backspace" && el.value === "" && b > 0) {
+      e.preventDefault();
+      const n = cloneDoc(); n[p].splice(b, 1); commitDoc(n); setEditing({ p, b: b - 1 });
+    }
+  };
+
+  // ---- Notion-style formatting on the block being edited
   const applyFormat = (kind: "h1" | "h2" | "bold" | "italic" | "code" | "bullet" | "number" | "todo" | "quote" | "divider") => {
-    const el = bodyRef.current; if (!el) return;
-    const a = el.selectionStart, b = el.selectionEnd, text = content;
+    const el = bodyRef.current;
+    if (!el || !editing) {                                               // nothing open: open the last paragraph of this page
+      const last = Math.max(0, (doc[pageIdx]?.length ?? 1) - 1);
+      setEditing({ p: pageIdx, b: last }); return;
+    }
+    const { p, b: bi } = editing;
+    const a = el.selectionStart, b = el.selectionEnd, text = el.value;
+    const put = (next: string, s1: number, s2?: number) => {
+      setBlockText(p, bi, next);
+      requestAnimationFrame(() => { const e2 = bodyRef.current; if (e2) { e2.focus(); e2.setSelectionRange(s1, s2 ?? s1); } });
+    };
     if (kind === "bold" || kind === "italic" || kind === "code") {
       const m = kind === "bold" ? "**" : kind === "italic" ? "*" : "`";
       const sel = text.slice(a, b) || "text";
-      const next = text.slice(0, a) + m + sel + m + text.slice(b);
-      commitContent(next, a + m.length, a + m.length + sel.length); return;
+      put(text.slice(0, a) + m + sel + m + text.slice(b), a + m.length, a + m.length + sel.length); return;
     }
-    if (kind === "divider") {
-      const next = text.slice(0, a) + (a > 0 && text[a - 1] !== "\n" ? "\n" : "") + "---\n" + text.slice(b);
-      commitContent(next, a + 5); return;
-    }
+    if (kind === "divider") { put(text + (text && !text.endsWith("\n") ? "\n" : "") + "---", text.length + 4); return; }
     const prefix = { h1: "# ", h2: "## ", bullet: "- ", number: "1. ", todo: "- [ ] ", quote: "> " }[kind];
     const ls = text.lastIndexOf("\n", a - 1) + 1;
     let le = text.indexOf("\n", b); if (le === -1) le = text.length;
-    const block = text.slice(ls, le).split("\n");
+    const lines = text.slice(ls, le).split("\n");
     const strip = (l: string) => l.replace(/^(#{1,3}\s+|[-*]\s+\[( |x)\]\s+|[-*]\s+|\d+\.\s+|>\s?)/, "");
-    const allHave = block.every((l) => l.startsWith(prefix));
-    const nextBlock = block.map((l) => (allHave ? l.slice(prefix.length) : prefix + strip(l))).join("\n");
-    const next = text.slice(0, ls) + nextBlock + text.slice(le);
-    commitContent(next, ls + nextBlock.length);
+    const allHave = lines.every((l) => l.startsWith(prefix));
+    const nextLines = lines.map((l) => (allHave ? l.slice(prefix.length) : prefix + strip(l))).join("\n");
+    put(text.slice(0, ls) + nextLines + text.slice(le), ls + nextLines.length);
   };
+
+  // ---- pictures: inside the page (at the caret / end of the page) and under it (the grid below)
+  const tokenFor = (id: string) => `![img](eb:${id.slice(0, 8)})`;
   const insertAtCursor = (text: string) => {
     const el = bodyRef.current;
-    if (el && !readMode) {
-      const a = el.selectionStart, b = el.selectionEnd;
-      commitContent(content.slice(0, a) + text + content.slice(b), a + text.length);
+    if (el && editing && !readMode) {
+      const a = el.selectionStart, b = el.selectionEnd, v = el.value;
+      const glue = (a > 0 && v[a - 1] !== "\n" ? "\n" : "") + text + "\n";
+      setBlockText(editing.p, editing.b, v.slice(0, a) + glue + v.slice(b));
     } else {
-      commitContent(content + (content.endsWith("\n") || !content ? "" : "\n") + text.replace(/^\n/, ""));
+      const n = cloneDoc(); const pg = n[pageIdx] ?? n[0]; const pi = n[pageIdx] ? pageIdx : 0;
+      if (pg[pg.length - 1]?.trim() === "") pg[pg.length - 1] = text; else pg.push(text);
+      n[pi] = pg; commitDoc(n);
     }
   };
-  const tokenFor = (id: string) => `\n![img](eb:${id.slice(0, 8)})\n`;
   const handleInlineUpload = async (files: FileList) => {
     const toks: string[] = [];
     for (const f of Array.from(files)) { const id = await handleUpload(f); if (id) toks.push(tokenFor(id)); }
-    if (toks.length) insertAtCursor(toks.join(""));
+    if (toks.length) insertAtCursor(toks.join("\n"));
   };
   const imgOf = (prefix: string) => {
     const index = images.findIndex((x) => x.id.startsWith(prefix));
     return index >= 0 ? { url: images[index].url, index } : null;
   };
-  const openInlineImage = (index: number) => openViewer(images.map((x) => ({ url: x.url, title: active?.title || "Page", sub: labelFor(x.album) })), index);
-  const inlineIds = Array.from(content.matchAll(/\(eb:([0-9a-f]+)\)/g)).map((m) => m[1]);
-  const removeInline = (prefix: string) => commitContent(content.split("\n").filter((l) => !l.includes(`(eb:${prefix})`)).join("\n"));
-  const toggleCheck = (lineIndex: number) => {
-    const lines = content.split("\n");
-    lines[lineIndex] = /\[x\]/.test(lines[lineIndex]) ? lines[lineIndex].replace("[x]", "[ ]") : lines[lineIndex].replace("[ ]", "[x]");
-    commitContent(lines.join("\n"));
-  };
-  // the page grows with the writing, like a real document (no inner scrollbar)
+  const openInlineImage = (index: number) => openViewer(images.map((x) => ({ url: x.url, title: active?.title || "Note", sub: labelFor(x.album) })), index);
+
+  // the active block grows with the writing (no inner scrollbar)
   useEffect(() => {
     const el = bodyRef.current; if (!el) return;
     el.style.height = "auto"; el.style.height = `${el.scrollHeight}px`;
-  }, [content, activeId, readMode, mobilePage]);
+  }, [doc, editing, textSize]);
 
   return (
     <div className="eb-journey">
@@ -1038,6 +1142,37 @@ export default function Journey() {
         }
 
         .eb-journey.pv-portal{ padding:0 !important; margin:0 !important; min-height:0 !important; background:transparent !important; width:0; height:0; overflow:visible; }
+
+        /* ---- THE BOOK: swipeable pages, live-rendered text, tap a block to edit ---- */
+        .eb-journey .book{ display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; margin-top:.9rem; scrollbar-width:none; align-items:flex-start; border-radius:18px; }
+        .eb-journey .book::-webkit-scrollbar{ display:none; }
+        .eb-journey .sheet{ flex:0 0 100%; width:100%; scroll-snap-align:center; scroll-snap-stop:always; min-height:52vh; padding:1.4rem 1.5rem 1rem; border:1px solid var(--line); border-radius:18px; background:var(--elev); box-shadow:0 1px 2px rgba(20,24,40,.05), 0 14px 30px -18px rgba(20,24,40,.22); display:flex; flex-direction:column; }
+        .eb-journey .sheet + .sheet{ margin-left:14px; }
+        .eb-journey .sheet-body{ flex:1; }
+        .eb-journey .sheet-foot{ margin-top:1.2rem; text-align:center; font-size:.72rem; letter-spacing:.08em; color:var(--dim); }
+        .eb-journey .blk{ margin:0 -.5rem; padding:.2rem .5rem; border-radius:10px; cursor:text; transition:background .15s; }
+        .eb-journey .blk:hover{ background:var(--accent-soft); }
+        .eb-journey .blk:active{ background:color-mix(in srgb, var(--accent) 22%, transparent); }
+        .eb-journey .blk.ro{ cursor:default; } .eb-journey .blk.ro:hover,.eb-journey .blk.ro:active{ background:transparent; }
+        .eb-journey .blk.doc-read{ min-height:0; margin-top:0; }
+        .eb-journey .blk-empty{ color:var(--dim); opacity:.7; margin:.35rem 0; }
+        .eb-journey .blk-edit{ display:block; width:calc(100% + 1rem); margin:0 -.5rem; padding:.2rem .5rem; border:0; outline:none; resize:none; overflow:hidden; background:var(--accent-soft); border-radius:10px; box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, transparent); color:var(--text); font:inherit; font-size:var(--ts,1.06rem); line-height:1.75; caret-color:var(--accent); }
+        .eb-journey .blk-add{ margin-top:.6rem; border:0; background:transparent; color:var(--dim); font:600 .8rem inherit; cursor:pointer; padding:.4rem .2rem; opacity:.7; }
+        .eb-journey .blk-add:hover{ opacity:1; color:var(--accent); }
+        .eb-journey .book-nav{ display:flex; align-items:center; gap:.5rem; margin-top:.8rem; }
+        .eb-journey .book-nav > button{ width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--elev); color:var(--text); display:grid; place-items:center; cursor:pointer; transition:transform .15s; }
+        .eb-journey .book-nav > button:active{ transform:scale(.92); }
+        .eb-journey .book-nav > button:disabled{ opacity:.3; cursor:default; }
+        .eb-journey .book-nav .dots{ display:flex; gap:7px; align-items:center; padding:0 .3rem; overflow-x:auto; max-width:50vw; scrollbar-width:none; }
+        .eb-journey .book-nav .dots button{ width:8px; height:8px; padding:0; border:0; border-radius:50%; background:var(--line); cursor:pointer; flex:none; transition:width .25s cubic-bezier(.2,.8,.2,1), background .2s; }
+        .eb-journey .book-nav .dots button.on{ width:22px; border-radius:6px; background:var(--accent); }
+        .eb-journey .book-nav .sp{ flex:1; }
+        .eb-journey .book-nav .add-page,.eb-journey .book-nav .del-page{ display:inline-flex; align-items:center; gap:.4rem; height:34px; padding:0 .8rem; border-radius:999px; border:1px solid var(--line); background:var(--elev); color:var(--accent); font:600 .8rem inherit; cursor:pointer; width:auto; }
+        .eb-journey .book-nav .del-page{ color:var(--dim); padding:0 .65rem; }
+        @media (max-width:767px){
+          .eb-journey .sheet{ padding:1.1rem 1rem .8rem; min-height:56vh; }
+          .eb-journey .book-nav .dots{ max-width:34vw; }
+        }
 `}</style>
 
       <div className="inner">
@@ -1053,7 +1188,7 @@ export default function Journey() {
           <div className="col list-col">
             <div className="list-head">
               <div className="list-head-top">
-                <span>Pages</span>
+                <span>Notes</span>
                 <div style={{ display: "flex", gap: ".4rem" }}>
                   <button className="btn icon-btn" onClick={openGallery} title="View all photos" aria-label="View all photos">
                     <Images size={14} />
@@ -1076,7 +1211,7 @@ export default function Journey() {
               </div>
               {activeFolder !== "all" && (
                 <div className="folder-banner" style={{ "--fc": allFolders.find((f) => f.name === activeFolder)?.color ?? "#6A55F1" } as React.CSSProperties}>
-                  <BookOpen size={16} /><b>{activeFolder}</b><span>{folderCount(activeFolder)} page{folderCount(activeFolder) === 1 ? "" : "s"}</span>
+                  <BookOpen size={16} /><b>{activeFolder}</b><span>{folderCount(activeFolder)} note{folderCount(activeFolder) === 1 ? "" : "s"}</span>
                 </div>
               )}
             </div>
@@ -1084,7 +1219,7 @@ export default function Journey() {
               {loading ? (
                 <div className="empty">Loading…</div>
               ) : filteredEntries.length === 0 ? (
-                <div className="empty">{search ? "No pages match your search." : "No pages yet. Start your first one."}</div>
+                <div className="empty">{search ? "No notes match your search." : "No notes yet. Start your first one."}</div>
               ) : (
                 filteredEntries.map((e) => (
                   <button key={e.id} className={`item ${e.id === activeId ? "active" : ""}`} onClick={() => selectEntry(e)}>
@@ -1137,8 +1272,8 @@ export default function Journey() {
                   <span className="prop-v">{timeAgo(active.updated_at)}</span>
                 </div>
 
-                {!readMode && (
-                  <div className="fmt-bar" role="toolbar" aria-label="Formatting">
+                {!readMode ? (
+                  <div className="fmt-bar" role="toolbar" aria-label="Formatting" onMouseDown={(ev) => ev.preventDefault()}>
                     <button onClick={() => applyFormat("h1")} aria-label="Heading 1"><Heading1 size={16} /></button>
                     <button onClick={() => applyFormat("h2")} aria-label="Heading 2"><Heading2 size={16} /></button>
                     <span className="sep" />
@@ -1157,42 +1292,61 @@ export default function Journey() {
                     <button className="ts-btn" onClick={() => changeTextSize(-1)} disabled={textSize === 0} aria-label="Smaller text">A<small>−</small></button>
                     <button className="ts-btn big" onClick={() => changeTextSize(1)} disabled={textSize === TEXT_SIZES.length - 1} aria-label="Larger text">A<small>+</small></button>
                   </div>
-                )}
-
-                {readMode && (
+                ) : (
                   <div className="fmt-bar ts-only" role="toolbar" aria-label="Text size">
                     <button className="ts-btn" onClick={() => changeTextSize(-1)} disabled={textSize === 0} aria-label="Smaller text">A<small>−</small></button>
                     <button className="ts-btn big" onClick={() => changeTextSize(1)} disabled={textSize === TEXT_SIZES.length - 1} aria-label="Larger text">A<small>+</small></button>
                   </div>
                 )}
-                {readMode ? (
-                  <div className="doc-read">{content.trim() ? renderMarkdown(content, toggleCheck, imgOf, openInlineImage) : <p className="muted">Nothing written yet.</p>}</div>
-                ) : (
-                  <textarea
-                    ref={bodyRef}
-                    className="body-input"
-                    value={content}
-                    aria-label="Entry content"
-                    placeholder="Write your thoughts, plans and lessons. Use the toolbar for headings, lists and checklists."
-                    onChange={(ev) => { setContent(ev.target.value); queueSave({ content: ev.target.value }); }}
-                  />
-                )}
-                {!readMode && inlineIds.length > 0 && (
-                  <div className="inline-strip">
-                    <span className="meta">Pictures in this page · shown in place in Read mode</span>
-                    <div>
-                      {inlineIds.map((pid, n) => { const h = imgOf(pid); return h ? (
-                        <div key={`${pid}-${n}`} className="inline-chip"><img src={h.url} alt="" /><button onClick={() => removeInline(pid)} aria-label="Remove from page"><X size={11} /></button></div>
-                      ) : null; })}
-                    </div>
+
+                <div className="book" ref={bookRef} onScroll={onBookScroll}>
+                  {doc.map((blocks, p) => (
+                    <section key={p} className="sheet" aria-label={`Page ${p + 1} of ${doc.length}`}>
+                      <div className="sheet-body">
+                        {blocks.map((txt, bi) => {
+                          const isEditing = !readMode && editing?.p === p && editing.b === bi;
+                          return isEditing ? (
+                            <textarea
+                              key={`${p}-${bi}`} ref={bodyRef} className="blk-edit" rows={1} autoFocus value={txt}
+                              aria-label={`Page ${p + 1} text`}
+                              placeholder={bi === 0 && blocks.length === 1 ? "Start writing…" : "Write…"}
+                              onFocus={(ev) => { const l = ev.target.value.length; ev.target.setSelectionRange(l, l); }}
+                              onChange={(ev) => setBlockText(p, bi, ev.target.value)}
+                              onBlur={() => onBlockBlur(p, bi)}
+                              onKeyDown={(ev) => onBlockKey(ev, p, bi)}
+                            />
+                          ) : (
+                            <div key={`${p}-${bi}`} className={`blk doc-read ${readMode ? "ro" : ""}`} onClick={() => startEdit(p, bi)}>
+                              {txt.trim() ? renderMarkdown(txt, (li) => toggleCheckAt(p, bi, li), imgOf, openInlineImage) : <p className="blk-empty">{readMode ? "" : "Tap to start writing…"}</p>}
+                            </div>
+                          );
+                        })}
+                        {!readMode && (
+                          <button className="blk-add" onClick={() => addBlock(p)} aria-label="Add a paragraph">+ Add a paragraph</button>
+                        )}
+                      </div>
+                      <div className="sheet-foot">{p + 1} / {doc.length}</div>
+                    </section>
+                  ))}
+                </div>
+
+                <div className="book-nav">
+                  <button onClick={() => goPage(pageIdx - 1)} disabled={pageIdx === 0} aria-label="Previous page"><ChevronLeft size={18} /></button>
+                  <div className="dots" role="tablist" aria-label="Pages">
+                    {doc.map((_, i) => <button key={i} role="tab" aria-selected={i === pageIdx} className={i === pageIdx ? "on" : ""} onClick={() => goPage(i)} aria-label={`Page ${i + 1}`} />)}
                   </div>
-                )}
+                  <button onClick={() => goPage(pageIdx + 1)} disabled={pageIdx >= doc.length - 1} aria-label="Next page"><ChevronRight size={18} /></button>
+                  <span className="sp" />
+                  {!readMode && <button className="add-page" onClick={addPage}><FilePlus size={15} /> Add page</button>}
+                  {!readMode && doc.length > 1 && <button className="del-page" onClick={() => deletePage(pageIdx)} aria-label="Delete this page"><Trash2 size={15} /></button>}
+                </div>
+
                 <input ref={inlineInputRef} type="file" accept="image/*" multiple style={{ display: "none" }}
                   onChange={(e) => { if (e.target.files?.length) handleInlineUpload(e.target.files); e.target.value = ""; }} />
 
                 <div className="gallery">
                   <div className="gallery-head-row">
-                    <span className="meta">Photos under this page</span>
+                    <span className="meta">Pictures under this note</span>
                     <select className="album-select" value={uploadAlbum} onChange={(e) => setUploadAlbum(e.target.value)} title="New photos go to this album">
                       {allAlbums.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
                     </select>
