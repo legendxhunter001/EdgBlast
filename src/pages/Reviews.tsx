@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useTrades } from '@/hooks/useTrades';
+import { useTrades, type Trade } from '@/hooks/useTrades';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAccountScope } from '@/hooks/useAccountScope';
+import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import {
   Target, Plus, Trash2, ChevronRight, Flag, DollarSign, Wallet, Scale, Gauge,
@@ -31,72 +33,160 @@ type Goal = {
   id: string; goal_type: string; target_value: number; target_date: string | null;
   starting_value: number | null; starting_at: string;
 };
-type Axis = { key: string; label: string; score: number; hasData: boolean };
+type Axis = { key: string; label: string; score: number; hasData: boolean; evidence: string; how: string };
+type ClosedTrade = Trade;
+type RiskRules = Database['public']['Tables']['risk_rules']['Row'];
 
-/* ───────────── 7-axis profile, computed from real closed trades ───────────── */
-type ClosedTrade = ReturnType<typeof useTrades>['data'] extends (infer T)[] | undefined ? T : never;
+/* ───────────── 7-axis profile ─────────────
+   Every score is a ratio of real, recorded trades. A trade that lacks the data an axis needs is
+   left out of that axis (never counted as 0, never filled with a guess). */
+const MIN = 5;
+const numOrNull = (v: unknown) => {
+  if (v === null || v === undefined || v === '') return null;
+  const x = Number(v);
+  return Number.isFinite(x) ? x : null;
+};
+const pct = (part: number, whole: number) => (whole ? (part / whole) * 100 : 0);
+const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
-function computeProfile(closed: ClosedTrade[]) {
-  const n = closed.length;
-  const has = (min: number) => n >= min;
+function computeProfile(closed: ClosedTrade[], rules: RiskRules | null) {
+  const total = closed.length;
+  const more = (n: number, min = MIN, unit = 'measurable trade') => `Needs ${plural(Math.max(0, min - n), unit)} more`;
 
-  const rrKnown = closed.filter((t) => !isNaN(Number(t.risk_reward)) && Number(t.risk_reward) !== 0);
-  const poorRr = rrKnown.filter((t) => Number(t.risk_reward) < 1).length;
-  const discipline = rrKnown.length ? ((rrKnown.length - poorRr) / rrKnown.length) * 100 : 50;
-
-  const emoTagged = closed.filter((t) => t.emotional_state);
-  const goodEmo = emoTagged.filter((t) => ['calm', 'confident', 'excited'].includes(t.emotional_state as string)).length;
-  const psychology = emoTagged.length ? (goodEmo / emoTagged.length) * 100 : 50;
-
-  const sizes = closed.map((t) => Number(t.position_size)).filter((v) => !isNaN(v) && v > 0);
-  let riskMgmt = 50;
-  if (sizes.length >= 5) {
-    const mean = sizes.reduce((a, b) => a + b, 0) / sizes.length;
-    const variance = sizes.reduce((s, v) => s + (v - mean) ** 2, 0) / sizes.length;
-    const cv = mean > 0 ? Math.sqrt(variance) / mean : 0;
-    riskMgmt = Math.max(0, Math.min(100, 100 - cv * 100));
+  /* Discipline: trades that followed every saved rule that could be checked on them */
+  const viol = { noStop: 0, noStrategy: 0, oversize: 0, lowRr: 0, symbol: 0 };
+  let dMeasured = 0, dOk = 0;
+  if (rules) {
+    const syms = (rules.allowed_symbols ?? []).map((x) => x.toUpperCase());
+    closed.forEach((t) => {
+      let checks = 0, fails = 0;
+      if (rules.require_stop_loss) { checks++; if (!numOrNull(t.stop_loss)) { fails++; viol.noStop++; } }
+      if (rules.require_strategy) { checks++; if (!t.strategy_id) { fails++; viol.noStrategy++; } }
+      const size = numOrNull(t.position_size);
+      if (rules.max_lot_size !== null && size !== null) { checks++; if (size > Number(rules.max_lot_size)) { fails++; viol.oversize++; } }
+      const e = numOrNull(t.entry_price), sl = numOrNull(t.stop_loss), tp = numOrNull(t.take_profit);
+      if (e !== null && sl !== null && tp !== null && e !== sl) {
+        checks++;
+        if (Math.abs(tp - e) / Math.abs(e - sl) < Number(rules.min_rr)) { fails++; viol.lowRr++; }
+      }
+      if (syms.length) { checks++; if (!syms.includes(t.asset.toUpperCase())) { fails++; viol.symbol++; } }
+      if (checks) { dMeasured++; if (!fails) dOk++; }
+    });
   }
+  const discipline = pct(dOk, dMeasured);
 
-  const rrs = rrKnown.map((t) => Number(t.risk_reward));
-  const avgRr = rrs.length ? rrs.reduce((a, b) => a + b, 0) / rrs.length : null;
-  const execution = avgRr !== null ? Math.max(0, Math.min(100, (avgRr / 2) * 100)) : 50;
+  /* Psychology: tagged trades entered in a composed state */
+  const tagged = closed.filter((t) => t.emotional_state);
+  const composedStates = ['calm', 'confident', 'excited'];
+  const composed = tagged.filter((t) => composedStates.includes(t.emotional_state as string));
+  const other = tagged.filter((t) => !composedStates.includes(t.emotional_state as string));
+  const avgPnl = (l: ClosedTrade[]) => (l.length ? l.reduce((x, t) => x + Number(t.pnl ?? 0), 0) / l.length : null);
+  const composedAvg = composed.length >= 3 && other.length >= 3 ? avgPnl(composed) : null;
+  const otherAvg = composedAvg !== null ? avgPnl(other) : null;
+  const psychology = pct(composed.length, tagged.length);
 
-  let consistency = 50;
-  if (n >= 5) {
-    const pnls = closed.map((t) => Number(t.pnl ?? 0));
-    const meanAbs = pnls.reduce((s, v) => s + Math.abs(v), 0) / n || 1;
-    const mean = pnls.reduce((a, b) => a + b, 0) / n;
-    const stdDev = Math.sqrt(pnls.reduce((s, v) => s + (v - mean) ** 2, 0) / n);
-    consistency = Math.max(0, Math.min(100, 100 - (stdDev / meanAbs) * 18));
-  }
+  /* Risk: how steady your position size is */
+  const sizes = closed.map((t) => numOrNull(t.position_size)).filter((v): v is number => v !== null && v > 0);
+  const sizeMean = sizes.length ? sizes.reduce((x, y) => x + y, 0) / sizes.length : 0;
+  const cv = sizes.length >= MIN && sizeMean > 0 ? Math.sqrt(sizes.reduce((x, v) => x + (v - sizeMean) ** 2, 0) / sizes.length) / sizeMean : 0;
+  const riskMgmt = Math.max(0, Math.min(100, 100 - cv * 100));
 
-  const byDay: Record<string, number[]> = {};
-  closed.forEach((t) => { if (t.exit_at) (byDay[t.exit_at.slice(0, 10)] ??= []).push(Number(t.pnl ?? 0)); });
-  const heavy = Object.values(byDay).filter((d) => d.length >= 3).flat();
-  const light = Object.values(byDay).filter((d) => d.length <= 2).flat();
-  const heavyAvg = heavy.length ? heavy.reduce((a, b) => a + b, 0) / heavy.length : null;
-  const lightAvg = light.length ? light.reduce((a, b) => a + b, 0) / light.length : null;
-  let patience = 60;
-  if (heavyAvg !== null && lightAvg !== null && heavy.length >= 3) patience = heavyAvg < lightAvg ? 32 : 78;
+  /* Execution: trades that ended the way the plan said (stop honoured, target captured) */
+  let xMeasured = 0, xOk = 0;
+  closed.forEach((t) => {
+    const e = numOrNull(t.entry_price), x = numOrNull(t.exit_price), sl = numOrNull(t.stop_loss);
+    if (e === null || x === null || sl === null || e === sl) return;
+    const r = ((t.direction === 'short' ? -1 : 1) * (x - e)) / Math.abs(e - sl);
+    if (r < 0) { xMeasured++; if (r >= -1.15) xOk++; return; }
+    const tp = numOrNull(t.take_profit);
+    if (tp === null) return;
+    xMeasured++;
+    if (r >= (Math.abs(tp - e) / Math.abs(e - sl)) * 0.85) xOk++;
+  });
+  const execution = pct(xOk, xMeasured);
 
-  const tagged = closed.filter((t) => t.strategy_id).length;
-  const strategy = n ? (tagged / n) * 100 : 50;
+  /* Consistency: profitable trading weeks */
+  const weekPnl: Record<string, number> = {};
+  closed.forEach((t) => { if (t.exit_at) { const k = format(parseISO(t.exit_at), 'RRRR-II'); weekPnl[k] = (weekPnl[k] ?? 0) + Number(t.pnl ?? 0); } });
+  const weeks = Object.values(weekPnl);
+  const winWeeks = weeks.filter((v) => v > 0).length;
+  const consistency = pct(winWeeks, weeks.length);
+
+  /* Patience: trading days that stayed inside your max-trades-per-day rule */
+  const maxDay = rules?.max_trades_per_day ?? null;
+  const perDay: Record<string, number> = {};
+  closed.forEach((t) => { if (t.entry_at) { const k = t.entry_at.slice(0, 10); perDay[k] = (perDay[k] ?? 0) + 1; } });
+  const dayCounts = Object.values(perDay);
+  const dayOk = maxDay !== null ? dayCounts.filter((v) => v <= maxDay).length : 0;
+  const patience = pct(dayOk, dayCounts.length);
+
+  /* Strategy: trades logged against a named strategy */
+  const strat = closed.filter((t) => t.strategy_id).length;
+  const strategy = pct(strat, total);
 
   const axes: Axis[] = [
-    { key: 'discipline', label: 'Discipline', score: discipline, hasData: has(5) },
-    { key: 'psychology', label: 'Psychology', score: psychology, hasData: emoTagged.length >= 5 },
-    { key: 'risk', label: 'Risk Mgmt', score: riskMgmt, hasData: sizes.length >= 5 },
-    { key: 'execution', label: 'Execution', score: execution, hasData: rrs.length >= 5 },
-    { key: 'consistency', label: 'Consistency', score: consistency, hasData: has(5) },
-    { key: 'patience', label: 'Patience', score: patience, hasData: heavy.length >= 3 },
-    { key: 'strategy', label: 'Strategy', score: strategy, hasData: has(5) },
+    {
+      key: 'discipline', label: 'Discipline', score: discipline, hasData: !!rules && dMeasured >= MIN,
+      evidence: !rules ? 'Save your risk rules to measure this'
+        : dMeasured === 0 ? 'None of your saved rules could be checked on these trades'
+        : dMeasured < MIN ? more(dMeasured)
+        : `${dOk} of ${dMeasured} trades followed every saved rule`,
+      how: 'Share of trades that followed every one of your saved risk rules that could be checked on that trade (required stop loss, required strategy, max lot size, minimum planned reward, allowed symbols). Judged against your current rules.',
+    },
+    {
+      key: 'psychology', label: 'Psychology', score: psychology, hasData: tagged.length >= MIN,
+      evidence: tagged.length < MIN ? more(tagged.length, MIN, 'tagged trade') : `${composed.length} of ${tagged.length} tagged trades entered calm, confident or excited${total > tagged.length ? ` (${total - tagged.length} untagged left out)` : ''}`,
+      how: 'Share of your emotion-tagged trades entered calm, confident or excited. Untagged trades are left out, not counted as bad.',
+    },
+    {
+      key: 'risk', label: 'Risk Mgmt', score: riskMgmt, hasData: sizes.length >= MIN,
+      evidence: sizes.length < MIN ? more(sizes.length, MIN, 'trade with a size') : `Position size varied ${Math.round(cv * 100)}% around your average across ${sizes.length} trades`,
+      how: 'How steady your position size is: 100 minus how much lot size varies around your average. Deliberate size changes also lower it.',
+    },
+    {
+      key: 'execution', label: 'Execution', score: execution, hasData: xMeasured >= MIN,
+      evidence: xMeasured < MIN ? more(xMeasured) : `${xOk} of ${xMeasured} trades ended as planned`,
+      how: 'Share of trades that ended as planned. Losses count when the stop held (within 15% slippage). Wins count when at least 85% of the planned target was captured. Needs entry, exit and stop (and a target for wins).',
+    },
+    {
+      key: 'consistency', label: 'Consistency', score: consistency, hasData: weeks.length >= 4,
+      evidence: weeks.length < 4 ? more(weeks.length, 4, 'trading week') : `${winWeeks} of ${weeks.length} trading weeks were profitable`,
+      how: 'Share of trading weeks with positive net P&L. Needs at least 4 trading weeks.',
+    },
+    {
+      key: 'patience', label: 'Patience', score: patience, hasData: maxDay !== null && dayCounts.length >= MIN,
+      evidence: maxDay === null ? 'Set a max trades per day rule to measure this'
+        : dayCounts.length < MIN ? more(dayCounts.length, MIN, 'trading day')
+        : `${dayOk} of ${dayCounts.length} trading days stayed within your limit of ${maxDay}`,
+      how: 'Share of trading days (by entry date) that stayed within your max trades per day rule.',
+    },
+    {
+      key: 'strategy', label: 'Strategy', score: strategy, hasData: total >= MIN,
+      evidence: total < MIN ? more(total, MIN, 'closed trade') : `${strat} of ${total} trades were logged against a named strategy`,
+      how: 'Share of closed trades logged against a named strategy.',
+    },
   ];
+
   const dataAxes = axes.filter((a) => a.hasData);
-  const overall = dataAxes.length ? dataAxes.reduce((s, a) => s + a.score, 0) / dataAxes.length : null;
-  const sorted = [...dataAxes].sort((a, b) => b.score - a.score);
+  const overall = dataAxes.length >= 3 ? dataAxes.reduce((x, a) => x + a.score, 0) / dataAxes.length : null;
+  const sorted = [...dataAxes].sort((x, y) => y.score - x.score);
+
+  /* realized R (stored risk_reward is realized, not planned): feeds the Average R:R goal */
+  const rrs = closed.map((t) => numOrNull(t.risk_reward)).filter((v): v is number => v !== null && v !== 0);
+  const avgRr = rrs.length ? rrs.reduce((x, y) => x + y, 0) / rrs.length : null;
+
+  const byExitDay: Record<string, number[]> = {};
+  closed.forEach((t) => { if (t.exit_at) (byExitDay[t.exit_at.slice(0, 10)] ??= []).push(Number(t.pnl ?? 0)); });
+  const heavy = Object.values(byExitDay).filter((d) => d.length >= 3).flat();
+  const light = Object.values(byExitDay).filter((d) => d.length <= 2).flat();
+  const mean = (l: number[]) => l.reduce((x, y) => x + y, 0) / l.length;
+  const heavyAvg = heavy.length >= 3 && light.length >= 3 ? mean(heavy) : null;
+  const lightAvg = heavyAvg !== null ? mean(light) : null;
+
   return {
-    axes, overall, strongest: sorted[0] ?? null, weakest: sorted[sorted.length - 1] ?? null,
-    avgRr, heavyAvg, lightAvg, poorRr, rrKnownCount: rrKnown.length,
+    axes, overall, measured: dataAxes.length,
+    strongest: sorted[0] ?? null, weakest: sorted[sorted.length - 1] ?? null,
+    avgRr, heavyAvg, lightAvg, viol, composedAvg, otherAvg, composedN: composed.length, otherN: other.length,
   };
 }
 
@@ -122,7 +212,7 @@ const HeptagonChart = ({ axes, prev }: { axes: Axis[]; prev?: Axis[] | null }) =
         const [x, y] = pt(i, 1.27);
         return (
           <text key={ax.key} x={x} y={y} textAnchor={Math.abs(x - cx) < 6 ? 'middle' : x > cx ? 'start' : 'end'}
-            dominantBaseline="middle" fontSize={11.5} fontWeight={600} fill="hsl(var(--muted-foreground))">{ax.label}</text>
+            dominantBaseline="middle" fontSize={11.5} fontWeight={600} fill="hsl(var(--muted-foreground))" opacity={ax.hasData ? 1 : 0.45}>{ax.label}</text>
         );
       })}
     </svg>
@@ -203,20 +293,50 @@ const Reviews = () => {
   const setTab = (t: 'review' | 'goals') => { tap(); setParams(t === 'goals' ? { tab: 'goals' } : {}, { replace: true }); };
 
   const closed = useMemo(() => (trades ?? []).filter((t) => t.status === 'closed' && t.pnl !== null), [trades]);
+  const { scope, connections } = useAccountScope();
+
+  /* your saved risk rules (the yardstick for Discipline and Patience) */
+  const [rules, setRules] = useState<RiskRules | null>(null);
+  const [rulesLoaded, setRulesLoaded] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('risk_rules').select('*').eq('user_id', user.id).then(({ data }) => {
+      const rows = (data ?? []) as RiskRules[];
+      setRules(rows.find((r) => r.account_id === (scope !== 'all' ? scope : null)) ?? rows.find((r) => r.account_id === null) ?? rows[0] ?? null);
+      setRulesLoaded(true);
+    });
+  }, [user, scope]);
+
+  /* live broker balance, only when the goals tab needs it */
+  const balConn = useMemo(
+    () => (scope !== 'all' ? connections.find((x) => x.id === scope) : connections.find((x) => x.is_primary && x.status === 'connected') ?? connections.find((x) => x.status === 'connected')),
+    [scope, connections],
+  );
+  const [liveBalance, setLiveBalance] = useState<number | null>(null);
+  useEffect(() => {
+    if (tab !== 'goals' || !balConn || balConn.status !== 'connected') { setLiveBalance(null); return; }
+    let alive = true;
+    supabase.functions.invoke('get-account-info', { body: { connection_id: balConn.id } }).then(({ data, error }) => {
+      if (!alive) return;
+      const b = data?.account?.balance;
+      setLiveBalance(!error && typeof b === 'number' ? b : null);
+    });
+    return () => { alive = false; };
+  }, [tab, balConn]);
 
   /* period windows: this window vs the equal window before it */
   const [period, setPeriod] = useState<'30' | '90' | 'all'>('all');
   const { cur, prev } = useMemo(() => {
-    if (period === 'all') return { cur: computeProfile(closed), prev: null };
+    if (period === 'all') return { cur: computeProfile(closed, rules), prev: null };
     const d = Number(period), now = new Date();
     const a = subDays(now, d), b = subDays(now, d * 2);
     const inWin = (t: ClosedTrade, from: Date, to: Date) => !!t.exit_at && parseISO(t.exit_at) >= from && parseISO(t.exit_at) < to;
     return {
-      cur: computeProfile(closed.filter((t) => inWin(t, a, new Date(now.getTime() + 864e5)))),
-      prev: computeProfile(closed.filter((t) => inWin(t, b, a))),
+      cur: computeProfile(closed.filter((t) => inWin(t, a, new Date(now.getTime() + 864e5))), rules),
+      prev: computeProfile(closed.filter((t) => inWin(t, b, a)), rules),
     };
-  }, [closed, period]);
-  const allProfile = useMemo(() => computeProfile(closed), [closed]);
+  }, [closed, period, rules]);
+  const allProfile = useMemo(() => computeProfile(closed, rules), [closed, rules]);
   const scoreShown = Math.round(useCountUp(cur.overall));
 
   const delta = (i: number) =>
@@ -225,9 +345,16 @@ const Reviews = () => {
 
   const insights = useMemo(() => {
     const out: { good: boolean; text: string }[] = [];
-    if (cur.strongest) out.push({ good: true, text: `${cur.strongest.label} is your strongest axis at ${Math.round(cur.strongest.score)}.` });
+    if (cur.strongest) out.push({ good: true, text: `${cur.strongest.label} is your strongest measured axis at ${Math.round(cur.strongest.score)}.` });
     if (cur.weakest && cur.weakest.key !== cur.strongest?.key) out.push({ good: false, text: `${cur.weakest.label} is holding your score down at ${Math.round(cur.weakest.score)}.` });
-    if (cur.rrKnownCount > 0 && cur.poorRr > 0) out.push({ good: false, text: `${cur.poorRr} of ${cur.rrKnownCount} trades had under 1R reward-to-risk.` });
+    const v = cur.viol;
+    if (v.noStop) out.push({ good: false, text: `${plural(v.noStop, 'trade')} had no stop loss, which your rules require.` });
+    if (v.noStrategy) out.push({ good: false, text: `${plural(v.noStrategy, 'trade')} had no strategy logged, which your rules require.` });
+    if (v.oversize) out.push({ good: false, text: `${plural(v.oversize, 'trade')} went over your max lot size.` });
+    if (v.lowRr) out.push({ good: false, text: `${plural(v.lowRr, 'trade')} planned less reward than your minimum RR.` });
+    if (v.symbol) out.push({ good: false, text: `${plural(v.symbol, 'trade')} were outside your allowed symbols.` });
+    if (cur.composedAvg !== null && cur.otherAvg !== null)
+      out.push({ good: cur.composedAvg >= cur.otherAvg, text: `Trades entered calm, confident or excited averaged ${formatCurrency(cur.composedAvg)} vs ${formatCurrency(cur.otherAvg)} for other states (${cur.composedN} vs ${cur.otherN} trades).` });
     if (cur.heavyAvg !== null && cur.lightAvg !== null)
       out.push({ good: cur.heavyAvg >= cur.lightAvg, text: `Days with 3+ trades averaged ${formatCurrency(cur.heavyAvg)} per trade vs ${formatCurrency(cur.lightAvg)} on lighter days.` });
     return out;
@@ -270,7 +397,6 @@ const Reviews = () => {
   const grossProfit = closed.filter((t) => Number(t.pnl) > 0).reduce((s, t) => s + Number(t.pnl), 0);
   const grossLoss = Math.abs(closed.filter((t) => Number(t.pnl) < 0).reduce((s, t) => s + Number(t.pnl), 0));
   const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : null;
-  const totalPnl = closed.reduce((s, t) => s + Number(t.pnl ?? 0), 0);
   const monthPnl = useMemo(() => {
     const start = startOfMonth(new Date());
     return closed.filter((t) => t.exit_at && parseISO(t.exit_at) >= start).reduce((s, t) => s + Number(t.pnl ?? 0), 0);
@@ -283,18 +409,12 @@ const Reviews = () => {
       case 'profit_factor': return profitFactor;
       case 'avg_rr': return allProfile.avgRr;
       case 'monthly_pnl': return monthPnl;
-      case 'account_balance': return totalPnl;
+      case 'account_balance': return liveBalance;
       default: return null;
     }
   };
-  const currentValueFor = (goal: Goal): number | null => {
-    if (goal.goal_type === 'account_balance') {
-      const since = parseISO(goal.starting_at);
-      const gained = closed.filter((t) => t.exit_at && parseISO(t.exit_at) >= since).reduce((s, t) => s + Number(t.pnl ?? 0), 0);
-      return (goal.starting_value ?? 0) + gained;
-    }
-    return liveFor(goal.goal_type);
-  };
+  const currentValueFor = (goal: Goal): number | null => liveFor(goal.goal_type);
+
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const targetNum = Number(newTarget);
@@ -303,9 +423,9 @@ const Reviews = () => {
   const nowReading = liveFor(newType);
 
   const addGoal = async () => {
-    if (!user || !validTarget || !validDate || saving) return;
+    if (!user || !validTarget || !validDate || saving || nowReading === null) return;
     setSaving(true);
-    const startFor: Record<string, number | null> = { account_balance: totalPnl, win_rate: winRate, profit_factor: profitFactor, avg_rr: allProfile.avgRr };
+    const startFor: Record<string, number | null> = { account_balance: liveBalance, win_rate: winRate, profit_factor: profitFactor, avg_rr: allProfile.avgRr };
     const { error } = await supabase.from('goals').insert({
       user_id: user.id, goal_type: newType, target_value: targetNum,
       target_date: newDate || null, starting_value: startFor[newType] ?? null,
@@ -403,7 +523,7 @@ const Reviews = () => {
       <div key={tab} className="animate-fade-up">
       {tab === 'review' && (
         <div className="space-y-4">
-          {isLoading ? (
+          {isLoading || !rulesLoaded ? (
             <div className="space-y-4" aria-busy="true" aria-label="Loading your review">
               <Skeleton className="h-9 rounded-[10px]" />
               <Skeleton className="h-[420px] rounded-[24px]" />
@@ -431,7 +551,7 @@ const Reviews = () => {
 
               <div className={`${SURFACE} p-5`} style={SURFACE_SHADOW}>
                 {cur.overall === null ? (
-                  <p className="text-[14px] text-muted-foreground py-6 text-center">Not enough trades in this window yet. Try a longer period.</p>
+                  <p className="text-[14px] text-muted-foreground py-6 text-center">{cur.measured}/7 axes measured here. A score needs at least 3, so there isn't enough recorded data in this window yet. Try a longer period.</p>
                 ) : (
                   <>
                     <div className="flex items-baseline gap-3 flex-wrap">
@@ -440,7 +560,7 @@ const Reviews = () => {
                         <StatusChip tone={overallDelta >= 0 ? 'bull' : 'bear'}>{overallDelta >= 0 ? '+' : ''}{overallDelta} vs previous {period} days</StatusChip>
                       )}
                     </div>
-                    <div className="text-[14px] text-muted-foreground mb-1">Review score out of 100</div>
+                    <div className="text-[14px] text-muted-foreground mb-1">Review score out of 100, from {cur.measured} of 7 measured axes</div>
                     <HeptagonChart axes={cur.axes} prev={prev && prev.overall !== null ? prev.axes : null} />
                     {prev && prev.overall !== null && <div className="text-center text-[12px] text-muted-foreground">Dashed line is the previous {period} days</div>}
                   </>
@@ -453,7 +573,10 @@ const Reviews = () => {
                   const d = delta(i);
                   return (
                     <div key={ax.key} className="flex items-center gap-3 py-3 border-t border-border first:border-t-0">
-                      <span className="w-[96px] text-[15px]">{ax.label}</span>
+                      <div className="w-[128px] shrink-0">
+                        <div className="text-[15px]">{ax.label}</div>
+                        <div className="text-[11.5px] leading-snug text-muted-foreground">{ax.evidence}</div>
+                      </div>
                       <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden" role="progressbar" aria-valuenow={ax.hasData ? Math.round(ax.score) : 0} aria-valuemin={0} aria-valuemax={100} aria-label={ax.label}>
                         {ax.hasData && <div className="h-full rounded-full transition-all duration-500" style={{ width: `${ax.score}%`, background: c(barTone(ax.score)) }} />}
                       </div>
@@ -480,9 +603,20 @@ const Reviews = () => {
                 </>
               )}
 
+              <details className={`group ${SURFACE} px-4 py-3`} style={SURFACE_SHADOW}>
+                <summary className={`${FOCUS} cursor-pointer list-none flex items-center justify-between text-[15px] font-semibold rounded`}>
+                  How scores are measured
+                  <ChevronRight className="size-[18px] text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
+                </summary>
+                <div className="mt-3 space-y-2.5 text-[13px] text-muted-foreground">
+                  {cur.axes.map((ax) => <p key={ax.key}><b className="text-foreground">{ax.label}.</b> {ax.how}</p>)}
+                  <p>Trades missing the data an axis needs are left out of that axis, never counted as zero or guessed. An axis needs at least 5 measurable trades (4 trading weeks for Consistency), and the overall score needs at least 3 measured axes.</p>
+                </div>
+              </details>
+
               {cur.weakest && (
                 <div className="rounded-[24px] p-5 text-primary-foreground" style={{ background: c('primary') }}>
-                  <div className="flex items-center gap-1.5 text-[12px] font-semibold opacity-85"><Flag className="size-[15px]" /> This week's focus</div>
+                  <div className="flex items-center gap-1.5 text-[12px] font-semibold opacity-85"><Flag className="size-[15px]" /> Next focus</div>
                   <div className="font-display text-[20px] font-bold mt-1">{cur.weakest.label} ({Math.round(cur.weakest.score)})</div>
                   <p className="text-[15px] mt-1 opacity-95">{focusLine[cur.weakest.key]}</p>
                 </div>
@@ -635,7 +769,7 @@ const Reviews = () => {
             <div className="space-y-3">
               <label className="block">
                 <span className="text-[12px] text-muted-foreground ml-1">
-                  Target value{nowReading !== null ? ` (right now: ${GOAL_DEFS[newType].format(nowReading)})` : newType === 'max_drawdown_limit' ? ' (not tracked yet)' : ''}
+                  Target value{nowReading !== null ? ` (right now: ${GOAL_DEFS[newType].format(nowReading)})` : ''}
                 </span>
                 <div className="relative mt-1">
                   <input type="number" step="any" inputMode="decimal" autoFocus value={newTarget} onChange={(e) => setNewTarget(e.target.value)}
@@ -643,6 +777,11 @@ const Reviews = () => {
                     aria-invalid={newTarget !== '' && !validTarget} className="w-full px-3 pr-9 bg-secondary text-[16px] outline-none border border-transparent" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px]">{UNIT[newType]}</span>
                 </div>
+                {nowReading === null && (
+                  <span className="block text-[12px] ml-1 mt-1" style={{ color: c('gold') }}>
+                    {newType === 'max_drawdown_limit' ? "Drawdown isn't tracked yet, so this goal can't be measured." : newType === 'account_balance' ? 'Connect an MT5 account to track your real balance.' : 'Log closed trades first so this goal has a real starting point.'}
+                  </span>
+                )}
                 {newTarget !== '' && !validTarget && <span className="text-[12px] ml-1" style={{ color: c('bear') }}>Enter a number above 0.</span>}
               </label>
               <label className="block">
@@ -651,7 +790,7 @@ const Reviews = () => {
                 {!validDate && <span className="text-[12px] ml-1" style={{ color: c('bear') }}>Pick today or a later date.</span>}
               </label>
             </div>
-            <button onClick={addGoal} disabled={!validTarget || !validDate || saving}
+            <button onClick={addGoal} disabled={!validTarget || !validDate || saving || nowReading === null}
               className={`${FOCUS} w-full h-12 mt-5 rounded-[16px] font-semibold text-[15px] text-primary-foreground disabled:opacity-40 active:scale-[.97] transition`}
               style={{ background: c('primary') }}>
               {saving ? 'Saving…' : 'Set goal'}
