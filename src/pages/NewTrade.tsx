@@ -11,6 +11,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useStrategies } from '@/hooks/useTrades';
 import { pipsBetween, getPipValue } from '@/lib/pips';
 
 const NewTrade = () => {
@@ -30,12 +31,14 @@ const NewTrade = () => {
     fees: '',
     entry_at: new Date().toISOString().slice(0, 16),
     exit_at: '',
-    emotional_state: 'neutral',
+    emotional_state: 'none',
+    strategy_id: 'none',
     confidence_rating: '7',
     thesis: '',
     notes: '',
   });
 
+  const { data: strategies = [] } = useStrategies();
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const entryNum = Number(form.entry_price) || 0;
@@ -89,7 +92,8 @@ const NewTrade = () => {
       risk_reward: rr,
       entry_at: form.entry_at ? new Date(form.entry_at).toISOString() : null,
       exit_at: form.exit_at ? new Date(form.exit_at).toISOString() : null,
-      emotional_state: form.emotional_state as any,
+      emotional_state: (form.emotional_state === 'none' ? null : form.emotional_state) as any,
+      strategy_id: form.strategy_id === 'none' ? null : form.strategy_id,
       confidence_rating: Number(form.confidence_rating),
       thesis: form.thesis || null,
       notes: form.notes || null,
@@ -183,10 +187,21 @@ const NewTrade = () => {
           <h3 className="font-display font-semibold">Psychology</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
+              <Label>Strategy</Label>
+              <Select value={form.strategy_id} onValueChange={v => set('strategy_id', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No strategy</SelectItem>
+                  {strategies.map(st => <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
               <Label>Emotional state</Label>
               <Select value={form.emotional_state} onValueChange={v => set('emotional_state', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Not set</SelectItem>
                   {['calm','confident','anxious','fearful','greedy','frustrated','excited','neutral'].map(e =>
                     <SelectItem key={e} value={e}>{e[0].toUpperCase()+e.slice(1)}</SelectItem>)}
                 </SelectContent>

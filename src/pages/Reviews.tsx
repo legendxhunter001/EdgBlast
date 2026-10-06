@@ -6,11 +6,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAccountScope } from '@/hooks/useAccountScope';
+import { StrategiesPanel } from '@/components/StrategiesPanel';
 import type { Database } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import {
   Target, Plus, Trash2, ChevronRight, Flag, DollarSign, Wallet, Scale, Gauge,
-  TrendingDown, CheckCircle2, AlertCircle, Sparkles, ArrowRight, BarChart3, Pencil, Check, type LucideIcon,
+  TrendingDown, CheckCircle2, AlertCircle, Sparkles, ArrowRight, BarChart3, Pencil, Check, Layers, type LucideIcon,
 } from 'lucide-react';
 import { format, parseISO, differenceInCalendarDays, startOfMonth, subDays } from 'date-fns';
 
@@ -76,7 +77,7 @@ function computeProfile(closed: ClosedTrade[], rules: RiskRules | null) {
   const discipline = pct(dOk, dMeasured);
 
   /* Psychology: tagged trades entered in a composed state */
-  const tagged = closed.filter((t) => t.emotional_state);
+  const tagged = closed.filter((t) => t.emotional_state && t.emotional_state !== 'neutral');
   const composedStates = ['calm', 'confident', 'excited'];
   const composed = tagged.filter((t) => composedStates.includes(t.emotional_state as string));
   const other = tagged.filter((t) => !composedStates.includes(t.emotional_state as string));
@@ -135,8 +136,8 @@ function computeProfile(closed: ClosedTrade[], rules: RiskRules | null) {
     },
     {
       key: 'psychology', label: 'Psychology', score: psychology, hasData: tagged.length >= MIN,
-      evidence: tagged.length < MIN ? more(tagged.length, MIN, 'tagged trade') : `${composed.length} of ${tagged.length} tagged trades entered calm, confident or excited${total > tagged.length ? ` (${total - tagged.length} untagged left out)` : ''}`,
-      how: 'Share of your emotion-tagged trades entered calm, confident or excited. Untagged trades are left out, not counted as bad.',
+      evidence: tagged.length < MIN ? more(tagged.length, MIN, 'tagged trade') : `${composed.length} of ${tagged.length} tagged trades entered calm, confident or excited${total > tagged.length ? ` (${total - tagged.length} untagged or neutral left out)` : ''}`,
+      how: 'Share of your emotion-tagged trades entered calm, confident or excited. Untagged and neutral trades are left out (neutral was the form default, so it cannot prove a choice), never counted as bad.',
     },
     {
       key: 'risk', label: 'Risk Mgmt', score: riskMgmt, hasData: sizes.length >= MIN,
@@ -289,8 +290,9 @@ const Reviews = () => {
   const { user } = useAuth();
   const { data: trades, isLoading } = useTrades();
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'goals' ? 'goals' : 'review';
-  const setTab = (t: 'review' | 'goals') => { tap(); setParams(t === 'goals' ? { tab: 'goals' } : {}, { replace: true }); };
+  const rawTab = params.get('tab');
+  const tab: 'review' | 'goals' | 'strategies' = rawTab === 'goals' || rawTab === 'strategies' ? rawTab : 'review';
+  const setTab = (t: 'review' | 'goals' | 'strategies') => { tap(); setParams(t === 'review' ? {} : { tab: t }, { replace: true }); };
 
   const closed = useMemo(() => (trades ?? []).filter((t) => t.status === 'closed' && t.pnl !== null), [trades]);
   const { scope, connections } = useAccountScope();
@@ -504,15 +506,17 @@ const Reviews = () => {
   /* ───────────── render ───────────── */
   return (
     <div className="px-4 md:px-8 pt-4 pb-10 max-w-3xl mx-auto">
-      <h1 className="font-display text-[34px] leading-[1.1] font-bold tracking-tight">{tab === 'review' ? 'Review' : 'Goals'}</h1>
+      <h1 className="font-display text-[34px] leading-[1.1] font-bold tracking-tight">{tab === 'review' ? 'Review' : tab === 'goals' ? 'Goals' : 'Strategies'}</h1>
       <p className="text-[14px] text-muted-foreground mt-1 mb-4">
         {tab === 'review'
           ? 'Scored from your real trades. What helps, what hurts, what to fix next.'
-          : 'Progress comes from your trades. The tick shows where you should be today.'}
+          : tab === 'goals'
+            ? 'Progress comes from your trades. The tick shows where you should be today.'
+            : 'Define your setups, tag your trades, and see what each one really pays.'}
       </p>
 
       <div className="flex p-[3px] rounded-[12px] bg-secondary mb-5" role="tablist" aria-label="Review sections">
-        {([['review', 'Review', BarChart3], ['goals', 'Goals', Target]] as const).map(([k, label, Icon]) => (
+        {([['review', 'Review', BarChart3], ['goals', 'Goals', Target], ['strategies', 'Strategies', Layers]] as const).map(([k, label, Icon]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
             className={`${FOCUS} flex-1 flex items-center justify-center gap-1.5 rounded-[10px] py-2 text-[14px] font-semibold transition ${tab === k ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>
             <Icon className="size-[17px]" aria-hidden /> {label}
@@ -619,6 +623,9 @@ const Reviews = () => {
                   <div className="flex items-center gap-1.5 text-[12px] font-semibold opacity-85"><Flag className="size-[15px]" /> Next focus</div>
                   <div className="font-display text-[20px] font-bold mt-1">{cur.weakest.label} ({Math.round(cur.weakest.score)})</div>
                   <p className="text-[15px] mt-1 opacity-95">{focusLine[cur.weakest.key]}</p>
+                  {cur.weakest.key === 'strategy' && (
+                    <button onClick={() => setTab('strategies')} className={`${FOCUS} mt-3 inline-flex items-center gap-1.5 h-10 px-4 rounded-[12px] bg-white/20 font-semibold text-[14px]`}>Set up strategies <ArrowRight className="size-4" /></button>
+                  )}
                 </div>
               )}
             </>
@@ -638,6 +645,8 @@ const Reviews = () => {
           </Link>
         </div>
       )}
+
+      {tab === 'strategies' && <StrategiesPanel closed={closed} />}
 
       {tab === 'goals' && (
         <div className="space-y-3.5">
