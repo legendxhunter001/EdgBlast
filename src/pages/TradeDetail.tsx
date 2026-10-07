@@ -194,10 +194,10 @@ const TradeDetail = () => {
           </div>
           <div className="text-right">
             <div className="text-caption text-muted-foreground">P&L</div>
-            <div className={cn('font-mono text-2xl md:text-3xl font-semibold tracking-tight mt-0.5', pnlClass(trade.pnl))}>
+            <div className={cn('tabular-nums text-2xl md:text-3xl font-semibold tracking-tight mt-0.5', pnlClass(trade.pnl))}>
               {formatCurrency(trade.pnl, { sign: true })}
             </div>
-            <div className={cn('font-mono text-xs', pnlClass(trade.pnl_percent))}>{formatPct(trade.pnl_percent, { sign: true })}</div>
+            <div className={cn('tabular-nums text-xs', pnlClass(trade.pnl_percent))}>{formatPct(trade.pnl_percent, { sign: true })}</div>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
@@ -221,12 +221,12 @@ const TradeDetail = () => {
           </div>
           <div className="text-right shrink-0">
             <div className="text-caption text-muted-foreground">Step</div>
-            <div className="font-mono text-lg font-semibold">{stepIndex + 1}<span className="text-muted-foreground text-sm">/{STEPS.length}</span></div>
+            <div className="tabular-nums text-lg font-semibold">{stepIndex + 1}<span className="text-muted-foreground text-sm">/{STEPS.length}</span></div>
           </div>
         </div>
 
         <div className="h-1 rounded-full bg-muted overflow-hidden mb-4">
-          <div className="h-full bg-gradient-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+          <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto scrollbar-thin -mx-1 px-1 pb-1">
@@ -239,13 +239,13 @@ const TradeDetail = () => {
                 onClick={() => setStep(s.id)}
                 className={cn(
                   'tap shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium press transition-all flex items-center gap-1.5',
-                  active && 'bg-primary text-primary-foreground shadow-glow-primary',
+                  active && 'bg-primary text-primary-foreground shadow-sm',
                   !active && done && 'bg-primary/10 text-primary',
                   !active && !done && 'bg-secondary text-muted-foreground hover:text-foreground'
                 )}
               >
                 {done && <CheckCircle2 className="size-3.5" />}
-                <span className="font-mono text-[10px] opacity-70">{i + 1}</span>
+                <span className="tabular-nums text-[10px] opacity-70">{i + 1}</span>
                 {s.label}
               </button>
             );
@@ -304,9 +304,9 @@ const TradeDetail = () => {
                   key={n}
                   onClick={() => setReviewScore(n)}
                   className={cn(
-                    'tap size-9 md:size-10 rounded-lg press transition-all flex items-center justify-center font-mono text-sm font-semibold',
+                    'tap size-9 md:size-10 rounded-lg press transition-all flex items-center justify-center tabular-nums text-sm font-semibold',
                     rating >= n
-                      ? 'bg-gradient-primary text-primary-foreground shadow-glow-primary scale-105'
+                      ? 'bg-primary text-primary-foreground shadow-sm scale-105'
                       : 'bg-secondary text-muted-foreground hover:bg-muted'
                   )}
                   aria-label={`Rate ${n}/10`}
@@ -318,7 +318,7 @@ const TradeDetail = () => {
             {rating > 0 && (
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/10 text-gold animate-scale-in">
                 <Star className="size-4 fill-current" />
-                <span className="text-sm font-semibold">{rating}/10 — saved</span>
+                <span className="text-sm font-semibold">{rating}/10, saved</span>
               </div>
             )}
             <div>
@@ -345,7 +345,7 @@ const TradeDetail = () => {
         <Button
           disabled={stepIndex === STEPS.length - 1}
           onClick={() => setStep(STEPS[stepIndex + 1].id)}
-          className="press tap bg-gradient-primary text-primary-foreground shadow-glow-primary hover:opacity-90"
+          className="press tap bg-primary text-primary-foreground shadow-sm hover:opacity-90"
         >
           Next <ChevronRight className="size-4 ml-1" />
         </Button>
@@ -381,7 +381,7 @@ const ImportedDataSection = ({ trade }: { trade: any }) => {
         <div className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-3">
           {entries.map(([key, value]) => (
             <div key={key} className="min-w-0">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold truncate">{key}</div>
+              <div className="text-[11px] text-muted-foreground font-semibold truncate">{key}</div>
               <div className="text-sm mt-0.5 whitespace-pre-wrap break-words">{String(value)}</div>
             </div>
           ))}
@@ -404,7 +404,7 @@ const SaveIndicator = ({ state }: { state: 'idle' | 'saving' | 'saved' }) => {
 const Stat = ({ label, value, capitalize }: { label: string; value: any; capitalize?: boolean }) => (
   <div>
     <div className="text-caption text-muted-foreground">{label}</div>
-    <div className={cn('font-mono text-sm mt-1', capitalize && 'capitalize font-sans')}>{value}</div>
+    <div className={cn('tabular-nums text-sm mt-1', capitalize && 'capitalize font-sans')}>{value}</div>
   </div>
 );
 
@@ -501,7 +501,7 @@ const ScreenshotSlot = ({ kind, label, url, onUpload, onRemove, onZoom, tall }: 
               <ZoomIn className="size-4" /> View full
             </span>
           </button>
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-card/90 backdrop-blur shadow-xs">
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-card/90 backdrop-blur shadow-xs">
             {kind}
           </div>
           <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -543,7 +543,7 @@ const Lightbox = ({ url, onClose }: { url: string; onClose: () => void }) => {
       </button>
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-2 py-1.5 rounded-full bg-card/90 backdrop-blur shadow-elevated z-10" onClick={e => e.stopPropagation()}>
         <Button size="sm" variant="ghost" className="h-8 px-3" onClick={() => setZoom(z => Math.max(1, z - 0.25))}>−</Button>
-        <span className="text-xs font-mono w-12 text-center">{Math.round(zoom * 100)}%</span>
+        <span className="text-xs tabular-nums w-12 text-center">{Math.round(zoom * 100)}%</span>
         <Button size="sm" variant="ghost" className="h-8 px-3" onClick={() => setZoom(z => Math.min(4, z + 0.25))}>+</Button>
         <Button size="sm" variant="ghost" className="h-8 px-3" onClick={() => setZoom(1)}>Reset</Button>
       </div>

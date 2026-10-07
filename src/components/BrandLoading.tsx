@@ -12,7 +12,7 @@ export const BrandLoading = ({ label }: { label?: string }) => (
       <polygon points="132,227 351,256 132,285" fill="url(#ebLoadingGrad)" className="eb-lp eb-lp-3" />
       <polygon points="132,358 316,387 132,416" fill="url(#ebLoadingGrad)" className="eb-lp eb-lp-4" />
     </svg>
-    {label && <div className="text-xs uppercase tracking-widest text-muted-foreground">{label}</div>}
+    {label && <div className="text-xs text-muted-foreground">{label}</div>}
     <style>{`
       .eb-lp { transform-origin: center; animation: eb-lp-pulse 1.4s ease-in-out infinite; }
       .eb-lp-1 { animation-delay: 0ms; }

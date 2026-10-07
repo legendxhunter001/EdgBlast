@@ -63,7 +63,7 @@ const Auth = () => {
     setLoading(false);
     if (error) return toast.error(error.message);
     applyRemember();
-    toast.success('Account created — you are signed in');
+    toast.success("Account created. You're signed in.");
     navigate(nextPath);
   };
 
@@ -90,7 +90,7 @@ const Auth = () => {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) return toast.error(error.message);
-    toast.success('Password reset link sent — check your inbox');
+    toast.success('Reset link sent. Check your inbox.');
     setForgotOpen(false);
   };
 
@@ -105,28 +105,28 @@ const Auth = () => {
             <Logo size={44} />
             <div>
               <div className="font-display font-bold text-xl leading-none">Edge Blast</div>
-              <div className="text-[10px] uppercase tracking-widest text-white/60 mt-1">Trading Journal</div>
+              <div className="text-[10px] text-white/60 mt-1">Trading Journal</div>
             </div>
           </div>
         </div>
 
         <div className="relative z-10 space-y-8 max-w-md">
           <div>
-            <h2 className="font-display text-4xl font-semibold leading-tight">Refine your edge.<br/>Trade with clarity.</h2>
+            <h2 className="font-display text-4xl font-semibold leading-tight">Your trades,<br/>in one place.</h2>
             <p className="text-white/70 mt-4 text-base leading-relaxed">
-              A premium journal for serious traders. Log every trade, review with screenshots, and uncover the patterns that grow your edge.
+              Log every trade, review it with your screenshots, and see which setups actually pay you.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Feature icon={<TrendingUp className="size-4" />} label="Performance analytics" />
-            <Feature icon={<BarChart3 className="size-4" />} label="Edge discovery" />
+            <Feature icon={<BarChart3 className="size-4" />} label="Results by strategy" />
             <Feature icon={<CalendarIcon className="size-4" />} label="Daily P&L calendar" />
-            <Feature icon={<ShieldCheck className="size-4" />} label="Private & secure" />
+            <Feature icon={<ShieldCheck className="size-4" />} label="Your data is private" />
           </div>
         </div>
 
         <div className="relative z-10 text-xs text-white/50">
-          © {new Date().getFullYear()} Edge Blast — Built for disciplined traders.
+          © {new Date().getFullYear()} Edge Blast
         </div>
       </aside>
 
@@ -138,7 +138,7 @@ const Auth = () => {
               <Logo size={40} />
               <div className="text-left">
                 <div className="font-display font-bold text-lg leading-none">Edge Blast</div>
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">Trading Journal</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">Trading Journal</div>
               </div>
             </div>
           </div>
@@ -162,7 +162,7 @@ const Auth = () => {
 
             <div className="relative flex items-center">
               <div className="flex-1 hairline" />
-              <span className="px-3 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">or</span>
+              <span className="px-3 text-[10px] text-muted-foreground font-semibold">or</span>
               <div className="flex-1 hairline" />
             </div>
 

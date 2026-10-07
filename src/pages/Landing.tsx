@@ -169,7 +169,7 @@ const Gauge = ({ value, label, hue }: { value: number; label: string; hue: strin
       </svg>
       <div className="text-center leading-tight">
         <div className="text-sm font-semibold tabular tracking-tight">{Math.round(v)}</div>
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+        <div className="text-[10px] text-muted-foreground">{label}</div>
       </div>
     </div>
   );
@@ -217,7 +217,7 @@ const CalendarMock = () => {
             : 'hsl(var(--muted) / 0.4)';
           return (
             <div key={d.d}
-              className="aspect-square rounded-md text-[10px] flex items-start justify-start p-1 font-mono text-foreground/80 eb-cal-cell"
+              className="aspect-square rounded-md text-[10px] flex items-start justify-start p-1 tabular-nums text-foreground/80 eb-cal-cell"
               style={{ background: bg }}>
               {d.d}
             </div>
@@ -271,7 +271,7 @@ const SyncLoop = () => {
               <Icon className="w-3.5 h-3.5" />
             </div>
             <span className="text-xs font-medium">{s.label}</span>
-            {active && <span className="ml-auto text-[10px] uppercase tracking-wider text-primary">running</span>}
+            {active && <span className="ml-auto text-[10px] text-primary">running</span>}
           </div>
         );
       })}
@@ -358,15 +358,15 @@ const Landing = () => {
       <section className="max-w-[1240px] mx-auto px-6 pt-16 md:pt-24 pb-24">
         <div className="grid lg:grid-cols-[1.05fr_1.15fr] gap-14 items-center">
           <div className="animate-fade-up">
-            <div className="inline-flex items-center gap-2 border border-white/10 rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.15em] text-primary font-mono">
+            <div className="inline-flex items-center gap-2 border border-white/10 rounded-full px-3 py-1.5 text-[11px] text-primary tabular-nums">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               MT5 auto-sync · live
             </div>
             <h1 className="mt-6 font-display text-[clamp(2.5rem,5.6vw,4.75rem)] leading-[1.02] tracking-tight">
-              The operating system<br />for professional traders.
+              A trading journal<br />that keeps you honest.
             </h1>
             <p className="mt-6 text-lg text-foreground/70 max-w-xl leading-relaxed">
-              Every trade auto-synced from MT5. Reviewed against your rules. Reflected on by an AI coach that never forgets. Edge Blast turns discipline into evidence.
+              Your MT5 trades land in your journal on their own. Check each one against your own rules, see what your numbers say, and talk it through with your coach.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link to="/auth"><Button size="lg" className="eb-btn-primary h-12 px-7">Start free <ArrowRight className="w-4 h-4" /></Button></Link>
@@ -387,14 +387,14 @@ const Landing = () => {
               <div className="eb-dash-main">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Portfolio</div>
+                    <div className="text-[11px] text-muted-foreground">Portfolio</div>
                     <div className="font-display text-2xl mt-0.5">
                       $<CountUp to={128450} />
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Today</div>
-                    <div className="font-mono text-primary text-lg">+<CountUp to={2384} prefix="$" /></div>
+                    <div className="text-[11px] text-muted-foreground">Today</div>
+                    <div className="tabular-nums text-primary text-lg">+<CountUp to={2384} prefix="$" /></div>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-2 mb-4">
@@ -408,14 +408,14 @@ const Landing = () => {
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <div className="rounded-lg border border-white/[0.06] bg-black/20 p-2">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Sessions</div>
+                    <div className="text-[10px] text-muted-foreground mb-1">Sessions</div>
                     <MiniBars n={10} />
                   </div>
                   <div className="rounded-lg border border-white/[0.06] bg-black/20 p-2 flex flex-col justify-between">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Strategy</div>
+                    <div className="text-[10px] text-muted-foreground">Strategy</div>
                     <div className="text-xs font-medium">London Reversal</div>
                     <div className="flex items-end gap-1">
-                      <span className="font-mono text-primary text-lg leading-none">+18.4%</span>
+                      <span className="tabular-nums text-primary text-lg leading-none">+18.4%</span>
                       <span className="text-[10px] text-muted-foreground pb-0.5">30d</span>
                     </div>
                   </div>
@@ -426,20 +426,20 @@ const Landing = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold">GBP/USD</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[hsl(40_55%_55%/0.2)] text-[hsl(40_55%_60%)]">SELL</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[hsl(40_55%_55%/0.2)] text-[hsl(40_55%_60%)]">SELL</span>
                   </div>
-                  <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary">
+                  <span className="flex items-center gap-1 text-[10px] text-primary">
                     <span className="w-1 h-1 rounded-full bg-primary" /> synced
                   </span>
                 </div>
-                <div className="space-y-1 font-mono text-[11px]">
+                <div className="space-y-1 tabular-nums text-[11px]">
                   <Row k="Entry" v="1.27450" />
                   <Row k="Stop" v="1.27890" tone="warn" />
                   <Row k="Target" v="1.26440" tone="pos" />
                 </div>
                 <div className="mt-2 pt-2 border-t border-white/10 flex items-baseline gap-2">
-                  <span className="font-mono text-primary text-xl">2.3R</span>
-                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground">reward : risk</span>
+                  <span className="tabular-nums text-primary text-xl">2.3R</span>
+                  <span className="text-[9px] text-muted-foreground">reward : risk</span>
                 </div>
               </div>
 
@@ -448,14 +448,14 @@ const Landing = () => {
                   <div className="w-6 h-6 rounded-md flex items-center justify-center bg-primary/20 text-primary">
                     <Brain className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-xs font-semibold">Claude · Weekly Review</span>
+                  <span className="text-xs font-semibold">Weekly review</span>
                 </div>
                 <Typewriter text="Excellent discipline this week. You respected risk on 96% of trades. London session outperforming NY." />
                 <div className="mt-2 text-[10px] text-muted-foreground">Confidence 94%</div>
               </div>
 
               <div className="eb-float eb-f-gauges">
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Psychology</div>
+                <div className="text-[10px] text-muted-foreground mb-2">Psychology</div>
                 <div className="grid grid-cols-3 gap-2">
                   <Gauge value={82} label="Discipline" hue="hsl(var(--primary))" />
                   <Gauge value={71} label="Patience" hue="hsl(217 36% 63%)" />
@@ -465,8 +465,8 @@ const Landing = () => {
 
               <div className="eb-float eb-f-cal">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Journal</span>
-                  <span className="text-[10px] font-mono text-primary">Jan · +$4,820</span>
+                  <span className="text-[10px] text-muted-foreground">Journal</span>
+                  <span className="text-[10px] tabular-nums text-primary">Jan · +$4,820</span>
                 </div>
                 <div className="grid grid-cols-7 gap-[3px]">
                   {Array.from({ length: 28 }).map((_, i) => {
@@ -484,23 +484,14 @@ const Landing = () => {
         </div>
       </section>
 
-      <section className="border-y border-white/[0.06] bg-black/20">
-        <div className="max-w-[1240px] mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
-          <StatBig label="Trades journaled" to={182400} suffix="+" />
-          <StatBig label="Avg win rate lift" to={14} suffix="%" />
-          <StatBig label="Auto-sync latency" to={0.8} decimals={1} suffix="s" />
-          <StatBig label="Trader hours saved" to={26800} suffix="+" />
-        </div>
-      </section>
-
-      <section id="platform" className="max-w-[1240px] mx-auto px-6 py-28">
+            <section id="platform" className="max-w-[1240px] mx-auto px-6 py-28">
         <SectionHead
           eyebrow="The platform"
-          title="Everything a serious trader tracks, in one workspace."
-          sub="Nine modules, one coherent system. Built for repetition — the kind that turns effort into edge."
+          title="What's inside."
+          sub="A journal, a calendar, your numbers, your strategies and a coach. They all read from the same trades."
         />
         <div className="grid md:grid-cols-3 gap-5 mt-14">
-          <FeatureCard icon={LineChart} title="Performance analytics" desc="Equity curve, RR, expectancy, drawdown — recalculated on every close.">
+          <FeatureCard icon={LineChart} title="Performance analytics" desc="Equity curve, RR, expectancy, drawdown, recalculated on every close.">
             <div className="h-24 mt-4"><EquityChart height={96} /></div>
           </FeatureCard>
           <FeatureCard icon={CalIcon} title="Trading calendar" desc="See discipline as heatmap. Winning days blue, losing days rose.">
@@ -511,14 +502,14 @@ const Landing = () => {
               <Typewriter text="Your patience improved 18% over the last 43 trades." speed={26} />
             </div>
           </FeatureCard>
-          <FeatureCard icon={GaugeIcon} title="Psychology tracking" desc="Discipline, patience, confidence — measured, not guessed.">
+          <FeatureCard icon={GaugeIcon} title="Psychology tracking" desc="Discipline, patience, confidence, measured, not guessed.">
             <div className="mt-4 grid grid-cols-3 gap-2">
               <Gauge value={78} label="Discipline" hue="hsl(var(--primary))" />
               <Gauge value={66} label="Patience" hue="hsl(217 36% 63%)" />
               <Gauge value={83} label="Focus" hue="hsl(var(--bull))" />
             </div>
           </FeatureCard>
-          <FeatureCard icon={Camera} title="Screenshot journal" desc="Entry, exit, analysis — three shots per trade, exactly.">
+          <FeatureCard icon={Camera} title="Screenshot journal" desc="Entry, exit, analysis, three shots per trade, exactly.">
             <ScreenshotSlots />
           </FeatureCard>
           <FeatureCard icon={Shield} title="Risk management" desc="Rule violations flagged instantly. No trade slips past standard.">
@@ -537,19 +528,19 @@ const Landing = () => {
           <div>
             <SectionHead
               eyebrow="MT5 auto-sync"
-              title="Trades log themselves. You stay in the flow."
-              sub="Sync fires the instant a position closes. The trade lands in your journal, analytics recompute, the calendar fills in, and your AI coach reviews it — all before you switch tabs."
+              title="Your trades log themselves."
+              sub="When a position closes in MT5, the trade shows up in your journal. Your numbers and your calendar update with it."
               align="left"
             />
             <div className="mt-8 flex flex-wrap gap-3">
-              <Pill icon={Zap}>Instant relay</Pill>
+              <Pill icon={Zap}>Syncs on close</Pill>
               <Pill icon={Shield}>Account-scoped</Pill>
-              <Pill icon={Cpu}>Zero manual entry</Pill>
+              <Pill icon={Cpu}>No retyping</Pill>
             </div>
           </div>
           <div className="rounded-2xl border border-white/[0.08] bg-[hsl(210_20%_10%/0.6)] backdrop-blur-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">Sync pipeline</span>
+              <span className="text-xs text-muted-foreground">Sync pipeline</span>
               <span className="flex items-center gap-1.5 text-xs text-primary">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> live
               </span>
@@ -584,7 +575,7 @@ const Landing = () => {
           <div className="grid grid-cols-[1fr_180px]">
             <div className="p-4 h-[260px]"><CandleChart /></div>
             <div className="border-l border-white/[0.06] p-3 space-y-1.5 text-xs">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Watchlist</div>
+              <div className="text-[10px] text-muted-foreground mb-2">Watchlist</div>
               {[
                 ['EURUSD','1.0842','+0.24%',true],
                 ['GBPUSD','1.2745','-0.12%',false],
@@ -592,7 +583,7 @@ const Landing = () => {
                 ['USDJPY','156.14','-0.31%',false],
                 ['BTCUSD','67,240','+1.42%',true],
               ].map(([s,,c,up]) => (
-                <div key={s as string} className="flex items-center justify-between font-mono">
+                <div key={s as string} className="flex items-center justify-between tabular-nums">
                   <span>{s}</span>
                   <span className={up ? 'text-[hsl(var(--bull))]' : 'text-[hsl(var(--bear))]'}>{c}</span>
                 </div>
@@ -607,8 +598,8 @@ const Landing = () => {
           <div>
             <SectionHead
               eyebrow="Trader psychology"
-              title="Measure the mind behind the P&L."
-              sub="Fear, greed, patience, discipline — rated after every session. Over time the pattern becomes impossible to hide from."
+              title="See how your mood affects your results."
+              sub="Note how you felt going into each trade. Over time you can see which moods cost you money."
               align="left"
             />
             <div className="mt-8 grid grid-cols-3 gap-4 max-w-md">
@@ -638,7 +629,7 @@ const Landing = () => {
                 { q: 'Emotional state 1-10', v: 7 },
               ].map((r) => (
                 <div key={r.q}>
-                  <div className="flex justify-between text-xs mb-1"><span className="text-foreground/80">{r.q}</span><span className="text-primary font-mono">{r.v}</span></div>
+                  <div className="flex justify-between text-xs mb-1"><span className="text-foreground/80">{r.q}</span><span className="text-primary tabular-nums">{r.v}</span></div>
                   <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                     <div className="h-full rounded-full bg-primary eb-fill" style={{ width: `${r.v * 10}%` }} />
                   </div>
@@ -651,25 +642,25 @@ const Landing = () => {
 
       <section id="coach" className="max-w-[1240px] mx-auto px-6 py-28">
         <SectionHead
-          eyebrow="AI memory"
-          title="Your trading coach never forgets."
-          sub="Every trade, every reflection, every rule — the coach carries context forward. Insights compound the way your account should."
+          eyebrow="Coach"
+          title="A coach that has read your journal."
+          sub="Ask about a trade, a rule you keep breaking, or how your week went. You don't have to explain your setup every time."
         />
         <div className="mt-14 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            'Over your last 43 trades, patience improved 18%.',
-            'You perform 27% better during the London session.',
-            'Average R:R climbed from 1.8R to 2.3R this quarter.',
-            'Most losing trades follow two consecutive wins — size creep detected.',
-            'Your best setup is the 4H engulfing reversal (68% win rate).',
-            'Discipline drops after 3 losing trades in a row — consider a hard stop.',
-            'Fridays account for 41% of your rule violations.',
-            'Trades taken within 15m of your plan outperform by 1.4R.',
+            'Win rate and profit factor for each strategy you tag.',
+            'Your average result on each day of the week.',
+            'How your results change with the mood you logged.',
+            'Your longest winning and losing streaks.',
+            'Your biggest dip from a peak, in dollars.',
+            'Long trades against short trades, side by side.',
+            'How many of your trades followed your saved rules.',
+            'Your best and weakest pairs.',
           ].map((m, i) => (
             <div key={i} className="eb-memory-card p-5 rounded-xl border border-white/[0.08] bg-[hsl(210_20%_10%/0.55)] backdrop-blur-xl"
               style={{ animationDelay: `${i * 60}ms` }}>
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-primary mb-2">
-                <Sparkles className="w-3 h-3" /> insight
+              <div className="flex items-center gap-1.5 text-[10px] text-primary mb-2">
+                What you'll see
               </div>
               <p className="text-sm text-foreground/85 leading-relaxed">{m}</p>
             </div>
@@ -680,7 +671,7 @@ const Landing = () => {
       <section className="border-t border-white/[0.06] bg-black/20">
         <div className="max-w-[1240px] mx-auto px-6 py-20">
           <div className="text-center mb-10">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">Works with the tools you already use</div>
+            <div className="text-xs text-muted-foreground">Works with the tools you already use</div>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 opacity-80">
             {['MT4','MT5','TradingView','Google','Claude AI','Supabase'].map((b) => (
@@ -706,7 +697,7 @@ const Landing = () => {
             Stop reconstructing trades from memory.
           </h2>
           <p className="mt-5 text-foreground/70 text-lg">
-            Set up in under two minutes. Your next closed trade will be logged, reviewed, and remembered — automatically.
+            Setting up takes a couple of minutes. After that, your closed trades log themselves.
           </p>
           <div className="mt-8 flex items-center justify-center gap-3">
             <Link to="/auth"><Button size="lg" className="eb-btn-primary h-12 px-8">Get started free <ArrowRight className="w-4 h-4" /></Button></Link>
@@ -719,7 +710,7 @@ const Landing = () => {
         <div className="max-w-[1240px] mx-auto px-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <BrandMark small />
-            <span>Edge Blast — built for traders who track everything.</span>
+            <span>Edge Blast</span>
           </div>
           <div className="flex items-center gap-5">
             <a href="#" className="hover:text-foreground transition">Privacy</a>
@@ -756,8 +747,8 @@ const Row = ({ k, v, tone }: { k: string; v: string; tone?: 'pos' | 'warn' }) =>
 
 const MiniKpi = ({ label, value, tone }: { label: string; value: string; tone?: 'pos' | 'neu' }) => (
   <div className="rounded-lg border border-white/[0.06] bg-black/20 p-2">
-    <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
-    <div className={`text-sm font-mono mt-0.5 ${tone === 'pos' ? 'text-primary' : ''}`}>{value}</div>
+    <div className="text-[9px] text-muted-foreground">{label}</div>
+    <div className={`text-sm tabular-nums mt-0.5 ${tone === 'pos' ? 'text-primary' : ''}`}>{value}</div>
   </div>
 );
 
@@ -766,7 +757,7 @@ const StatBig = ({ label, to, suffix, decimals }: { label: string; to: number; s
     <div className="font-display text-3xl md:text-4xl tracking-tight">
       <CountUp to={to} suffix={suffix} decimals={decimals} />
     </div>
-    <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
+    <div className="text-xs text-muted-foreground mt-1">{label}</div>
   </div>
 );
 
@@ -774,7 +765,7 @@ const SectionHead = ({
   eyebrow, title, sub, align = 'center',
 }: { eyebrow: string; title: string; sub: string; align?: 'center' | 'left' }) => (
   <div className={align === 'center' ? 'text-center max-w-2xl mx-auto' : 'max-w-xl'}>
-    <div className="text-[11px] uppercase tracking-[0.18em] text-primary font-mono mb-3">{eyebrow}</div>
+    <div className="text-[11px] text-primary tabular-nums mb-3">{eyebrow}</div>
     <h2 className="font-display text-3xl md:text-[2.75rem] leading-[1.08] tracking-tight">{title}</h2>
     <p className="mt-4 text-foreground/70 leading-relaxed">{sub}</p>
   </div>
@@ -804,7 +795,7 @@ const Pill = ({ icon: Icon, children }: { icon: any; children: React.ReactNode }
 const RuleRow = ({ k, v, ok }: { k: string; v: string; ok: boolean }) => (
   <div className="flex items-center justify-between px-2.5 py-1.5 rounded-md border border-white/[0.06] bg-black/20">
     <span className="text-muted-foreground">{k}</span>
-    <span className={`font-mono ${ok ? 'text-primary' : 'text-[hsl(var(--bear))]'}`}>{ok ? '✓ ' : '✗ '}{v}</span>
+    <span className={`tabular-nums ${ok ? 'text-primary' : 'text-[hsl(var(--bear))]'}`}>{ok ? '✓ ' : '✗ '}{v}</span>
   </div>
 );
 
@@ -813,7 +804,7 @@ const ScreenshotSlots = () => (
     {['Entry','Exit','Analysis'].map((l) => (
       <div key={l} className="aspect-[4/3] rounded-lg border border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-transparent flex flex-col items-center justify-center gap-1 text-[10px] text-muted-foreground">
         <Camera className="w-4 h-4 text-primary/70" />
-        <span className="uppercase tracking-wider">{l}</span>
+        <span className="">{l}</span>
       </div>
     ))}
   </div>

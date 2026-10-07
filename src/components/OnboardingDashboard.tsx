@@ -1,19 +1,19 @@
 import { GreetingTitle } from './Greeting';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Camera, CheckCircle2, Circle, LineChart, Repeat, Sparkles, Target, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, Camera, CheckCircle2, Circle, LineChart, Repeat, NotebookPen, Target, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const benefits = [
-  { icon: Target, title: 'Find your edge', body: 'Spot which setups, sessions, and assets actually make you money.' },
-  { icon: TrendingUp, title: 'Compound consistency', body: 'Small habits, logged daily, become measurable performance gains.' },
-  { icon: Sparkles, title: 'Master your psychology', body: 'Track emotions and discipline alongside every entry and exit.' },
+  { icon: Target, title: 'See what pays', body: 'Find out which setups and pairs make you money, and which ones cost you.' },
+  { icon: TrendingUp, title: 'Keep the habit', body: 'A few minutes after each trade builds a record you can actually learn from.' },
+  { icon: NotebookPen, title: 'Note your mood', body: 'Write down how you felt going in, then see how it lines up with your results.' },
 ];
 
 const steps = [
   { icon: LineChart, label: 'Create your first trade', to: '/trades/new', done: false },
   { icon: Camera, label: 'Upload screenshots', to: '/trades/new', done: false },
   { icon: TrendingUp, label: 'Review performance', to: '/analytics', done: false },
-  { icon: Repeat, label: 'Build consistency', to: '/reviews', done: false },
+  { icon: Repeat, label: 'Check your weekly review', to: '/reviews', done: false },
 ];
 
 export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
@@ -24,17 +24,15 @@ export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
              style={{ background: 'var(--gradient-glow)' }} />
         <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium uppercase tracking-wider mb-4">
-              <Sparkles className="size-3.5" /> Welcome to Edge Blast
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
+              Welcome to Edge Blast
             </div>
             <div className="text-lg md:text-xl font-display font-semibold tracking-tight mb-2"><GreetingTitle /></div>
             <h1 className="font-display text-3xl md:text-5xl font-semibold tracking-tight mb-3">
-              Your trading journal,<br className="hidden md:block" /> elevated.
+              Let's log your<br className="hidden md:block" /> first trade.
             </h1>
             <p className="text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed">
-              A calm, professional workspace built to help you log trades, study your edge,
-              and grow as a consistent trader. Let's get you set up in under a minute.
-            </p>
+              Add a trade, drop in your screenshots, and your numbers start filling in. It takes about a minute.</p>
             <div className="flex flex-wrap items-center gap-3 mt-6">
               <Link
                 to="/trades/new"
@@ -55,7 +53,7 @@ export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="font-display text-xl font-semibold">Why traders journal</h2>
+          <h2 className="font-display text-xl font-semibold">Why keep a journal</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {benefits.map(({ icon: Icon, title, body }) => (
               <div key={title} className="luxe-card p-5">
@@ -71,8 +69,8 @@ export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
           <div className="luxe-card p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <div className="font-semibold text-sm">A peek at your future dashboard</div>
-                <p className="text-xs text-muted-foreground">Sample data — yours fills in as you log trades.</p>
+                <div className="font-semibold text-sm">What your dashboard will look like</div>
+                <p className="text-xs text-muted-foreground">Sample numbers. Yours fill in as you log trades.</p>
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -83,7 +81,7 @@ export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
                 { l: 'Streak', v: '4W', tone: 'pnl-pos' },
               ].map(s => (
                 <div key={s.l} className="rounded-xl border border-border/60 bg-card/60 p-4">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.l}</div>
+                  <div className="text-[10px] text-muted-foreground">{s.l}</div>
                   <div className={cn('font-mono text-lg font-semibold mt-1.5', s.tone)}>{s.v}</div>
                 </div>
               ))}
@@ -100,7 +98,7 @@ export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
         <div className="luxe-card p-5 h-fit">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-semibold">Getting started</h2>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">0 / 4</span>
+            <span className="text-[10px] text-muted-foreground">0 / 4</span>
           </div>
           <ol className="space-y-3">
             {steps.map((s, i) => (
@@ -115,7 +113,7 @@ export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
                     <Circle className="size-5 text-muted-foreground/50 shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Step {i + 1}</div>
+                    <div className="text-[10px] text-muted-foreground">Step {i + 1}</div>
                     <div className="text-sm font-medium truncate group-hover:text-primary transition">{s.label}</div>
                   </div>
                   <s.icon className="size-4 text-muted-foreground group-hover:text-primary transition" />

@@ -20,7 +20,7 @@ const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: s
         <Icon className="size-4 text-muted-foreground" />
       </div>
     </div>
-    <div className="stat-value font-mono font-semibold tracking-tight mt-3">{value}</div>
+    <div className="stat-value tabular-nums font-semibold tracking-tight mt-3">{value}</div>
     {sub && <div className="text-xs text-muted-foreground mt-1 truncate">{sub}</div>}
   </div>
 );
@@ -193,7 +193,7 @@ const Dashboard = () => {
             <div className="overflow-x-auto scrollbar-thin">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
+                  <tr className="text-left text-xs text-muted-foreground border-b border-border">
                     <th className="py-2.5 font-medium">Asset</th>
                     <th className="font-medium">Side</th>
                     <th className="font-medium">Date</th>
@@ -207,8 +207,8 @@ const Dashboard = () => {
                       <td className="py-3"><Link to={`/trades/${t.id}`} className="font-medium hover:text-primary inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</Link></td>
                       <td><DirectionBadge dir={t.direction} /></td>
                       <td className="text-muted-foreground">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d, yyyy') : '—'}</td>
-                      <td className={`text-right font-mono ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</td>
-                      <td className="text-right font-mono text-muted-foreground">{t.risk_reward ? `${Number(t.risk_reward).toFixed(2)}R` : '—'}</td>
+                      <td className={`text-right tabular-nums ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</td>
+                      <td className="text-right tabular-nums text-muted-foreground">{t.risk_reward ? `${Number(t.risk_reward).toFixed(2)}R` : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -235,7 +235,7 @@ const TopList = ({ title, icon: Icon, trades, kind }: { title: string; icon: any
             <div className="text-sm font-medium inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</div>
             <div className="text-[10px] text-muted-foreground">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d') : '—'}</div>
           </div>
-          <div className={`font-mono text-sm ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</div>
+          <div className={`tabular-nums text-sm ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</div>
         </Link>
       ))}
     </div>
@@ -248,8 +248,8 @@ const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: num
       <Icon className="size-5 text-muted-foreground" />
     </div>
     <div className="flex-1 min-w-0">
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="stat-value font-mono font-semibold tracking-tight mt-0.5">
+      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className="stat-value tabular-nums font-semibold tracking-tight mt-0.5">
         {count === 0 ? '—' : formatCurrency(pnl, { sign: true })}
       </div>
       <div className="text-xs text-muted-foreground mt-0.5">{count} trade{count === 1 ? '' : 's'}</div>
@@ -268,7 +268,7 @@ const ScoreCard = ({ label, value, icon: Icon, hint }: { label: string; value: n
           </div>
           <div className="text-sm font-semibold">{label}</div>
         </div>
-        <div className="font-mono text-lg font-semibold">{value}<span className="text-xs text-muted-foreground">/100</span></div>
+        <div className="tabular-nums text-lg font-semibold">{value}<span className="text-xs text-muted-foreground">/100</span></div>
       </div>
       <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
         <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
@@ -279,7 +279,7 @@ const ScoreCard = ({ label, value, icon: Icon, hint }: { label: string; value: n
 };
 
 export const DirectionBadge = ({ dir }: { dir: 'long' | 'short' }) => (
-  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${dir === 'long' ? 'bg-bull/15 text-bull' : 'bg-bear/15 text-bear'}`}>
+  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${dir === 'long' ? 'bg-bull/15 text-bull' : 'bg-bear/15 text-bear'}`}>
     {dir === 'long' ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
     {dir}
   </span>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen, Sparkles,
+  Search, LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen, MessageCircle,
   Compass, Plug, LineChart, Wrench, Settings, Plus,
 } from 'lucide-react';
 
@@ -12,7 +12,7 @@ const commands = [
   { to: '/calendar', label: 'Calendar', hint: 'Page', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', hint: 'Page', icon: BarChart3 },
   { to: '/reviews', label: 'Reviews', hint: 'Page', icon: NotebookPen },
-  { to: '/ai-coach', label: 'AI Coach', hint: 'Page', icon: Sparkles },
+  { to: '/ai-coach', label: 'Coach', hint: 'Page', icon: MessageCircle },
   { to: '/journey', label: 'Journey', hint: 'Page', icon: Compass },
   { to: '/connections', label: 'Connections', hint: 'Page', icon: Plug },
   { to: '/mt5', label: 'MT5', hint: 'Page', icon: LineChart },

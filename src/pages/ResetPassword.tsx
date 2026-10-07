@@ -35,7 +35,7 @@ const ResetPassword = () => {
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success('Password updated — you are signed in');
+    toast.success("Password updated. You're signed in.");
     navigate('/');
   };
 
@@ -48,7 +48,7 @@ const ResetPassword = () => {
             <Logo size={40} />
             <div className="text-left">
               <div className="font-display font-bold text-lg leading-none">Edge Blast</div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-0.5">Trading Journal</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Trading Journal</div>
             </div>
           </div>
         </div>

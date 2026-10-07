@@ -94,9 +94,9 @@ const Calendar = () => {
         <div className="luxe-card p-4 md:p-5 flex-1 min-w-0">
           <div className="grid grid-cols-7 md:grid-cols-[repeat(7,minmax(0,1fr))_auto] gap-2 mb-2">
             {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
-              <div key={d} className="text-center text-[10px] uppercase tracking-wider text-muted-foreground/80 py-1.5 font-semibold">{d}</div>
+              <div key={d} className="text-center text-[10px] text-muted-foreground/80 py-1.5 font-semibold">{d}</div>
             ))}
-            <div className="hidden md:block text-center text-[10px] uppercase tracking-wider text-muted-foreground/80 py-1.5 font-semibold w-24">Week</div>
+            <div className="hidden md:block text-center text-[10px] text-muted-foreground/80 py-1.5 font-semibold w-24">Week</div>
           </div>
 
           <div
@@ -173,7 +173,7 @@ const Calendar = () => {
                         </div>
                         {data && (
                           <div className="absolute inset-x-1.5 bottom-1 md:bottom-1.5">
-                            <div className={cn('text-[10px] md:text-[11px] font-mono font-semibold leading-none', textColor)}>
+                            <div className={cn('text-[10px] md:text-[11px] tabular-nums font-semibold leading-none', textColor)}>
                               {data.pnl >= 0 ? '+' : ''}{Math.round(data.pnl)}
                             </div>
                             <div className={cn(
@@ -186,13 +186,13 @@ const Calendar = () => {
                     );
                   })}
                   <div className="hidden md:flex w-24 flex-col justify-center rounded-2xl bg-card border border-border/60 px-2.5 py-2 shadow-xs">
-                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground/80 font-semibold">Wk {wi + 1}</div>
-                    <div className={cn('text-[12px] font-mono font-semibold tabular-nums mt-1', pnlClass(wkStats.pnl))}>
+                    <div className="text-[9px] text-muted-foreground/80 font-semibold">Wk {wi + 1}</div>
+                    <div className={cn('text-[12px] tabular-nums font-semibold tabular-nums mt-1', pnlClass(wkStats.pnl))}>
                       {wkStats.pnl >= 0 ? '+' : ''}{Math.round(wkStats.pnl)}
                     </div>
                     <div className="flex items-center justify-between mt-1 gap-1.5">
-                      <span className="text-[9px] font-mono tabular-nums text-foreground/70">{wkWinRate}%</span>
-                      <span className="text-[9px] font-mono tabular-nums text-muted-foreground">{wkStats.count}t</span>
+                      <span className="text-[9px] tabular-nums tabular-nums text-foreground/70">{wkWinRate}%</span>
+                      <span className="text-[9px] tabular-nums tabular-nums text-muted-foreground">{wkStats.count}t</span>
                     </div>
                   </div>
                 </div>
@@ -219,7 +219,7 @@ const Calendar = () => {
             <div className="luxe-card p-5 sticky top-20 space-y-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-wider">{format(parseISO(selected), 'EEEE')}</div>
+                  <div className="text-xs text-muted-foreground">{format(parseISO(selected), 'EEEE')}</div>
                   <div className="font-display text-xl font-semibold mt-0.5">{format(parseISO(selected), 'MMM d, yyyy')}</div>
                 </div>
                 <Button variant="ghost" size="icon" className="size-7 rounded-md" onClick={() => setSelected(null)}><X className="size-4" /></Button>
@@ -232,7 +232,7 @@ const Calendar = () => {
               </div>
 
               <div className="space-y-1.5">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Trades</div>
+                <div className="text-[10px] text-muted-foreground">Trades</div>
                 {selectedData.trades.map((t: any) => {
                   const snippet = t.thesis || t.lessons_learned || t.notes;
                   return (
@@ -242,7 +242,7 @@ const Calendar = () => {
                           <div className="text-sm font-medium inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</div>
                           <div className="text-[10px] text-muted-foreground uppercase">{t.direction}</div>
                         </div>
-                        <div className={cn('font-mono text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
+                        <div className={cn('tabular-nums text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
                       </div>
                       {snippet && (
                         <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{snippet}</p>
@@ -260,7 +260,7 @@ const Calendar = () => {
         <div className="lg:hidden luxe-card p-5 space-y-4 animate-slide-up">
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">{format(parseISO(selected), 'EEEE')}</div>
+              <div className="text-xs text-muted-foreground">{format(parseISO(selected), 'EEEE')}</div>
               <div className="font-display text-lg font-semibold mt-0.5">{format(parseISO(selected), 'MMM d, yyyy')}</div>
             </div>
             <Button variant="ghost" size="icon" className="size-7" onClick={() => setSelected(null)}><X className="size-4" /></Button>
@@ -277,7 +277,7 @@ const Calendar = () => {
                 <Link key={t.id} to={`/trades/${t.id}`} className="block p-2.5 rounded-lg bg-secondary/40">
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</div>
-                    <div className={cn('font-mono text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
+                    <div className={cn('tabular-nums text-sm font-semibold', pnlClass(t.pnl))}>{formatCurrency(t.pnl, { sign: true })}</div>
                   </div>
                   {snippet && (
                     <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{snippet}</p>
@@ -300,15 +300,15 @@ const Calendar = () => {
 
 const Stat = ({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) => (
   <div className="luxe-card p-3 md:p-4">
-    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
-    <div className={cn('font-mono text-lg md:text-xl font-semibold mt-1', valueClass)}>{value}</div>
+    <div className="text-[10px] text-muted-foreground font-semibold">{label}</div>
+    <div className={cn('tabular-nums text-lg md:text-xl font-semibold mt-1', valueClass)}>{value}</div>
   </div>
 );
 
 const MiniStat = ({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) => (
   <div className="p-2.5 rounded-lg bg-secondary/40">
-    <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
-    <div className={cn('font-mono text-sm font-semibold mt-0.5', valueClass)}>{value}</div>
+    <div className="text-[9px] text-muted-foreground font-semibold">{label}</div>
+    <div className={cn('tabular-nums text-sm font-semibold mt-0.5', valueClass)}>{value}</div>
   </div>
 );
 

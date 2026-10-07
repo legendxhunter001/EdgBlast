@@ -38,7 +38,7 @@ const LayoutInner = ({ children }: { children: ReactNode }) => {
           to="/trades/new"
           className={cn(
             'fixed bottom-6 md:bottom-8 right-5 md:right-8 z-30 press',
-            'h-14 w-14 rounded-full bg-gradient-primary text-primary-foreground',
+            'h-14 w-14 rounded-full bg-primary text-primary-foreground',
             'flex items-center justify-center shadow-elevated hover:shadow-lg',
             'transition-all duration-300 hover:scale-105'
           )}

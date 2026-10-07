@@ -160,7 +160,7 @@ const ImportedDataBlock = ({ raw }: { raw: Record<string, string> | null | undef
         onClick={() => setOpen((v) => !v)}
         style={{ background: 'none', border: 'none', color: 'var(--dim)', fontSize: '.76rem', cursor: 'pointer', padding: 0 }}
       >
-        From your CSV import — all original columns ({entries.length}) {open ? '▲' : '▼'}
+        From your CSV import, all original columns ({entries.length}) {open ? '▲' : '▼'}
       </button>
       {open && (
         <div style={{ marginTop: '.7rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '.7rem' }}>
@@ -1178,7 +1178,7 @@ export default function Journey() {
       <div className="inner">
         <h1>Journey</h1>
         <p className="sub">
-          Your trading notebook — plans, post-mortems, chart screenshots, and the running story behind the numbers.
+          Your trading notebook, plans, post-mortems, chart screenshots, and the running story behind the numbers.
           Everything saves automatically as you type.
         </p>
 

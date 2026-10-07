@@ -256,7 +256,7 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
       return;
     }
     if (activeCount >= 5) {
-      setError('You can have at most 5 active alerts — remove one first.');
+      setError('You can have at most 5 active alerts, remove one first.');
       return;
     }
     setSaving(true);
@@ -324,7 +324,7 @@ const PriceAlerts = ({ chartSymbol }: { chartSymbol: string }) => {
       )}
 
       {alerts.length === 0 ? (
-        <div className="tt-empty" style={{ marginTop: '.9rem' }}>No alerts yet — add one above.</div>
+        <div className="tt-empty" style={{ marginTop: '.9rem' }}>No alerts yet, add one above.</div>
       ) : (
         <div className="tt-alert-list">
           {alerts.map((a) => (
@@ -590,7 +590,7 @@ export default function TradingTools() {
         <div className="tt-inner">
           <h1>Trading Tools</h1>
           <p className="tt-sub">
-            Charts, position sizing, and macro events — all in one workspace.
+            Charts, position sizing, and macro events, all in one workspace.
           </p>
         </div>
       </header>
@@ -634,7 +634,7 @@ export default function TradingTools() {
                           type="button"
                           className="tt-icon-btn"
                           aria-label="How to customize candle colors"
-                          title="Candle colors can't be set from outside the chart on the free TradingView widget — open the chart's own settings (gear icon on desktop, or tap-hold a candle) to change them there. Your choice is remembered by TradingView."
+                          title="Candle colors can't be set from outside the chart on the free TradingView widget, open the chart's own settings (gear icon on desktop, or tap-hold a candle) to change them there. Your choice is remembered by TradingView."
                         >
                           <Info size={16} />
                         </button>
@@ -923,7 +923,7 @@ html.light .tt{
 }
 
 /* ======================================================================
-   iOS PHONE LAYER — same palette and structure as the rest of Edge Blast.
+   iOS PHONE LAYER, same palette and structure as the rest of Edge Blast.
    Maps this page's tokens onto the app tokens, so light/dark and colors stay in sync.
    ====================================================================== */
 @media (min-width: 0px){

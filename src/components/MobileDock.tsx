@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { prefetch } from '@/lib/routes';
 import {
   LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen,
-  Sparkles, Compass, LineChart, Wrench, Plug,
+  MessageCircle, Compass, LineChart, Wrench, Plug,
 } from 'lucide-react';
 
 /** Every main page lives in the dock. Settings lives in the top-bar three-dots menu. */
@@ -13,7 +13,7 @@ const tabs = [
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/reviews', label: 'Reviews', icon: NotebookPen },
-  { to: '/ai-coach', label: 'Coach', icon: Sparkles },
+  { to: '/ai-coach', label: 'Coach', icon: MessageCircle },
   { to: '/journey', label: 'Journey', icon: Compass },
   { to: '/mt5', label: 'MT5', icon: LineChart },
   { to: '/trading-tools', label: 'Tools', icon: Wrench },

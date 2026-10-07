@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { prefetch } from '@/lib/routes';
 import {
   LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen,
-  Settings, LogOut, PanelLeftClose, PanelLeftOpen, Plug, Compass, Wrench, LineChart, Sparkles,
+  Settings, LogOut, PanelLeftClose, PanelLeftOpen, Plug, Compass, Wrench, LineChart, MessageCircle,
   ChevronRight, CandlestickChart, Calculator, Newspaper,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,7 +25,7 @@ const items: Entry[] = [
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/reviews', label: 'Reviews', icon: NotebookPen },
-  { to: '/ai-coach', label: 'AI Coach', icon: Sparkles },
+  { to: '/ai-coach', label: 'Coach', icon: MessageCircle },
   { divider: 'Journey' },
   { to: '/journey', label: 'Journey', icon: Compass },
   { divider: 'Connections' },
@@ -162,7 +162,7 @@ const SidebarInner = ({ collapsed, onNavigate, showCollapseBtn = true }: {
             <Logo size={32} />
             <div className="flex-1 min-w-0">
               <div className="font-display font-bold text-base leading-none text-sidebar-accent-foreground">Edge Blast</div>
-              <div className="text-[10px] uppercase tracking-widest text-sidebar-foreground/60 mt-1">Trading Journal</div>
+              <div className="text-[10px] text-sidebar-foreground/60 mt-1">Trading Journal</div>
             </div>
             <ThemeToggle />
           </>

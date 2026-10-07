@@ -43,7 +43,7 @@ const Trades = () => {
           <p className="text-sm text-muted-foreground mt-1">{(trades ?? []).length} total · {filtered.length} shown</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link to="/trades/new" className="px-4 py-2 rounded-lg bg-gradient-bull text-primary-foreground text-sm font-medium shadow-glow-bull">+ New trade</Link>
+          <Link to="/trades/new" className="px-4 py-2 rounded-lg bg-bull text-primary-foreground text-sm font-medium shadow-sm">+ New trade</Link>
         </div>
       </header>
 
@@ -85,7 +85,7 @@ const Trades = () => {
           <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full text-sm">
               <thead className="bg-secondary/30">
-                <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <tr className="text-left text-xs text-muted-foreground">
                   <th className="px-4 py-3 font-medium">Asset</th>
                   <th className="font-medium">Side</th>
                   <th className="font-medium">Date</th>
@@ -101,10 +101,10 @@ const Trades = () => {
                     <td className="px-4 py-3"><Link to={`/trades/${t.id}`} className="font-medium hover:text-primary inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</Link></td>
                     <td><DirectionBadge dir={t.direction} /></td>
                     <td className="text-muted-foreground text-xs">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d, yyyy') : '—'}</td>
-                    <td className="text-right font-mono text-xs">{t.entry_price ?? '—'}</td>
-                    <td className="text-right font-mono text-xs">{t.exit_price ?? '—'}</td>
-                    <td className={`text-right font-mono ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</td>
-                    <td className="text-right pr-4 font-mono text-xs text-muted-foreground">{t.risk_reward ? `${Number(t.risk_reward).toFixed(2)}R` : '—'}</td>
+                    <td className="text-right tabular-nums text-xs">{t.entry_price ?? '—'}</td>
+                    <td className="text-right tabular-nums text-xs">{t.exit_price ?? '—'}</td>
+                    <td className={`text-right tabular-nums ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</td>
+                    <td className="text-right pr-4 tabular-nums text-xs text-muted-foreground">{t.risk_reward ? `${Number(t.risk_reward).toFixed(2)}R` : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -124,12 +124,12 @@ const Trades = () => {
               </div>
               <div className="flex items-end justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">P&L</div>
-                  <div className={`font-mono text-xl font-semibold ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</div>
+                  <div className="text-[10px] text-muted-foreground">P&L</div>
+                  <div className={`tabular-nums text-xl font-semibold ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">R:R</div>
-                  <div className="font-mono text-sm">{t.risk_reward ? `${Number(t.risk_reward).toFixed(2)}R` : '—'}</div>
+                  <div className="text-[10px] text-muted-foreground">R:R</div>
+                  <div className="tabular-nums text-sm">{t.risk_reward ? `${Number(t.risk_reward).toFixed(2)}R` : '—'}</div>
                 </div>
               </div>
             </Link>

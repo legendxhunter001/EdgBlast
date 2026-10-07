@@ -97,7 +97,7 @@ const realisticRange = (asset: string): [number, number] | null => {
   if (sym.startsWith('ETH')) return [50, 10000];
   if (sym.endsWith('JPY') && /^[A-Z]{6}$/.test(sym)) return [50, 400];
   if (/^[A-Z]{6}$/.test(sym)) return [0.05, 3.0]; // standard 6-letter FX pair
-  return null; // unrecognized symbol (index, exotic ticker, etc.) — don't touch it
+  return null; // unrecognized symbol (index, exotic ticker, etc.), don't touch it
 };
 
 const fixMissingDecimal = (value: number | null, asset: string, referencePrice?: number | null): number | null => {
@@ -105,7 +105,7 @@ const fixMissingDecimal = (value: number | null, asset: string, referencePrice?:
   const range = realisticRange(asset);
   if (!range) return value;
   const [lo, hi] = range;
-  if (value <= hi) return value; // already realistic (or below range) — don't guess
+  if (value <= hi) return value; // already realistic (or below range), don't guess
   const scale = Math.pow(10, Math.ceil(Math.log10(value / hi)));
   const corrected = value / scale;
   if (corrected < lo || corrected > hi) return value; // didn't land in a realistic range at all
@@ -341,7 +341,7 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
         <DialogHeader>
           <DialogTitle className="font-display">Import from CSV</DialogTitle>
           <DialogDescription>
-            {stage === 'upload' && 'Upload a CSV export — trades, journal entries, or a full migration from another EdgeBlast/Lovable project.'}
+            {stage === 'upload' && 'Upload a CSV export, trades, journal entries, or a full migration from another EdgeBlast/Lovable project.'}
             {stage === 'map' && `${rows.length} rows found in ${fileName}, detected as ${mode === 'trade' ? 'trades' : 'journal entries'}. Check the mapping below.`}
             {stage === 'importing' && 'Importing…'}
             {stage === 'done' && 'Import complete.'}
@@ -413,7 +413,7 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
 
             {unmappedColumns.length > 0 && (
               <div className="text-xs text-muted-foreground bg-secondary/30 rounded-lg px-3 py-2">
-                <span className="font-medium text-foreground">{unmappedColumns.length} unmapped column{unmappedColumns.length === 1 ? '' : 's'}</span> — not lost:
+                <span className="font-medium text-foreground">{unmappedColumns.length} unmapped column{unmappedColumns.length === 1 ? '' : 's'}</span>, not lost:
                 stored on every row's original data so nothing you wrote disappears: {unmappedColumns.join(', ')}
               </div>
             )}
@@ -471,7 +471,7 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
         {stage === 'importing' && (
           <div className="py-10 text-center text-sm text-muted-foreground">
             <div className="size-8 mx-auto mb-3 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-            Importing {rows.length} rows — checking each against your existing data to avoid duplicates…
+            Importing {rows.length} rows, checking each against your existing data to avoid duplicates…
           </div>
         )}
 
@@ -480,9 +480,9 @@ export default function ImportCsvDialog({ open, onOpenChange }: ImportCsvDialogP
             <CheckCircle2 className="size-10 mx-auto text-bull" />
             <div className="font-medium">{result.imported} {mode === 'trade' ? 'trade' : 'entry'}{result.imported === 1 ? '' : mode === 'trade' ? 's' : 'ies'} imported</div>
             <div className="text-xs text-muted-foreground space-y-0.5">
-              {result.duplicates > 0 && <div>{result.duplicates} already existed — skipped to avoid duplicates</div>}
+              {result.duplicates > 0 && <div>{result.duplicates} already existed, skipped to avoid duplicates</div>}
               {result.skipped > 0 && <div>{result.skipped} row{result.skipped === 1 ? '' : 's'} skipped (missing required fields)</div>}
-              {result.errors > 0 && <div className="text-bear">{result.errors} row{result.errors === 1 ? '' : 's'} failed — check they have valid data</div>}
+              {result.errors > 0 && <div className="text-bear">{result.errors} row{result.errors === 1 ? '' : 's'} failed, check they have valid data</div>}
             </div>
           </div>
         )}

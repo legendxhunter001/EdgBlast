@@ -380,7 +380,7 @@ export default function Connections() {
                 <div className="eb-trading-row">
                   <div>
                     <div className="eb-trading-label">Live trading</div>
-                    <div className="eb-trading-sub">{c.can_trade ? "Enabled — real orders will execute" : "Off — read-only journal sync"}</div>
+                    <div className="eb-trading-sub">{c.can_trade ? "Enabled, real orders will execute" : "Off, read-only journal sync"}</div>
                   </div>
                   <button
                     type="button"

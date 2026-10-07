@@ -169,15 +169,15 @@ const NewTrade = () => {
 
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Stop distance</div>
-              <div className="font-mono text-lg font-semibold mt-0.5">{stopPips !== null ? `${stopPips.toFixed(1)} pips` : '—'}</div>
-              {riskAmount !== null && <div className="font-mono text-xs text-bear mt-0.5">-${riskAmount.toFixed(2)} risk</div>}
+              <div className="text-[11px] text-muted-foreground font-semibold">Stop distance</div>
+              <div className="tabular-nums text-lg font-semibold mt-0.5">{stopPips !== null ? `${stopPips.toFixed(1)} pips` : '—'}</div>
+              {riskAmount !== null && <div className="tabular-nums text-xs text-bear mt-0.5">-${riskAmount.toFixed(2)} risk</div>}
               {stopPips !== null && riskAmount === null && <div className="text-xs text-muted-foreground mt-0.5">Add position size for $ risk</div>}
             </div>
             <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Target distance</div>
-              <div className="font-mono text-lg font-semibold mt-0.5">{targetPips !== null ? `${targetPips.toFixed(1)} pips` : '—'}</div>
-              {potentialProfit !== null && <div className="font-mono text-xs text-bull mt-0.5">+${potentialProfit.toFixed(2)} profit</div>}
+              <div className="text-[11px] text-muted-foreground font-semibold">Target distance</div>
+              <div className="tabular-nums text-lg font-semibold mt-0.5">{targetPips !== null ? `${targetPips.toFixed(1)} pips` : '—'}</div>
+              {potentialProfit !== null && <div className="tabular-nums text-xs text-bull mt-0.5">+${potentialProfit.toFixed(2)} profit</div>}
               {targetPips !== null && potentialProfit === null && <div className="text-xs text-muted-foreground mt-0.5">Add position size for $ profit</div>}
             </div>
           </div>
@@ -227,7 +227,7 @@ const NewTrade = () => {
         </section>
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={saving} className="bg-gradient-bull text-primary-foreground shadow-glow-bull">
+          <Button type="submit" disabled={saving} className="bg-bull text-primary-foreground shadow-sm">
             {saving ? 'Saving…' : 'Save trade'}
           </Button>
           <Link to="/trades"><Button type="button" variant="ghost">Cancel</Button></Link>

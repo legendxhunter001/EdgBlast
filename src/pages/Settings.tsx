@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAccountScope } from '@/hooks/useAccountScope';
 import { toast } from 'sonner';
-import { FileUp, ImageDown, Link2, User, ShieldCheck, Bell, Sparkles, Lock } from 'lucide-react';
+import { FileUp, ImageDown, Link2, User, ShieldCheck, Bell, MessageCircle, Lock } from 'lucide-react';
 import ImportCsvDialog from '@/components/ImportCsvDialog';
 import ImportScreenshotsDialog from '@/components/ImportScreenshotsDialog';
 
@@ -265,7 +265,7 @@ const NOTIFS: { key: string; title: string; desc: string }[] = [
   { key: 'trade_synced', title: 'Trade synced', desc: 'When a new trade lands from MT5.' },
   { key: 'rule_violation', title: 'Rule violation', desc: 'When a trade breaks one of your rules.' },
   { key: 'weekly_report', title: 'Weekly report', desc: 'Your performance digest every Sunday.' },
-  { key: 'ai_coaching_summary', title: 'AI coaching summary', desc: 'Periodic notes from your AI coach.' },
+  { key: 'ai_coaching_summary', title: 'Coach summary', desc: 'Regular notes from your coach.' },
 ];
 
 const NotificationsSection = () => {
@@ -275,7 +275,7 @@ const NotificationsSection = () => {
   return (
     <section className="eb-sec">
       <h2><i className="eb-ic ic-red"><Bell size={15} /></i>Notifications</h2>
-      <p className="desc">Choose what Edge Blast tells you about.</p>
+      <p className="desc">Choose what you want to hear about.</p>
       {NOTIFS.map((n) => (
         <div className="eb-toggle-row" key={n.key}>
           <div>
@@ -298,14 +298,14 @@ const AiCoachSection = () => {
   }, 'user_id');
   return (
     <section className="eb-sec">
-      <h2><i className="eb-ic ic-purple"><Sparkles size={15} /></i>AI Coach</h2>
-      <p className="desc">Automated review of your trades against your rules and psychology notes.</p>
+      <h2><i className="eb-ic ic-purple"><MessageCircle size={15} /></i>Coach</h2>
+      <p className="desc">Your coach goes over your trades against your rules and notes.</p>
       <div className="eb-toggle-row">
         <div>
-          <div className="t">Enable AI coaching</div>
-          <div className="d">Turn structured feedback on or off.</div>
+          <div className="t">Coach feedback</div>
+          <div className="d">Get feedback on your trades.</div>
         </div>
-        <Switch label="Enable AI coaching" on={!!s.value.enabled} onChange={(v) => s.set({ enabled: v })} />
+        <Switch label="Coach feedback" on={!!s.value.enabled} onChange={(v) => s.set({ enabled: v })} />
       </div>
       <div className="eb-row2" style={{ marginTop: '1.1rem' }}>
         <label className="eb-f">Coaching frequency

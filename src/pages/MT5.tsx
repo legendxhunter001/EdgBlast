@@ -227,7 +227,7 @@ const MT5AccountPanel = () => {
 
       <div className="mt5-section-label">New Order</div>
       {tradable.length === 0 ? (
-        <div className="mt5-empty">Live trading isn't enabled on any account — turn it on in Connections to trade here.</div>
+        <div className="mt5-empty">Live trading isn't enabled on any account, turn it on in Connections to trade here.</div>
       ) : (
         <>
           <div className="mt5-side-toggle" style={{ marginBottom: '.6rem' }}>
@@ -706,7 +706,7 @@ export default function MT5() {
 
       {/* Actions */}
       <button onClick={saveSetup} disabled={saving}
-        className="h-8 px-3 rounded-lg bg-gradient-primary text-primary-foreground text-xs font-medium flex items-center gap-1.5 disabled:opacity-60">
+        className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1.5 disabled:opacity-60">
         <Save className="size-3.5" /> {saving ? 'Saving…' : 'Save'}
       </button>
       <button onClick={clearAll}
@@ -762,7 +762,7 @@ export default function MT5() {
         )}
       >
         <div className="px-3 py-2.5 border-b border-border flex items-center justify-between flex-shrink-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Watchlist</span>
+          <span className="text-xs font-semibold text-muted-foreground">Watchlist</span>
           <button onClick={() => setWatchlistOpen(false)} className="text-muted-foreground hover:text-foreground">
             <X className="size-3.5" />
           </button>
@@ -803,16 +803,16 @@ export default function MT5() {
         <header>
           <h1 className="font-display text-2xl md:text-3xl font-semibold">MT5</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Your account, positions, and order ticket — plus a chart to plan and save your setups.
+            Your account, positions, and order ticket, plus a chart to plan and save your setups.
           </p>
         </header>
         <MT5AccountPanel />
-        <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-1">Chart & Setups</div>
+        <div className="text-xs text-muted-foreground font-semibold pt-1">Chart & Setups</div>
         <ChartToolbar />
         <ChartArea height={560} />
         {drawings.length > 0 && (
           <div className="glass rounded-xl p-4">
-            <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wider font-semibold">Drawings on this setup</div>
+            <div className="text-xs text-muted-foreground mb-2 font-semibold">Drawings on this setup</div>
             <div className="space-y-1.5">
               {drawings.map((d, i) => (
                 <div key={d.id ?? i} className="flex items-center gap-3 text-sm">

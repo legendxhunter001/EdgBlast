@@ -163,7 +163,7 @@ export default function ImportScreenshotsDialog({ open, onOpenChange }: ImportSc
         <DialogHeader>
           <DialogTitle className="font-display">Import screenshots</DialogTitle>
           <DialogDescription>
-            {stage === 'upload' && 'Upload the "Download all screenshots" zip from your Lovable export — each image gets matched to the right trade automatically.'}
+            {stage === 'upload' && 'Upload the "Download all screenshots" zip from your Lovable export, each image gets matched to the right trade automatically.'}
             {stage === 'preview' && `${parsed.length} images found in ${fileName}.`}
             {stage === 'importing' && 'Uploading and linking screenshots…'}
             {stage === 'done' && 'Import complete.'}
@@ -189,9 +189,9 @@ export default function ImportScreenshotsDialog({ open, onOpenChange }: ImportSc
               onChange={(e) => e.target.files?.length && handleFiles(Array.from(e.target.files))}
             />
             <FileArchive className="size-10 mx-auto text-primary/70 mb-3" />
-            <div className="font-medium text-sm">Drop your zip — or the individual screenshots — here, or tap to browse</div>
+            <div className="font-medium text-sm">Drop your zip, or the individual screenshots, here, or tap to browse</div>
             <div className="text-xs text-muted-foreground mt-1.5">
-              Works either way: the zip from Lovable, or the extracted image files themselves. Names should look like <span className="font-mono">2026-09-10_XAUUSD_entry.jpg</span> — that's what the export produces.
+              Works either way: the zip from Lovable, or the extracted image files themselves. Names should look like <span className="font-mono">2026-09-10_XAUUSD_entry.jpg</span>, that's what the export produces.
             </div>
           </div>
         )}
@@ -207,7 +207,7 @@ export default function ImportScreenshotsDialog({ open, onOpenChange }: ImportSc
 
             {unmatched.length > 0 && (
               <div className="text-xs text-muted-foreground bg-secondary/30 rounded-lg px-3 py-2 max-h-32 overflow-y-auto">
-                <div className="font-medium text-foreground mb-1">Couldn't match these — check the filename or that the trade exists:</div>
+                <div className="font-medium text-foreground mb-1">Couldn't match these, check the filename or that the trade exists:</div>
                 {unmatched.map((u, i) => <div key={i} className="truncate">{u.name}</div>)}
               </div>
             )}
@@ -248,7 +248,7 @@ export default function ImportScreenshotsDialog({ open, onOpenChange }: ImportSc
           <div className="py-6 text-center space-y-3">
             <CheckCircle2 className="size-10 mx-auto text-bull" />
             <div className="font-medium">{result.imported} screenshot{result.imported === 1 ? '' : 's'} added to your trades</div>
-            {result.errors > 0 && <div className="text-xs text-bear">{result.errors} failed to upload — try those again individually from the trade page.</div>}
+            {result.errors > 0 && <div className="text-xs text-bear">{result.errors} failed to upload, try those again individually from the trade page.</div>}
           </div>
         )}
 
