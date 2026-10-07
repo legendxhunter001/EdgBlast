@@ -1,4 +1,4 @@
-import { ReactNode, Suspense, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { prefetchAll } from '@/lib/routes';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
@@ -31,11 +31,7 @@ const LayoutInner = ({ children }: { children: ReactNode }) => {
       <MobileDock />
       <main className="flex-1 min-w-0 flex flex-col">
         <TopBar />
-        <div key={pathname} className="animate-fade-up flex-1">
-          <Suspense fallback={<div className="p-4 md:p-8 space-y-4"><div className="h-9 w-48 rounded-xl bg-muted/70 animate-pulse" /><div className="h-40 rounded-2xl bg-muted/50 animate-pulse" /></div>}>
-            {children}
-          </Suspense>
-        </div>
+        {children}
       </main>
       {!hideFab && (
         <Link

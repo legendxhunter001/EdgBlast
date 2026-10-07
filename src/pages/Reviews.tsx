@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTrades, type Trade } from '@/hooks/useTrades';
 import { useAuth } from '@/hooks/useAuth';
@@ -749,7 +750,7 @@ const Reviews = () => {
       </div>
 
       {/* new-goal bottom sheet */}
-      {sheet && (
+      {sheet && createPortal(
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={closeSheet}>
           <div role="dialog" aria-modal="true" aria-labelledby="new-goal-title"
             className="relative w-full max-w-md bg-background rounded-t-[28px] md:rounded-[28px] px-5 max-h-[92%] overflow-auto"
@@ -805,7 +806,8 @@ const Reviews = () => {
               {saving ? 'Saving…' : 'Set goal'}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

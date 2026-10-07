@@ -502,3 +502,22 @@
   background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
 }
+
+/* ── page content entrance: every page has its own flavor (set by PageTransition) ── */
+@keyframes eb-in-rise  { from { opacity: 0; transform: translateY(12px); } }
+@keyframes eb-in-scale { from { opacity: 0; transform: scale(.965); } }
+@keyframes eb-in-list  { from { opacity: 0; transform: translateX(-12px); } }
+@keyframes eb-in-fade  { from { opacity: 0; } }
+.eb-page-in > :first-child > * { animation: eb-in-rise .5s var(--transition-smooth) backwards; }
+.eb-page-in[data-flavor="scale"] > :first-child > * { animation-name: eb-in-scale; }
+.eb-page-in[data-flavor="list"]  > :first-child > * { animation-name: eb-in-list; animation-duration: .4s; }
+.eb-page-in[data-flavor="fade"]  > :first-child > * { animation-name: eb-in-fade; animation-duration: .6s; }
+.eb-page-in > :first-child > :nth-child(1) { animation-delay: 20ms; }
+.eb-page-in > :first-child > :nth-child(2) { animation-delay: 70ms; }
+.eb-page-in > :first-child > :nth-child(3) { animation-delay: 120ms; }
+.eb-page-in > :first-child > :nth-child(4) { animation-delay: 170ms; }
+.eb-page-in > :first-child > :nth-child(5) { animation-delay: 210ms; }
+.eb-page-in > :first-child > :nth-child(6) { animation-delay: 250ms; }
+.eb-page-in > :first-child > :nth-child(7) { animation-delay: 280ms; }
+.eb-page-in > :first-child > :nth-child(n+8) { animation-delay: 310ms; }
+@media (prefers-reduced-motion: reduce) { .eb-page-in > :first-child > * { animation: none !important; } }

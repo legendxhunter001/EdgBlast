@@ -1,15 +1,15 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { ThemeProvider } from "./hooks/useTheme";
-import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppLayout } from "./components/AppLayout";
 import { AccountScopeProvider } from "./contexts/AccountScopeContext";
 import { BrandLoading } from "./components/BrandLoading";
+import { AnimatedOutlet } from "./components/PageTransition";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -35,14 +35,13 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } },
 });
 
-const Shell = ({ children }: { children: React.ReactNode }) => (
-  <ProtectedRoute><AccountScopeProvider><AppLayout>{children}</AppLayout></AccountScopeProvider></ProtectedRoute>
-);
-
-const RootRoute = () => {
+/** One persistent shell for every signed-in page: only the page inside animates, the dock and sidebar never remount. */
+const ShellLayout = () => {
   const { session, loading } = useAuth();
+  const { pathname } = useLocation();
   if (loading) return <BrandLoading />;
-  return session ? <Shell><Dashboard /></Shell> : <Landing />;
+  if (!session) return pathname === "/" ? <Landing /> : <Navigate to="/auth" replace />;
+  return <AccountScopeProvider><AppLayout><AnimatedOutlet /></AppLayout></AccountScopeProvider>;
 };
 
 const App = () => (
@@ -57,19 +56,21 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/" element={<RootRoute />} />
-              <Route path="/trades" element={<Shell><Trades /></Shell>} />
-              <Route path="/trades/new" element={<Shell><NewTrade /></Shell>} />
-              <Route path="/trades/:id" element={<Shell><TradeDetail /></Shell>} />
-              <Route path="/calendar" element={<Shell><Calendar /></Shell>} />
-              <Route path="/analytics" element={<Shell><Analytics /></Shell>} />
-              <Route path="/reviews" element={<Shell><Reviews /></Shell>} />
-              <Route path="/ai-coach" element={<Shell><AICoach /></Shell>} />
-              <Route path="/settings" element={<Shell><Settings /></Shell>} />
-              <Route path="/connections" element={<Shell><Connections /></Shell>} />
-              <Route path="/trading-tools" element={<Shell><TradingTools /></Shell>} />
-              <Route path="/mt5" element={<Shell><MT5 /></Shell>} />
-              <Route path="/journey" element={<Shell><Journey /></Shell>} />
+              <Route element={<ShellLayout />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/trades" element={<Trades />} />
+                <Route path="/trades/new" element={<NewTrade />} />
+                <Route path="/trades/:id" element={<TradeDetail />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/reviews" element={<Reviews />} />
+                <Route path="/ai-coach" element={<AICoach />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/connections" element={<Connections />} />
+                <Route path="/trading-tools" element={<TradingTools />} />
+                <Route path="/mt5" element={<MT5 />} />
+                <Route path="/journey" element={<Journey />} />
+              </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
