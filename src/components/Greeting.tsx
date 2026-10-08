@@ -3,6 +3,23 @@ import { toast } from 'sonner';
 import { useProfileName } from '@/hooks/useProfileName';
 
 
+const LINES = [
+  'Plan the trade. Trade the plan.',
+  'Protect your capital first. Profit follows discipline.',
+  'One clean execution beats ten rushed ones.',
+  'Consistency is the edge nobody can copy.',
+  'Process over outcome. Every single trade.',
+  'Patience pays the sniper, not the gambler.',
+  'Small risk, clear rules, calm mind.',
+  'Your journal is your coach. Be honest with it.',
+  'Respect the stop. Respect yourself.',
+  'Boring trading is profitable trading.',
+  'Review yesterday, then trade today with intent.',
+  'Great traders are built one disciplined day at a time.',
+  'No setup, no trade. That is a win too.',
+  'Stay focused on the next right decision.',
+];
+
 export const greetingFor = (d = new Date()) => {
   const h = d.getHours();
   if (h >= 5 && h < 12) return 'Good morning';
@@ -10,7 +27,8 @@ export const greetingFor = (d = new Date()) => {
   return 'Good evening';
 };
 
-export const motivationFor = (d = new Date()) => d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+const dayOfYear = (d = new Date()) => Math.floor((+d - +new Date(d.getFullYear(), 0, 0)) / 86_400_000);
+export const motivationFor = (d = new Date()) => LINES[dayOfYear(d) % LINES.length];
 
 const useGreeting = () => {
   const [now, setNow] = useState(() => new Date());
