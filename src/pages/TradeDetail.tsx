@@ -1,5 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTrade, useScreenshots } from '@/hooks/useTrades';
+import { useTrade, useScreenshots, useStrategies } from '@/hooks/useTrades';
+import { useCountUp } from '@/hooks/useCountUp';
+import { IosSheet } from '@/components/IosSheet';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,6 +40,9 @@ const TradeDetail = () => {
   const { data: shots, refetch: refetchShots } = useScreenshots(id);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { data: strategies = [] } = useStrategies();
+  const shownPnl = useCountUp(trade && trade.pnl !== null ? Number(trade.pnl) : null);
+  const [confirmDel, setConfirmDel] = useState(false);
 
   const [step, setStep] = useState<StepId>('overview');
   const [fields, setFields] = useState({
@@ -129,8 +134,16 @@ const TradeDetail = () => {
     refetchShots();
   };
 
+  const setStrategy = async (value: string) => {
+    if (!id) return;
+    const { error } = await supabase.from('trades').update({ strategy_id: value || null }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith('trade') });
+    toast.success(value ? 'Strategy set' : 'Strategy removed');
+  };
+
   const handleDelete = async () => {
-    if (!id || !confirm('Delete this trade? This cannot be undone.')) return;
+    if (!id) return;
     await supabase.from('trades').delete().eq('id', id);
     qc.invalidateQueries({ queryKey: ['trades'] });
     toast.success('Trade deleted');
@@ -167,93 +180,86 @@ const TradeDetail = () => {
   const stepDef = STEPS[stepIndex];
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-5 md:space-y-6">
+    <div className="px-4 md:px-8 pt-3 pb-10 max-w-3xl mx-auto space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <Link to="/trades" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors press tap">
-          <ArrowLeft className="size-4" /> <span className="hidden sm:inline">Back to trades</span>
+        <Link to="/trades" className="inline-flex items-center -ml-1.5 text-[17px] font-medium rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" style={{ color: 'hsl(var(--primary))' }}>
+          <ChevronLeft className="size-6" aria-hidden /> Trades
         </Link>
         <div className="flex items-center gap-2">
           <SaveIndicator state={saving} />
-          <Button variant="ghost" size="sm" onClick={handleDelete} className="text-bear hover:text-bear hover:bg-bear/10 tap">
-            <Trash2 className="size-4" />
-          </Button>
+          <button onClick={() => setConfirmDel(true)} aria-label="Delete trade" className="size-10 rounded-full grid place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" style={{ color: 'hsl(var(--bear))' }}>
+            <Trash2 className="size-5" />
+          </button>
         </div>
       </div>
 
-      <section className="luxe-card p-5 md:p-7 animate-fade-up">
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
-          <div>
-            <div className="flex items-center gap-3 mb-1.5">
-              <h1 className="font-display text-2xl md:text-3xl font-semibold tracking-tight flex items-center gap-2.5"><SymbolLogo symbol={trade.asset} size={30} />{trade.asset}</h1>
-              <DirectionBadge dir={trade.direction} />
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {trade.entry_at && format(parseISO(trade.entry_at), 'MMM d, yyyy · HH:mm')}
-              {trade.exit_at && <> → {format(parseISO(trade.exit_at), 'HH:mm')}</>}
+      <section className="bg-card border border-border rounded-[24px] p-5 md:p-6" style={{ boxShadow: 'var(--ios-sh, 0 1px 2px rgba(0,0,0,.05))' }}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="font-display text-[28px] leading-tight font-bold tracking-tight flex items-center gap-2.5"><SymbolLogo symbol={trade.asset} size={32} />{trade.asset}</h1>
+            <div className="text-[14px] text-muted-foreground mt-1">
+              {trade.direction === 'short' ? 'Short' : 'Long'}
+              {trade.entry_at && <> · {format(parseISO(trade.entry_at), 'MMM d, yyyy, HH:mm')}</>}
+              {trade.exit_at && <> to {format(parseISO(trade.exit_at), 'HH:mm')}</>}
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-caption text-muted-foreground">P&L</div>
-            <div className={cn('tabular-nums text-2xl md:text-3xl font-semibold tracking-tight mt-0.5', pnlClass(trade.pnl))}>
-              {formatCurrency(trade.pnl, { sign: true })}
-            </div>
-            <div className={cn('tabular-nums text-xs', pnlClass(trade.pnl_percent))}>{formatPct(trade.pnl_percent, { sign: true })}</div>
+          <div className="text-right shrink-0">
+            <div className="text-[12.5px] text-muted-foreground">Result</div>
+            {trade.pnl === null
+              ? <div className="font-display text-[26px] leading-none font-bold mt-1">Open</div>
+              : <div className="font-display text-[32px] leading-none font-bold tracking-tight tabular-nums mt-1" style={{ color: Number(trade.pnl) >= 0 ? 'hsl(var(--bull))' : 'hsl(var(--bear))' }}>{formatCurrency(shownPnl, { sign: true })}</div>}
+            {trade.pnl_percent !== null && <div className="text-[13px] tabular-nums text-muted-foreground mt-1">{formatPct(trade.pnl_percent, { sign: true })}</div>}
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-          <Stat label="Entry" value={trade.entry_price ?? '—'} />
-          <Stat label="Exit" value={trade.exit_price ?? '—'} />
-          <Stat label="Size" value={trade.position_size ?? '—'} />
-          <Stat label="R:R" value={trade.risk_reward ? `${Number(trade.risk_reward).toFixed(2)}R` : '—'} />
-          <Stat label="Stop" value={trade.stop_loss ?? '—'} />
-          <Stat label="Target" value={trade.take_profit ?? '—'} />
-          <Stat label="Confidence" value={trade.confidence_rating ? `${trade.confidence_rating}/10` : '—'} />
-          <Stat label="Mood" value={trade.emotional_state ?? '—'} capitalize />
+        <div className="grid sm:grid-cols-2 sm:gap-x-10 mt-4">
+          <Row label="Entry">{trade.entry_price ?? '—'}</Row>
+          <Row label="Exit">{trade.exit_price ?? '—'}</Row>
+          <Row label="Stop">{trade.stop_loss ?? '—'}</Row>
+          <Row label="Target">{trade.take_profit ?? '—'}</Row>
+          <Row label="Size">{trade.position_size ?? '—'}</Row>
+          <Row label="Result in R">{trade.risk_reward ? `${Number(trade.risk_reward).toFixed(2)}R` : '—'}</Row>
+          <Row label="Confidence">{trade.confidence_rating ? `${trade.confidence_rating} of 10` : '—'}</Row>
+          <Row label="Mood"><span className="capitalize">{trade.emotional_state ?? '—'}</span></Row>
+          <Row label="Strategy">
+            <select value={trade.strategy_id ?? ''} onChange={(e) => setStrategy(e.target.value)} aria-label="Strategy"
+              className="bg-secondary rounded-[10px] px-2.5 py-1.5 text-[14px] max-w-[11rem] outline-none focus:ring-2 focus:ring-primary">
+              <option value="">None</option>
+              {strategies.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
+            </select>
+          </Row>
         </div>
       </section>
 
-      <section className="luxe-card p-4 md:p-6 animate-fade-up stagger-1">
-        <div className="flex items-center justify-between mb-3">
+      <section className="bg-card border border-border rounded-[24px] p-4 md:p-5" style={{ boxShadow: 'var(--ios-sh, 0 1px 2px rgba(0,0,0,.05))' }}>
+        <div className="flex items-center justify-between mb-3 px-1">
           <div>
-            <div className="text-caption text-muted-foreground">Review workflow</div>
-            <div className="text-section mt-0.5">{stepDef.label}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">{stepDef.desc}</div>
+            <div className="text-[17px] font-semibold">{stepDef.label}</div>
+            <div className="text-[13px] text-muted-foreground">{stepDef.desc}</div>
           </div>
-          <div className="text-right shrink-0">
-            <div className="text-caption text-muted-foreground">Step</div>
-            <div className="tabular-nums text-lg font-semibold">{stepIndex + 1}<span className="text-muted-foreground text-sm">/{STEPS.length}</span></div>
-          </div>
+          <div className="text-[13px] text-muted-foreground tabular-nums shrink-0">{stepIndex + 1} of {STEPS.length}</div>
         </div>
-
-        <div className="h-1 rounded-full bg-muted overflow-hidden mb-4">
-          <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-        </div>
-
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-thin -mx-1 px-1 pb-1">
-          {STEPS.map((s, i) => {
-            const active = s.id === step;
-            const done = i < stepIndex;
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1" role="tablist" aria-label="Review steps">
+          {STEPS.map((st, i) => {
+            const active = st.id === step, done = i < stepIndex;
             return (
-              <button
-                key={s.id}
-                onClick={() => setStep(s.id)}
-                className={cn(
-                  'tap shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium press transition-all flex items-center gap-1.5',
-                  active && 'bg-primary text-primary-foreground shadow-sm',
-                  !active && done && 'bg-primary/10 text-primary',
-                  !active && !done && 'bg-secondary text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {done && <CheckCircle2 className="size-3.5" />}
-                <span className="tabular-nums text-[10px] opacity-70">{i + 1}</span>
-                {s.label}
+              <button key={st.id} role="tab" aria-selected={active} onClick={() => setStep(st.id)}
+                className={cn('shrink-0 h-9 px-3.5 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  active ? 'bg-primary text-primary-foreground' : done ? 'bg-primary/10 text-primary' : 'bg-secondary text-muted-foreground')}>
+                {done && <CheckCircle2 className="size-3.5" />}{st.label}
               </button>
             );
           })}
         </div>
       </section>
 
-      <div key={step} className="animate-scale-in">
+      {confirmDel && (
+        <IosSheet title="Delete this trade?" onClose={() => setConfirmDel(false)}>
+          <p className="text-[14px] text-muted-foreground mb-4">This removes the trade and everything you wrote about it. It can't be undone.</p>
+          <button onClick={handleDelete} className="w-full h-12 rounded-[16px] font-semibold text-[15px] text-white active:scale-[.97] transition" style={{ background: 'hsl(var(--bear))' }}>Delete trade</button>
+        </IosSheet>
+      )}
+
+      <div key={step} className="animate-fade-up">
         {step === 'overview' && (
           <div className="space-y-5">
             <JournalField label="Trade thesis" placeholder="What was the underlying idea? Market context, key levels, catalyst…" value={fields.thesis} onChange={v => updateField('thesis', v)} large />
@@ -292,9 +298,9 @@ const TradeDetail = () => {
         )}
 
         {step === 'rating' && (
-          <div className="luxe-card p-6 md:p-8 text-center space-y-5">
+          <div className="bg-card border border-border rounded-[24px] p-6 md:p-8 text-center space-y-5">
             <div>
-              <div className="text-caption text-muted-foreground">Final rating</div>
+              <div className="text-[12.5px] text-muted-foreground">Final rating</div>
               <h3 className="font-display text-2xl mt-1">How well did you execute this trade?</h3>
               <p className="text-sm text-muted-foreground mt-1">Score the quality of execution, not the outcome.</p>
             </div>
@@ -369,10 +375,10 @@ const ImportedDataSection = ({ trade }: { trade: any }) => {
   if (entries.length === 0) return null;
 
   return (
-    <div className="luxe-card p-5">
+    <div className="bg-card border border-border rounded-[24px] p-5">
       <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between text-left">
         <div>
-          <div className="text-caption text-muted-foreground">From your CSV import</div>
+          <div className="text-[12.5px] text-muted-foreground">From your CSV import</div>
           <div className="text-section mt-0.5">All original columns ({entries.length})</div>
         </div>
         <ChevronRight className={cn('size-4 text-muted-foreground transition-transform', open && 'rotate-90')} />
@@ -401,15 +407,22 @@ const SaveIndicator = ({ state }: { state: 'idle' | 'saving' | 'saved' }) => {
   );
 };
 
+const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="flex items-center justify-between gap-4 py-3 border-t border-border first:border-t-0 sm:[&:nth-child(2)]:border-t-0">
+    <span className="text-[14px] text-muted-foreground">{label}</span>
+    <span className="text-[15px] font-medium tabular-nums text-right">{children}</span>
+  </div>
+);
+
 const Stat = ({ label, value, capitalize }: { label: string; value: any; capitalize?: boolean }) => (
   <div>
-    <div className="text-caption text-muted-foreground">{label}</div>
+    <div className="text-[12.5px] text-muted-foreground">{label}</div>
     <div className={cn('tabular-nums text-sm mt-1', capitalize && 'capitalize font-sans')}>{value}</div>
   </div>
 );
 
 const JournalField = ({ label, value, onChange, accent, placeholder, large }: { label: string; value: string; onChange: (v: string) => void; accent?: 'bull' | 'bear' | 'accent'; placeholder?: string; large?: boolean }) => (
-  <div className="luxe-card p-5">
+  <div className="bg-card border border-border rounded-[24px] p-5">
     <div className="flex items-center gap-2 mb-3">
       {accent && <div className={cn('size-1.5 rounded-full', accent === 'bull' ? 'bg-bull' : accent === 'bear' ? 'bg-bear' : 'bg-primary')} />}
       <h4 className="text-section">{label}</h4>
@@ -425,7 +438,7 @@ const JournalField = ({ label, value, onChange, accent, placeholder, large }: { 
 );
 
 const ScreenshotGrid = ({ shots, onUpload, onRemove, onZoom }: any) => (
-  <div className="luxe-card p-5">
+  <div className="bg-card border border-border rounded-[24px] p-5">
     <div className="flex items-center gap-2 mb-3">
       <Camera className="size-4 text-primary" />
       <h4 className="text-section">Screenshots</h4>
@@ -449,7 +462,7 @@ const ScreenshotGrid = ({ shots, onUpload, onRemove, onZoom }: any) => (
 const SingleSlot = ({ kind, label, shots, onUpload, onRemove, onZoom }: any) => {
   const shot = shots?.find((s: any) => s.kind === kind);
   return (
-    <div className="luxe-card p-5">
+    <div className="bg-card border border-border rounded-[24px] p-5">
       <div className="flex items-center gap-2 mb-3">
         <Camera className="size-4 text-primary" />
         <h4 className="text-section">{label}</h4>
