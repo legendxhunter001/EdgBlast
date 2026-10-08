@@ -1,287 +1,211 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useTrades, Trade } from '@/hooks/useTrades';
-import { formatCurrency, pnlClass } from '@/lib/format';
 import { Link } from 'react-router-dom';
-import { TrendingUp, TrendingDown, Target, Activity, Trophy, AlertTriangle, ArrowUpRight, Flame, CalendarRange, CalendarDays, Sun, Brain, ShieldCheck } from 'lucide-react';
-import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Area, AreaChart } from 'recharts';
+import { useTrades, type Trade } from '@/hooks/useTrades';
+import { useCountUp } from '@/hooks/useCountUp';
+import { useRiskRules } from '@/hooks/useRiskRules';
+import { computeProfile } from '@/lib/traderProfile';
+import { formatCurrency } from '@/lib/format';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { format, parseISO, isToday, isThisWeek, isThisMonth } from 'date-fns';
+import { ArrowUpRight, ChevronRight, TrendingDown, TrendingUp, Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OnboardingDashboard } from '@/components/OnboardingDashboard';
 import { SymbolLogo } from '@/components/SymbolLogo';
 import { GreetingTitle, MotivationLine, NamePrompt } from '@/components/Greeting';
 
-const TONE: Record<string, string> = { bull: 'tone tone-blue', bear: 'tone tone-red', accent: 'tone tone-slate', violet: 'tone tone-slate', gold: '' };
-
-const Stat = ({ label, value, sub, icon: Icon, glow }: { label: string; value: string; sub?: string; icon: any; glow?: 'bull' | 'bear' | 'accent' | 'gold' | 'violet' }) => (
-  <div className={`luxe-card stat-card ${TONE[glow ?? 'violet']} card-hover p-4 md:p-5`}>
-    <div className="flex items-center justify-between gap-2">
-      <div className="text-caption truncate">{label}</div>
-      <div className="size-8 rounded-lg bg-secondary/70 flex items-center justify-center shrink-0">
-        <Icon className="size-4 text-muted-foreground" />
-      </div>
-    </div>
-    <div className="stat-value tabular-nums font-semibold tracking-tight mt-3">{value}</div>
-    {sub && <div className="text-xs text-muted-foreground mt-1 truncate">{sub}</div>}
-  </div>
-);
-
 const ONBOARDING_KEY = 'eb-onboarding-skipped';
+const SURFACE = 'bg-card border border-border rounded-[24px]';
+const SHADOW = { boxShadow: 'var(--ios-sh, 0 1px 2px rgba(0,0,0,.05))' } as const;
+const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+const BULL = 'hsl(var(--bull))', BEAR = 'hsl(var(--bear))';
+const tone = (n: number) => (n >= 0 ? BULL : BEAR);
+const money = (n: number) => formatCurrency(n, { sign: true });
+const when = (t: Trade) => t.exit_at || t.entry_at || t.created_at;
 
 const Dashboard = () => {
   const { data: trades, isLoading } = useTrades();
+  const { rules } = useRiskRules();
   const [onboardingSkipped, setOnboardingSkipped] = useState(false);
+  useEffect(() => { setOnboardingSkipped(localStorage.getItem(ONBOARDING_KEY) === '1'); }, []);
 
-  useEffect(() => {
-    setOnboardingSkipped(localStorage.getItem(ONBOARDING_KEY) === '1');
-  }, []);
+  const closed = useMemo(() => (trades ?? []).filter((t) => t.status === 'closed' && t.pnl !== null), [trades]);
 
-  const stats = useMemo(() => {
-    const closed = (trades ?? []).filter(t => t.status === 'closed' && t.pnl !== null);
-    const wins = closed.filter(t => (t.pnl ?? 0) > 0);
-    const losses = closed.filter(t => (t.pnl ?? 0) < 0);
-    const totalPnl = closed.reduce((s, t) => s + Number(t.pnl ?? 0), 0);
-    const winRate = closed.length ? (wins.length / closed.length) * 100 : 0;
-    const avgWin = wins.length ? wins.reduce((s, t) => s + Number(t.pnl ?? 0), 0) / wins.length : 0;
-    const avgLoss = losses.length ? Math.abs(losses.reduce((s, t) => s + Number(t.pnl ?? 0), 0) / losses.length) : 0;
-    const avgRR = avgLoss ? avgWin / avgLoss : 0;
+  const S = useMemo(() => {
+    const pnl = (t: Trade) => Number(t.pnl ?? 0);
+    const wins = closed.filter((t) => pnl(t) > 0), losses = closed.filter((t) => pnl(t) < 0);
+    const total = closed.reduce((s, t) => s + pnl(t), 0);
+    const avgWin = wins.length ? wins.reduce((s, t) => s + pnl(t), 0) / wins.length : null;
+    const avgLoss = losses.length ? Math.abs(losses.reduce((s, t) => s + pnl(t), 0) / losses.length) : null;
+    const sum = (l: Trade[]) => l.reduce((s, t) => s + pnl(t), 0);
+    const inPeriod = (fn: (d: Date) => boolean) => closed.filter((t) => fn(parseISO(when(t))));
+    const today = inPeriod(isToday), week = inPeriod((d) => isThisWeek(d, { weekStartsOn: 1 })), month = inPeriod(isThisMonth);
 
-    const refDate = (t: Trade) => t.exit_at || t.entry_at || t.created_at;
-    const today = closed.filter(t => isToday(parseISO(refDate(t))));
-    const week = closed.filter(t => isThisWeek(parseISO(refDate(t)), { weekStartsOn: 1 }));
-    const month = closed.filter(t => isThisMonth(parseISO(refDate(t))));
-    const sumPnl = (arr: Trade[]) => arr.reduce((s, t) => s + Number(t.pnl ?? 0), 0);
-
-    const sorted = [...closed].sort((a, b) => (a.exit_at || a.created_at).localeCompare(b.exit_at || b.created_at));
-    let streak = 0;
-    let streakKind: 'win' | 'loss' | null = null;
+    const sorted = [...closed].sort((a, b) => when(a).localeCompare(when(b)));
+    let streak = 0, kind: 'win' | 'loss' | null = null;
     for (let i = sorted.length - 1; i >= 0; i--) {
-      const isWin = (sorted[i].pnl ?? 0) > 0;
-      const k = isWin ? 'win' : 'loss';
-      if (streakKind === null) { streakKind = k; streak = 1; }
-      else if (streakKind === k) streak++;
-      else break;
+      const k = pnl(sorted[i]) > 0 ? 'win' : 'loss';
+      if (kind === null) { kind = k; streak = 1; } else if (kind === k) streak++; else break;
     }
-
-    const confidences = closed.map(t => Number(t.confidence_rating ?? 0)).filter(v => v > 0);
-    const psychology = confidences.length
-      ? Math.round((confidences.reduce((s, v) => s + v, 0) / confidences.length) * 10)
-      : 0;
-    const reviewed = closed.filter(t => (t.review_score ?? 0) > 0).length;
-    const discipline = closed.length ? Math.round((reviewed / closed.length) * 100) : 0;
-
+    let eq = 0;
+    const curve = [{ date: 'Start', equity: 0 }, ...sorted.map((t) => { eq += pnl(t); return { date: format(parseISO(when(t)), 'MMM d'), equity: Math.round(eq * 100) / 100 }; })];
+    const ranked = [...closed].sort((a, b) => pnl(b) - pnl(a));
     return {
-      totalPnl, winRate, avgRR, totalTrades: closed.length, wins: wins.length, losses: losses.length,
-      streak, streakKind,
-      today: { pnl: sumPnl(today), count: today.length },
-      week: { pnl: sumPnl(week), count: week.length },
-      month: { pnl: sumPnl(month), count: month.length },
-      psychology, discipline,
+      total, n: closed.length, winRate: closed.length ? (wins.length / closed.length) * 100 : null,
+      payoff: avgWin !== null && avgLoss ? avgWin / avgLoss : null, streak, kind, curve,
+      periods: [['Today', today], ['This week', week], ['This month', month]] as const,
+      best: ranked.slice(0, 3).filter((t) => pnl(t) > 0), worst: ranked.slice(-3).reverse().filter((t) => pnl(t) < 0),
+      sum,
     };
-  }, [trades]);
+  }, [closed]);
 
-  const equityData = useMemo(() => {
-    const closed = (trades ?? []).filter(t => t.status === 'closed' && t.pnl !== null && (t.exit_at || t.created_at));
-    const sorted = [...closed].sort((a, b) => (a.exit_at || a.created_at).localeCompare(b.exit_at || b.created_at));
-    let equity = 0;
-    return sorted.map(t => {
-      equity += Number(t.pnl ?? 0);
-      return { date: format(parseISO(t.exit_at || t.created_at), 'MMM d'), equity: Number(equity.toFixed(2)) };
-    });
-  }, [trades]);
-
-  const best = useMemo(() => [...(trades ?? [])].filter(t => t.pnl !== null).sort((a, b) => Number(b.pnl) - Number(a.pnl)).slice(0, 3), [trades]);
-  const worst = useMemo(() => [...(trades ?? [])].filter(t => t.pnl !== null).sort((a, b) => Number(a.pnl) - Number(b.pnl)).slice(0, 3), [trades]);
+  const profile = useMemo(() => computeProfile(closed, rules), [closed, rules]);
+  const shown = useCountUp(S.n ? S.total : null);
   const recent = (trades ?? []).slice(0, 6);
+  const color = tone(S.total);
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-8 space-y-6 max-w-[1400px] mx-auto">
-        <div className="flex justify-between"><Skeleton className="h-10 w-48" /><Skeleton className="h-10 w-36 rounded-lg" /></div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
-        </div>
-        <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
-          <Skeleton className="h-80 rounded-2xl lg:col-span-2" />
-          <div className="space-y-4">
-            <Skeleton className="h-36 rounded-2xl" />
-            <Skeleton className="h-36 rounded-2xl" />
-          </div>
-        </div>
-        <Skeleton className="h-64 rounded-2xl" />
+      <div className="px-4 md:px-8 pt-4 pb-10 max-w-5xl mx-auto space-y-4" aria-busy="true">
+        <Skeleton className="h-10 w-56" />
+        <Skeleton className="h-[320px] rounded-[24px]" />
+        <Skeleton className="h-[170px] rounded-[24px]" />
       </div>
     );
   }
-
   const empty = (trades ?? []).length === 0;
 
   return (
-    <div className="p-4 md:p-8 space-y-8 max-w-[1400px] mx-auto">
+    <div className="px-4 md:px-8 pt-4 pb-10 max-w-5xl mx-auto">
       <NamePrompt />
       {empty && !onboardingSkipped ? (
-        <OnboardingDashboard onSkip={() => {
-          localStorage.setItem(ONBOARDING_KEY, '1');
-          setOnboardingSkipped(true);
-        }} />
+        <OnboardingDashboard onSkip={() => { localStorage.setItem(ONBOARDING_KEY, '1'); setOnboardingSkipped(true); }} />
       ) : (
-        <>
-          <header className="flex flex-wrap items-end justify-between gap-4 animate-fade-up">
+        <div className="space-y-4">
+          <header className="flex items-end justify-between gap-4">
             <div>
-              <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight"><GreetingTitle /></h1>
-              <p className="text-sm text-muted-foreground mt-1.5"><MotivationLine /></p>
+              <h1 className="font-display text-[34px] leading-[1.1] font-bold tracking-tight"><GreetingTitle /></h1>
+              <p className="text-[14px] text-muted-foreground mt-1"><MotivationLine /></p>
             </div>
-            <Link to="/trades/new" className="press tap inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:opacity-95 transition-all">
-              Log new trade <ArrowUpRight className="size-4" />
+            <Link to="/trades/new" className={`${FOCUS} hidden md:inline-flex h-11 items-center gap-2 px-5 rounded-[14px] bg-primary text-primary-foreground text-[15px] font-semibold`}>
+              <Plus className="size-4" /> Log a trade
             </Link>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 animate-fade-up">
-            <PeriodCard label="Today" pnl={stats.today.pnl} count={stats.today.count} icon={Sun} />
-            <PeriodCard label="This week" pnl={stats.week.pnl} count={stats.week.count} icon={CalendarDays} />
-            <PeriodCard label="This month" pnl={stats.month.pnl} count={stats.month.count} icon={CalendarRange} />
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <div className="animate-fade-up stagger-1"><Stat label="Total P&L" value={formatCurrency(stats.totalPnl, { sign: true })} sub={`${stats.totalTrades} closed trades`} icon={stats.totalPnl >= 0 ? TrendingUp : TrendingDown} glow={stats.totalPnl >= 0 ? 'bull' : 'bear'} /></div>
-            <div className="animate-fade-up stagger-2"><Stat label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} sub={`${stats.wins}W · ${stats.losses}L`} icon={Target} glow="accent" /></div>
-            <div className="animate-fade-up stagger-3"><Stat label="Avg R:R" value={stats.avgRR ? stats.avgRR.toFixed(2) : '—'} sub="Win/loss ratio" icon={Activity} glow="gold" /></div>
-            <div className="animate-fade-up stagger-4"><Stat label="Streak" value={`${stats.streak}${stats.streakKind === 'win' ? 'W' : stats.streakKind === 'loss' ? 'L' : ''}`} sub={stats.streakKind === 'win' ? 'On a roll' : stats.streakKind === 'loss' ? 'Stay disciplined' : '—'} icon={Flame} glow={stats.streakKind === 'win' ? 'bull' : stats.streakKind === 'loss' ? 'bear' : 'violet'} /></div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 animate-fade-up">
-            <ScoreCard label="Psychology score" value={stats.psychology} icon={Brain} hint="Avg confidence across logged trades" />
-            <ScoreCard label="Discipline score" value={stats.discipline} icon={ShieldCheck} hint="% of trades you've reviewed" />
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-4 md:gap-6 animate-fade-up">
-            <div className="luxe-card p-5 lg:col-span-2">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-display font-semibold">Equity curve</h3>
-                  <p className="text-xs text-muted-foreground">Cumulative P&L over time</p>
+          {S.n === 0 ? (
+            <div className={`${SURFACE} p-8 text-center`} style={SHADOW}>
+              <div className="font-display text-[18px] font-bold">No closed trades yet</div>
+              <p className="text-[14px] text-muted-foreground mt-1">Your open trades are in the journal. Once one closes, your numbers show up here.</p>
+              <Link to="/trades" className={`${FOCUS} inline-flex mt-4 h-11 items-center px-5 rounded-[14px] bg-primary text-primary-foreground text-[15px] font-semibold`}>Open your journal</Link>
+            </div>
+          ) : (
+            <>
+              <div className={`${SURFACE} pt-5 overflow-hidden`} style={SHADOW}>
+                <div className="px-5">
+                  <div className="text-[13px] text-muted-foreground">Total result</div>
+                  <div className="font-display text-[44px] leading-none font-bold tracking-tight tabular-nums mt-1" style={{ color }}>{money(shown)}</div>
+                  <div className="text-[13px] text-muted-foreground mt-1.5">{S.n} closed trade{S.n === 1 ? '' : 's'}</div>
+                </div>
+                <div className="h-[170px] mt-2" role="img" aria-label="Running total of your closed trades">
+                  <ResponsiveContainer>
+                    <AreaChart data={S.curve} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="dashEq" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" style={{ stopColor: color }} stopOpacity={0.28} />
+                          <stop offset="100%" style={{ stopColor: color }} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="date" hide />
+                      <YAxis hide domain={['dataMin', 'dataMax']} />
+                      <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="4 4" />
+                      <Tooltip cursor={{ stroke: 'hsl(var(--border))' }} content={({ active, payload, label }) => active && payload?.length ? (
+                        <div className="rounded-2xl bg-card/95 backdrop-blur border border-border px-3 py-2 shadow-lg text-[13px]"><div className="text-[12px] text-muted-foreground">{label}</div><div className="font-semibold tabular-nums">{money(Number(payload[0].value))}</div></div>
+                      ) : null} />
+                      <Area type="monotone" dataKey="equity" stroke={color} strokeWidth={2.5} fill="url(#dashEq)" animationDuration={800} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-3 border-t border-border">
+                  {[
+                    ['Win rate', S.winRate === null ? '—' : `${S.winRate.toFixed(0)}%`],
+                    ['Avg win vs loss', S.payoff === null ? '—' : `${S.payoff.toFixed(2)}x`],
+                    ['Current run', S.kind ? `${S.streak} ${S.kind === 'win' ? 'won' : 'lost'}` : '—'],
+                  ].map(([l, v], i) => (
+                    <div key={l} className={`py-3.5 px-4 ${i ? 'border-l border-border' : ''}`}>
+                      <div className="text-[12px] text-muted-foreground">{l}</div>
+                      <div className="text-[18px] font-semibold tabular-nums">{v}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={equityData} margin={{ left: -10, right: 8, top: 8 }}>
-                    <defs>
-                      <linearGradient id="eq" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--bull))" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="hsl(var(--bull))" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} strokeOpacity={0.5} />
-                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12, boxShadow: 'var(--shadow-elevated)' }} cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                    <Area type="monotone" dataKey="equity" stroke="hsl(var(--bull))" strokeWidth={2.5} fill="url(#eq)" animationDuration={800} />
-                  </AreaChart>
-                </ResponsiveContainer>
+
+              <div className={`${SURFACE} px-4`} style={SHADOW}>
+                {S.periods.map(([label, list]) => (
+                  <div key={label} className="flex items-center justify-between py-3.5 border-t border-border first:border-t-0">
+                    <div><div className="text-[15px]">{label}</div><div className="text-[12.5px] text-muted-foreground">{list.length} trade{list.length === 1 ? '' : 's'}</div></div>
+                    <div className="text-[17px] font-semibold tabular-nums" style={list.length ? { color: tone(S.sum(list)) } : undefined}>{list.length ? money(S.sum(list)) : '—'}</div>
+                  </div>
+                ))}
               </div>
-            </div>
 
-            <div className="space-y-6">
-              <TopList title="Best trades" icon={Trophy} trades={best} kind="bull" />
-              <TopList title="Worst trades" icon={AlertTriangle} trades={worst} kind="bear" />
-            </div>
-          </div>
+              <Link to="/reviews" className={`${FOCUS} ${SURFACE} flex items-center gap-4 p-4 active:scale-[.98] transition`} style={SHADOW}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] text-muted-foreground">Review score</div>
+                  {profile.overall !== null ? (
+                    <>
+                      <div className="font-display text-[26px] font-bold tabular-nums leading-tight">{Math.round(profile.overall)}<span className="text-[14px] font-medium text-muted-foreground"> out of 100</span></div>
+                      <div className="text-[12.5px] text-muted-foreground">From {profile.measured} of 7 areas that have enough of your trades to measure.</div>
+                    </>
+                  ) : (
+                    <div className="text-[14px] mt-0.5">Not enough recorded data to score yet. Open your review to see what's missing.</div>
+                  )}
+                </div>
+                <ChevronRight className="size-[18px] text-muted-foreground shrink-0" aria-hidden />
+              </Link>
 
-          <div className="luxe-card p-5 animate-fade-up">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-semibold">Recent trades</h3>
-              <Link to="/trades" className="text-xs text-primary hover:underline">View all →</Link>
-            </div>
-            <div className="overflow-x-auto scrollbar-thin">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-muted-foreground border-b border-border">
-                    <th className="py-2.5 font-medium">Asset</th>
-                    <th className="font-medium">Side</th>
-                    <th className="font-medium">Date</th>
-                    <th className="font-medium text-right">P&L</th>
-                    <th className="font-medium text-right">R:R</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent.map(t => (
-                    <tr key={t.id} className="border-b border-border/40 last:border-0 hover:bg-secondary/40 transition">
-                      <td className="py-3"><Link to={`/trades/${t.id}`} className="font-medium hover:text-primary inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</Link></td>
-                      <td><DirectionBadge dir={t.direction} /></td>
-                      <td className="text-muted-foreground">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d, yyyy') : '—'}</td>
-                      <td className={`text-right tabular-nums ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</td>
-                      <td className="text-right tabular-nums text-muted-foreground">{t.risk_reward ? `${Number(t.risk_reward).toFixed(2)}R` : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
+              <div className="grid md:grid-cols-2 gap-4">
+                {([['Best trades', S.best, 'No winning trades yet.'], ['Worst trades', S.worst, 'No losing trades yet.']] as const).map(([title, list, none]) => (
+                  <section key={title}>
+                    <h2 className="text-[13px] font-semibold text-muted-foreground px-1.5 pb-2">{title}</h2>
+                    <div className={`${SURFACE} px-4`} style={SHADOW}>
+                      {list.length === 0 && <div className="py-4 text-[14px] text-muted-foreground">{none}</div>}
+                      {list.map((t) => <TradeRow key={t.id} t={t} />)}
+                    </div>
+                  </section>
+                ))}
+              </div>
+
+              <section>
+                <div className="flex items-end justify-between px-1.5 pb-2">
+                  <h2 className="text-[13px] font-semibold text-muted-foreground">Recent trades</h2>
+                  <Link to="/trades" className={`${FOCUS} text-[13px] font-semibold rounded inline-flex items-center gap-0.5`} style={{ color: 'hsl(var(--primary))' }}>See all <ArrowUpRight className="size-3.5" /></Link>
+                </div>
+                <div className={`${SURFACE} px-4`} style={SHADOW}>
+                  {recent.map((t) => <TradeRow key={t.id} t={t} showSide />)}
+                </div>
+              </section>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
 };
 
-const TopList = ({ title, icon: Icon, trades, kind }: { title: string; icon: any; trades: Trade[]; kind: 'bull' | 'bear' }) => (
-  <div className="luxe-card card-hover p-5">
-    <div className="flex items-center gap-2 mb-3">
-      <Icon className={`size-4 ${kind === 'bull' ? 'text-bull' : 'text-bear'}`} />
-      <h3 className="font-display font-semibold text-sm">{title}</h3>
-    </div>
-    <div className="space-y-2">
-      {trades.length === 0 && <div className="text-xs text-muted-foreground">No data yet</div>}
-      {trades.map(t => (
-        <Link key={t.id} to={`/trades/${t.id}`} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50 transition">
-          <div>
-            <div className="text-sm font-medium inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</div>
-            <div className="text-[10px] text-muted-foreground">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d') : '—'}</div>
-          </div>
-          <div className={`tabular-nums text-sm ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</div>
-        </Link>
-      ))}
-    </div>
-  </div>
-);
-
-const PeriodCard = ({ label, pnl, count, icon: Icon }: { label: string; pnl: number; count: number; icon: any }) => (
-  <div className={`luxe-card stat-card tone ${pnl > 0 ? 'tone-blue' : pnl < 0 ? 'tone-red' : 'tone-slate'} card-hover p-4 md:p-5 flex items-center gap-4`}>
-    <div className="size-11 rounded-xl bg-secondary/70 flex items-center justify-center shrink-0">
-      <Icon className="size-5 text-muted-foreground" />
-    </div>
+const TradeRow = ({ t, showSide }: { t: Trade; showSide?: boolean }) => (
+  <Link to={`/trades/${t.id}`} className={`${FOCUS} flex items-center gap-3 py-3 border-t border-border first:border-t-0`}>
+    <SymbolLogo symbol={t.asset} size={28} />
     <div className="flex-1 min-w-0">
-      <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="stat-value tabular-nums font-semibold tracking-tight mt-0.5">
-        {count === 0 ? '—' : formatCurrency(pnl, { sign: true })}
-      </div>
-      <div className="text-xs text-muted-foreground mt-0.5">{count} trade{count === 1 ? '' : 's'}</div>
+      <div className="text-[15px] font-semibold">{t.asset}{showSide && <span className="font-normal text-muted-foreground"> {t.direction === 'short' ? 'Short' : 'Long'}</span>}</div>
+      <div className="text-[12.5px] text-muted-foreground">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d, yyyy') : 'No date'}{t.status !== 'closed' ? ' · open' : ''}</div>
     </div>
-  </div>
+    <div className="text-[15px] font-semibold tabular-nums" style={t.pnl === null ? undefined : { color: tone(Number(t.pnl)) }}>{t.pnl === null ? '—' : money(Number(t.pnl))}</div>
+  </Link>
 );
-
-const ScoreCard = ({ label, value, icon: Icon, hint }: { label: string; value: number; icon: any; hint: string }) => {
-  const pct = Math.max(0, Math.min(100, value));
-  return (
-    <div className="luxe-card stat-card tone tone-slate card-hover p-4 md:p-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Icon className="size-4 text-primary" />
-          </div>
-          <div className="text-sm font-semibold">{label}</div>
-        </div>
-        <div className="tabular-nums text-lg font-semibold">{value}<span className="text-xs text-muted-foreground">/100</span></div>
-      </div>
-      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
-      </div>
-      <div className="text-xs text-muted-foreground mt-2">{hint}</div>
-    </div>
-  );
-};
 
 export const DirectionBadge = ({ dir }: { dir: 'long' | 'short' }) => (
-  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${dir === 'long' ? 'bg-bull/15 text-bull' : 'bg-bear/15 text-bear'}`}>
+  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${dir === 'long' ? 'bg-bull/15 text-bull' : 'bg-bear/15 text-bear'}`}>
     {dir === 'long' ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
-    {dir}
+    {dir === 'long' ? 'Long' : 'Short'}
   </span>
 );
 

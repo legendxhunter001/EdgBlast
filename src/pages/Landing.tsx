@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import {
-  ArrowRight, Brain, Calendar as CalIcon, LineChart, Sparkles, Shield,
-  Check, BarChart3, Camera, Zap, Cpu,
+  ArrowRight, MessageCircle, Calendar as CalIcon, LineChart, Shield,
+  Check, BarChart3, Camera, Link2, Cpu, X,
   Gauge as GaugeIcon, MessageSquare, Layers, RefreshCw, ChevronRight,
 } from 'lucide-react';
 
@@ -235,12 +235,12 @@ const CalendarMock = () => {
 };
 
 const SYNC_STEPS = [
-  { icon: Zap, label: 'Trade closes in MT5' },
-  { icon: RefreshCw, label: 'Sync relays instantly' },
+  { icon: Link2, label: 'Trade closes in MT5' },
+  { icon: RefreshCw, label: 'Trade syncs over' },
   { icon: Layers, label: 'Journal writes trade' },
   { icon: BarChart3, label: 'Analytics recalculate' },
   { icon: CalIcon, label: 'Calendar updates' },
-  { icon: Brain, label: 'AI coach reviews' },
+  { icon: MessageCircle, label: 'Coach reviews it' },
 ];
 
 const SyncLoop = () => {
@@ -382,8 +382,7 @@ const Landing = () => {
           </div>
 
           <div ref={heroRef} className="eb-hero-stage animate-fade-up" style={{ animationDelay: '120ms' }}>
-            <div className="eb-hero-glow" />
-            <div className="eb-hero-scene">
+                        <div className="eb-hero-scene">
               <div className="eb-dash-main">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -446,7 +445,7 @@ const Landing = () => {
               <div className="eb-float eb-f-ai eb-ai-card">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-6 h-6 rounded-md flex items-center justify-center bg-primary/20 text-primary">
-                    <Brain className="w-3.5 h-3.5" />
+                    <MessageCircle className="w-3.5 h-3.5" />
                   </div>
                   <span className="text-xs font-semibold">Weekly review</span>
                 </div>
@@ -497,9 +496,9 @@ const Landing = () => {
           <FeatureCard icon={CalIcon} title="Trading calendar" desc="See discipline as heatmap. Winning days blue, losing days rose.">
             <div className="mt-4"><CalendarMock /></div>
           </FeatureCard>
-          <FeatureCard icon={Brain} title="AI trade coach" desc="Weekly reviews and pattern detection with memory of every trade.">
+          <FeatureCard icon={MessageCircle} title="Coach" desc="Ask about a trade, a rule or your week. It has read your journal.">
             <div className="mt-4 rounded-lg border border-white/[0.06] bg-black/20 p-3">
-              <Typewriter text="Your patience improved 18% over the last 43 trades." speed={26} />
+              <Typewriter text="Ask me about any trade, rule or week." speed={26} />
             </div>
           </FeatureCard>
           <FeatureCard icon={GaugeIcon} title="Psychology tracking" desc="Discipline, patience, confidence, measured, not guessed.">
@@ -533,7 +532,7 @@ const Landing = () => {
               align="left"
             />
             <div className="mt-8 flex flex-wrap gap-3">
-              <Pill icon={Zap}>Syncs on close</Pill>
+              <Pill icon={Link2}>Syncs on close</Pill>
               <Pill icon={Shield}>Account-scoped</Pill>
               <Pill icon={Cpu}>No retyping</Pill>
             </div>
@@ -795,14 +794,14 @@ const Pill = ({ icon: Icon, children }: { icon: any; children: React.ReactNode }
 const RuleRow = ({ k, v, ok }: { k: string; v: string; ok: boolean }) => (
   <div className="flex items-center justify-between px-2.5 py-1.5 rounded-md border border-white/[0.06] bg-black/20">
     <span className="text-muted-foreground">{k}</span>
-    <span className={`tabular-nums ${ok ? 'text-primary' : 'text-[hsl(var(--bear))]'}`}>{ok ? '✓ ' : '✗ '}{v}</span>
+    <span className={`tabular-nums ${ok ? 'text-primary' : 'text-[hsl(var(--bear))]'}`}>{ok ? <Check className="inline w-3 h-3 mr-1" /> : <X className="inline w-3 h-3 mr-1" />}{v}</span>
   </div>
 );
 
 const ScreenshotSlots = () => (
   <div className="mt-4 grid grid-cols-3 gap-2">
     {['Entry','Exit','Analysis'].map((l) => (
-      <div key={l} className="aspect-[4/3] rounded-lg border border-white/[0.08] bg-gradient-to-br from-white/[0.04] to-transparent flex flex-col items-center justify-center gap-1 text-[10px] text-muted-foreground">
+      <div key={l} className="aspect-[4/3] rounded-lg border border-white/[0.08] bg-white/[0.03] flex flex-col items-center justify-center gap-1 text-[10px] text-muted-foreground">
         <Camera className="w-4 h-4 text-primary/70" />
         <span className="">{l}</span>
       </div>
@@ -855,7 +854,6 @@ const ScopedStyles = () => (
     .eb-landing .eb-btn-primary { background: linear-gradient(135deg, hsl(187 60% 48%), hsl(217 60% 55%)); border-color: transparent; color: #06110E; font-weight: 600; }
     .eb-landing .eb-btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
     .eb-hero-stage { position:relative; perspective:1600px; min-height: 520px; }
-    .eb-hero-glow { position:absolute; inset:-40px; background: radial-gradient(circle at 55% 45%, hsl(187 60% 45% / 0.35), transparent 65%); filter:blur(60px); z-index:-1; }
     .eb-hero-scene {
       position:relative; height:100%; transform-style: preserve-3d;
       transform: rotateX(calc(var(--my,0) * -4deg)) rotateY(calc(var(--mx,0) * 6deg));

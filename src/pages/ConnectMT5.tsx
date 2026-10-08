@@ -388,7 +388,7 @@ export default function ConnectMT5({ onConnected, compact = false }: ConnectMT5P
             </label>
 
             <p className="eb-security-note">
-              🔒 Use your MT5 <strong>investor password</strong>, never your trader password. It's
+              Use your MT5 <strong>investor password</strong>, never your trader password. It's
               sent directly to our sync provider to open a read-only connection and is never
               stored in our database.
             </p>

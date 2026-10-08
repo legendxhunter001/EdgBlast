@@ -78,11 +78,11 @@ export function symbolLogoUrls(raw: string): string[] {
 
 export function symbolGlyph(raw: string): string {
   const c = clean(raw);
-  if (/^XAU/.test(c)) return '🥇';
-  if (/^XAG/.test(c)) return '🥈';
-  if (/^(BTC|ETH|XRP|LTC|SOL|DOGE|ADA|BNB)/.test(c)) return '🪙';
-  if (/OIL|WTI|BRENT/.test(c)) return '🛢️';
-  return '💱';
+  if (/^XAU/.test(c)) return 'Au';
+  if (/^XAG/.test(c)) return 'Ag';
+  if (/^(BTC|ETH|XRP|LTC|SOL|DOGE|ADA|BNB)/.test(c)) return c.slice(0, 3);
+  if (/OIL|WTI|BRENT/.test(c)) return 'Oil';
+  return 'FX';
 }
 
 export const SymbolLogo = ({ symbol, size = 22, className = '' }: { symbol: string; size?: number; className?: string }) => {
@@ -92,7 +92,7 @@ export const SymbolLogo = ({ symbol, size = 22, className = '' }: { symbol: stri
 
   if (mainFailed || urls.length === 0) {
     return (
-      <span className={className} style={{ fontSize: size * 0.8, lineHeight: 1, display: 'inline-block' }} aria-hidden="true">
+      <span className={`${className} inline-grid place-items-center rounded-full bg-secondary font-semibold text-muted-foreground`} style={{ width: size, height: size, fontSize: size * 0.4, lineHeight: 1 }} aria-hidden="true">
         {symbolGlyph(symbol)}
       </span>
     );

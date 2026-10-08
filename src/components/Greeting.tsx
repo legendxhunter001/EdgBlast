@@ -2,22 +2,6 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useProfileName } from '@/hooks/useProfileName';
 
-const LINES = [
-  'Plan the trade. Trade the plan.',
-  'Protect your capital first. Profit follows discipline.',
-  'One clean execution beats ten rushed ones.',
-  'Consistency is the edge nobody can copy.',
-  'Process over outcome. Every single trade.',
-  'Patience pays the sniper, not the gambler.',
-  'Small risk, clear rules, calm mind.',
-  'Your journal is your coach. Be honest with it.',
-  'Respect the stop. Respect yourself.',
-  'Boring trading is profitable trading.',
-  'Review yesterday, then trade today with intent.',
-  'Great traders are built one disciplined day at a time.',
-  'No setup, no trade. That is a win too.',
-  'Stay focused on the next right decision.',
-];
 
 export const greetingFor = (d = new Date()) => {
   const h = d.getHours();
@@ -26,8 +10,7 @@ export const greetingFor = (d = new Date()) => {
   return 'Good evening';
 };
 
-const dayOfYear = (d = new Date()) => Math.floor((+d - +new Date(d.getFullYear(), 0, 0)) / 86_400_000);
-export const motivationFor = (d = new Date()) => LINES[dayOfYear(d) % LINES.length];
+export const motivationFor = (d = new Date()) => d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
 const useGreeting = () => {
   const [now, setNow] = useState(() => new Date());
@@ -35,14 +18,14 @@ const useGreeting = () => {
   return { greeting: greetingFor(now), line: motivationFor(now) };
 };
 
-/** "Good afternoon, Amin" with the name in a living gradient. */
+/** "Good afternoon, Amin" */
 export const GreetingTitle = () => {
   const { greeting } = useGreeting();
   const { firstName } = useProfileName();
   return (
     <>
       {greeting}
-      {firstName && <>, <span className="eb-name">{firstName}</span></>}
+      {firstName && <>, <span>{firstName}</span></>}
     </>
   );
 };
@@ -77,9 +60,9 @@ export const NamePrompt = () => {
       <div className="w-full max-w-md rounded-3xl bg-card border border-border p-7 shadow-elevated">
         <div className="text-caption mb-2">Welcome to Edge Blast</div>
         <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-tight">
-          What should we <span className="eb-name">call you?</span>
+          What should we call you?
         </h2>
-        <p className="text-sm text-muted-foreground mt-2">Your name shows up on your dashboard, so Edge Blast feels like yours from day one.</p>
+        <p className="text-sm text-muted-foreground mt-2">We'll use it to greet you on your dashboard.</p>
         <input
           autoFocus value={value} maxLength={40} placeholder="Your first name"
           onChange={(e) => setValue(e.target.value)}

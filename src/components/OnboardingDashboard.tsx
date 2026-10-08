@@ -20,8 +20,6 @@ export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
   return (
     <div className="space-y-8 animate-fade-up">
       <section className="luxe-card relative overflow-hidden p-8 md:p-12">
-        <div className="absolute inset-0 pointer-events-none opacity-60"
-             style={{ background: 'var(--gradient-glow)' }} />
         <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
@@ -82,11 +80,11 @@ export const OnboardingDashboard = ({ onSkip }: { onSkip: () => void }) => {
               ].map(s => (
                 <div key={s.l} className="rounded-xl border border-border/60 bg-card/60 p-4">
                   <div className="text-[10px] text-muted-foreground">{s.l}</div>
-                  <div className={cn('font-mono text-lg font-semibold mt-1.5', s.tone)}>{s.v}</div>
+                  <div className={cn('tabular-nums text-lg font-semibold mt-1.5', s.tone)}>{s.v}</div>
                 </div>
               ))}
             </div>
-            <div className="mt-4 h-24 rounded-xl border border-border/60 bg-gradient-to-tr from-bull/5 via-transparent to-primary/5 relative overflow-hidden">
+            <div className="mt-4 h-24 rounded-xl border border-border/60 bg-secondary/40 relative overflow-hidden">
               <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 100" preserveAspectRatio="none">
                 <path d="M0,80 C50,70 80,60 120,55 S200,40 240,30 320,15 400,10" stroke="hsl(var(--bull))" strokeWidth="2" fill="none" />
                 <path d="M0,80 C50,70 80,60 120,55 S200,40 240,30 320,15 400,10 L400,100 L0,100 Z" fill="hsl(var(--bull) / 0.10)" />

@@ -983,7 +983,7 @@ html.light .tt{
   .tt-result b{ font-size:1.12rem; letter-spacing:-.01em; }
   .tt-result .r-hero{
     order:-1; grid-column:1 / -1; padding:1rem 1.1rem; color:#fff; border:0;
-    background:linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)) 55%, hsl(275 78% 64%));
+    background:hsl(var(--primary));
     box-shadow:0 14px 28px -14px hsl(var(--primary) / .75);
   }
   .tt-result .r-hero::after{ content:''; position:absolute; right:-28px; top:-40px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,.16); pointer-events:none; }

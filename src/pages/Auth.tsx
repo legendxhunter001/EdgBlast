@@ -98,8 +98,7 @@ const Auth = () => {
     <div className="min-h-screen flex relative overflow-hidden bg-background">
       <div className="absolute top-4 right-4 z-20"><ThemeToggle /></div>
 
-      <aside className="hidden lg:flex lg:w-[46%] xl:w-1/2 relative flex-col justify-between p-12 bg-gradient-luxe text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(800px circle at 20% 20%, hsl(var(--primary) / 0.35), transparent 60%), radial-gradient(700px circle at 80% 80%, hsl(var(--accent) / 0.25), transparent 60%)' }} />
+      <aside className="hidden lg:flex lg:w-[46%] xl:w-1/2 relative flex-col justify-between p-12 bg-[hsl(240_6%_9%)] text-white overflow-hidden">
         <div className="relative z-10">
           <div className="inline-flex items-center gap-3">
             <Logo size={44} />
@@ -131,7 +130,6 @@ const Auth = () => {
       </aside>
 
       <main className="flex-1 flex items-center justify-center p-4 sm:p-8 relative">
-        <div className="absolute inset-0 bg-gradient-glow pointer-events-none lg:hidden" />
         <div className="relative w-full max-w-md">
           <div className="lg:hidden text-center mb-6">
             <div className="inline-flex items-center gap-3">
