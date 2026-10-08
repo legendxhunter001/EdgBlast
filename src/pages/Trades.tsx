@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
-import { Plus, Search, X } from 'lucide-react';
+import { LayoutGrid, List, Plus, Search, X } from 'lucide-react';
 import { useStrategies, useTrades, type Trade } from '@/hooks/useTrades';
 import { formatCurrency } from '@/lib/format';
 import { SymbolLogo } from '@/components/SymbolLogo';
@@ -20,6 +20,9 @@ type Sort = 'date' | 'pnl' | 'asset';
 const FILTERS: [Filter, string][] = [['all', 'All'], ['open', 'Open'], ['wins', 'Wins'], ['losses', 'Losses'], ['long', 'Long'], ['short', 'Short']];
 const SORTS: [Sort, string][] = [['date', 'Newest'], ['pnl', 'Best result'], ['asset', 'A to Z']];
 
+const VIEW_KEY = 'eb-trades-view';
+type View = 'cards' | 'list';
+
 type Row = { kind: 'head'; id: string; label: string } | { kind: 'trade'; id: string; trade: Trade };
 
 const Trades = () => {
@@ -29,6 +32,9 @@ const Trades = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('date');
+  // remembered on this device: cards by default, the list only if that's what they picked last
+  const [view, setView] = useState<View>(() => { try { return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'cards'; } catch { return 'cards'; } });
+  const chooseView = (v: View) => { tap(); setView(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* storage unavailable */ } };
 
   const all = trades ?? [];
   const when = (t: Trade) => t.entry_at || t.created_at;
@@ -80,9 +86,20 @@ const Trades = () => {
             {hasResults && ` · ${money(net)}`}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+        <div className="flex p-[2px] rounded-[9px] bg-secondary" role="group" aria-label="View as">
+          {([['cards', LayoutGrid, 'Cards'], ['list', List, 'List']] as const).map(([k, Icon, label]) => (
+            <button key={k} onClick={() => chooseView(k)} aria-pressed={view === k} aria-label={label}
+              className={`${FOCUS} relative size-8 rounded-[7px] grid place-items-center transition-colors ${view === k ? '' : 'text-muted-foreground'}`}>
+              {view === k && <motion.span layoutId="trades-view-thumb" className="absolute inset-0 rounded-[7px] bg-card shadow-sm" transition={spring} />}
+              <Icon className="relative size-[17px]" />
+            </button>
+          ))}
+        </div>
         <Link to="/trades/new" className={`${FOCUS} hidden md:inline-flex h-11 items-center gap-2 px-5 rounded-[14px] bg-primary text-primary-foreground text-[15px] font-semibold`}>
           <Plus className="size-4" /> New trade
         </Link>
+        </div>
       </header>
 
       <div className="relative mt-4">
@@ -134,7 +151,7 @@ const Trades = () => {
           <button onClick={() => { setSearch(''); setFilter('all'); }} className={`${FOCUS} mt-4 h-10 px-4 rounded-[12px] bg-secondary text-[14px] font-semibold`}>Clear filters</button>
         </div>
       ) : (
-        <div className="relative mt-1">
+        <div key={view} className={view === 'list' ? `relative mt-2 ${SURFACE} px-4 pb-1` : 'relative mt-1'} style={view === 'list' ? SHADOW : undefined}>
           <AnimatePresence mode="popLayout" initial>
             {rows.map((r, i) => {
               const motionProps = {
@@ -145,12 +162,39 @@ const Trades = () => {
                 transition: { ...spring, delay: reduce ? 0 : Math.min(i, 9) * 0.03 },
               };
               if (r.kind === 'head') {
-                return <motion.h2 key={r.id} {...motionProps} className="text-[13px] font-semibold text-muted-foreground px-1.5 pt-5 pb-2">{r.label}</motion.h2>;
+                return (
+                  <motion.h2 key={r.id} {...motionProps}
+                    className={view === 'list' ? 'text-[12.5px] font-semibold text-muted-foreground pt-4 pb-1' : 'text-[13px] font-semibold text-muted-foreground px-1.5 pt-5 pb-2'}>{r.label}</motion.h2>
+                );
               }
               const t = r.trade;
               const rr = t.risk_reward !== null && Number(t.risk_reward) !== 0 ? Number(t.risk_reward) : null;
               const strat = stratName(t.strategy_id);
               const pnl = t.pnl === null ? null : Number(t.pnl);
+              const meta = `${t.direction === 'short' ? 'Short' : 'Long'} · ${format(parseISO(when(t)), 'MMM d, yyyy')}${strat ? ` · ${strat}` : ''}`;
+              const result = (
+                <div className="text-right shrink-0">
+                  {pnl === null
+                    ? <span className="inline-flex px-2.5 py-1 rounded-full bg-secondary text-[12px] font-semibold text-muted-foreground">Open</span>
+                    : <div className={`${view === 'list' ? 'text-[16px]' : 'text-[19px]'} font-semibold tabular-nums leading-tight`} style={{ color: tone(pnl) }}>{money(pnl)}</div>}
+                  {rr !== null && <div className="text-[12px] text-muted-foreground tabular-nums">{rr.toFixed(1)}R</div>}
+                </div>
+              );
+              if (view === 'list') {
+                const first = i === 0 || rows[i - 1].kind === 'head';
+                return (
+                  <motion.div key={r.id} {...motionProps} className={first ? '' : 'border-t border-border'}>
+                    <Link to={`/trades/${t.id}`} className={`${FOCUS} flex items-center gap-3 py-3 rounded active:opacity-60 transition-opacity`}>
+                      <SymbolLogo symbol={t.asset} size={32} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[16px] font-semibold truncate">{t.asset}</div>
+                        <div className="text-[12.5px] text-muted-foreground truncate">{meta}</div>
+                      </div>
+                      {result}
+                    </Link>
+                  </motion.div>
+                );
+              }
               return (
                 <motion.div key={r.id} {...motionProps} whileTap={reduce ? undefined : { scale: 0.975 }} className="mb-3">
                   <Link to={`/trades/${t.id}`} className={`${FOCUS} block ${SURFACE} p-4`} style={SHADOW}>
@@ -158,16 +202,9 @@ const Trades = () => {
                       <SymbolLogo symbol={t.asset} size={38} />
                       <div className="flex-1 min-w-0">
                         <div className="text-[17px] font-semibold truncate">{t.asset}</div>
-                        <div className="text-[12.5px] text-muted-foreground truncate">
-                          {t.direction === 'short' ? 'Short' : 'Long'} · {format(parseISO(when(t)), 'MMM d, yyyy')}{strat ? ` · ${strat}` : ''}
-                        </div>
+                        <div className="text-[12.5px] text-muted-foreground truncate">{meta}</div>
                       </div>
-                      <div className="text-right shrink-0">
-                        {pnl === null
-                          ? <span className="inline-flex px-2.5 py-1 rounded-full bg-secondary text-[12px] font-semibold text-muted-foreground">Open</span>
-                          : <div className="text-[19px] font-semibold tabular-nums leading-tight" style={{ color: tone(pnl) }}>{money(pnl)}</div>}
-                        {rr !== null && <div className="text-[12px] text-muted-foreground tabular-nums">{rr.toFixed(1)}R</div>}
-                      </div>
+                      {result}
                     </div>
                     {pnl !== null && (
                       <div className="mt-3 h-1 rounded-full bg-secondary overflow-hidden" aria-hidden>
