@@ -1,138 +1,155 @@
-import { useState, useMemo } from 'react';
-import { useTrades } from '@/hooks/useTrades';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
-import { Search, LayoutGrid, List, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
-import { formatCurrency, pnlClass } from '@/lib/format';
-import { DirectionBadge } from './Dashboard';
+import { Plus, Search, X } from 'lucide-react';
+import { useStrategies, useTrades, type Trade } from '@/hooks/useTrades';
+import { formatCurrency } from '@/lib/format';
 import { SymbolLogo } from '@/components/SymbolLogo';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+
+const SURFACE = 'bg-card border border-border rounded-[24px]';
+const SHADOW = { boxShadow: 'var(--ios-sh, 0 1px 2px rgba(0,0,0,.05))' } as const;
+const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+const tap = () => { try { navigator.vibrate?.(8); } catch { /* not supported */ } };
+const tone = (n: number) => (n >= 0 ? 'hsl(var(--bull))' : 'hsl(var(--bear))');
+const money = (n: number) => formatCurrency(n, { sign: true });
+
+type Filter = 'all' | 'open' | 'wins' | 'losses' | 'long' | 'short';
+type Sort = 'date' | 'pnl' | 'asset';
+const FILTERS: [Filter, string][] = [['all', 'All'], ['open', 'Open'], ['wins', 'Wins'], ['losses', 'Losses'], ['long', 'Long'], ['short', 'Short']];
+const SORTS: [Sort, string][] = [['date', 'Newest'], ['pnl', 'Best result'], ['asset', 'A to Z']];
 
 const Trades = () => {
   const { data: trades, isLoading } = useTrades();
+  const { data: strategies = [] } = useStrategies();
   const [search, setSearch] = useState('');
-  const [view, setView] = useState<'table' | 'grid'>('table');
-  const [filter, setFilter] = useState<'all' | 'wins' | 'losses' | 'long' | 'short'>('all');
-  const [sort, setSort] = useState<'date' | 'pnl' | 'asset'>('date');
+  const [filter, setFilter] = useState<Filter>('all');
+  const [sort, setSort] = useState<Sort>('date');
 
-  const filtered = useMemo(() => {
-    let list = trades ?? [];
+  const all = trades ?? [];
+  const when = (t: Trade) => t.entry_at || t.created_at;
+
+  const list = useMemo(() => {
+    let l = all;
     const q = search.trim().toLowerCase();
-    if (q) list = list.filter(t => t.asset.toLowerCase().includes(q) || (t.notes ?? '').toLowerCase().includes(q));
-    if (filter === 'wins') list = list.filter(t => (t.pnl ?? 0) > 0);
-    if (filter === 'losses') list = list.filter(t => (t.pnl ?? 0) < 0);
-    if (filter === 'long') list = list.filter(t => t.direction === 'long');
-    if (filter === 'short') list = list.filter(t => t.direction === 'short');
+    if (q) l = l.filter((t) => t.asset.toLowerCase().includes(q) || (t.notes ?? '').toLowerCase().includes(q));
+    if (filter === 'open') l = l.filter((t) => t.status === 'open');
+    if (filter === 'wins') l = l.filter((t) => Number(t.pnl ?? 0) > 0);
+    if (filter === 'losses') l = l.filter((t) => Number(t.pnl ?? 0) < 0);
+    if (filter === 'long') l = l.filter((t) => t.direction === 'long');
+    if (filter === 'short') l = l.filter((t) => t.direction === 'short');
+    return [...l].sort((a, b) =>
+      sort === 'pnl' ? Number(b.pnl ?? 0) - Number(a.pnl ?? 0)
+      : sort === 'asset' ? a.asset.localeCompare(b.asset)
+      : when(b).localeCompare(when(a)));
+  }, [all, search, filter, sort]);
 
-    list = [...list].sort((a, b) => {
-      if (sort === 'pnl') return Number(b.pnl ?? 0) - Number(a.pnl ?? 0);
-      if (sort === 'asset') return a.asset.localeCompare(b.asset);
-      return (b.entry_at || b.created_at).localeCompare(a.entry_at || a.created_at);
+  const net = list.filter((t) => t.pnl !== null).reduce((s, t) => s + Number(t.pnl), 0);
+  const hasResults = list.some((t) => t.pnl !== null);
+
+  // group by month when sorted by date, like the Photos and Messages lists
+  const groups = useMemo(() => {
+    if (sort !== 'date') return [{ label: '', items: list }];
+    const out: { label: string; items: Trade[] }[] = [];
+    list.forEach((t) => {
+      const label = format(parseISO(when(t)), 'MMMM yyyy');
+      const last = out[out.length - 1];
+      if (last && last.label === label) last.items.push(t); else out.push({ label, items: [t] });
     });
-    return list;
-  }, [trades, search, filter, sort]);
+    return out;
+  }, [list, sort]);
+
+  const stratName = (id: string | null) => strategies.find((s) => s.id === id)?.name;
+  const filtering = search.trim() !== '' || filter !== 'all';
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-[1400px] mx-auto">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <div className="px-4 md:px-8 pt-4 pb-10 max-w-3xl mx-auto">
+      <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold">Trades</h1>
-          <p className="text-sm text-muted-foreground mt-1">{(trades ?? []).length} total · {filtered.length} shown</p>
+          <h1 className="font-display text-[34px] leading-[1.1] font-bold tracking-tight">Trades</h1>
+          <p className="text-[14px] text-muted-foreground mt-1 tabular-nums">
+            {isLoading ? ' ' : filtering ? `${list.length} of ${all.length} trades` : `${all.length} trade${all.length === 1 ? '' : 's'}`}
+            {hasResults && ` · ${money(net)}`}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link to="/trades/new" className="px-4 py-2 rounded-lg bg-bull text-primary-foreground text-sm font-medium shadow-sm">+ New trade</Link>
-        </div>
+        <Link to="/trades/new" className={`${FOCUS} hidden md:inline-flex h-11 items-center gap-2 px-5 rounded-[14px] bg-primary text-primary-foreground text-[15px] font-semibold`}>
+          <Plus className="size-4" /> New trade
+        </Link>
       </header>
 
-      <div className="glass rounded-xl p-4 flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search asset or notes…" className="pl-9 bg-secondary/40 border-border" />
-        </div>
-        <Select value={filter} onValueChange={(v: any) => setFilter(v)}>
-          <SelectTrigger className="w-[140px] bg-secondary/40"><Filter className="size-3.5 mr-1" /><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All trades</SelectItem>
-            <SelectItem value="wins">Wins</SelectItem>
-            <SelectItem value="losses">Losses</SelectItem>
-            <SelectItem value="long">Long</SelectItem>
-            <SelectItem value="short">Short</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sort} onValueChange={(v: any) => setSort(v)}>
-          <SelectTrigger className="w-[140px] bg-secondary/40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="date">Newest</SelectItem>
-            <SelectItem value="pnl">Highest P&L</SelectItem>
-            <SelectItem value="asset">Asset A–Z</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="flex rounded-md bg-secondary/40 p-0.5">
-          <Button variant={view === 'table' ? 'secondary' : 'ghost'} size="sm" onClick={() => setView('table')}><List className="size-4" /></Button>
-          <Button variant={view === 'grid' ? 'secondary' : 'ghost'} size="sm" onClick={() => setView('grid')}><LayoutGrid className="size-4" /></Button>
+      <div className="relative mt-4">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-[17px] text-muted-foreground pointer-events-none" aria-hidden />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search pair or notes" aria-label="Search trades"
+          className="w-full pl-10 pr-10 bg-secondary text-[16px] rounded-[12px] outline-none border border-transparent focus:border-primary" />
+        {search && (
+          <button onClick={() => setSearch('')} aria-label="Clear search" className={`${FOCUS} absolute right-2 top-1/2 -translate-y-1/2 size-7 rounded-full grid place-items-center text-muted-foreground`}>
+            <X className="size-4" />
+          </button>
+        )}
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 mt-3" role="group" aria-label="Filter trades">
+        {FILTERS.map(([k, label]) => (
+          <button key={k} onClick={() => { tap(); setFilter(k); }} aria-pressed={filter === k}
+            className={`${FOCUS} shrink-0 h-9 px-4 rounded-full text-[14px] font-semibold transition ${filter === k ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between mt-4 mb-1 px-1">
+        <span className="text-[13px] text-muted-foreground">Sort by</span>
+        <div className="flex p-[2px] rounded-[9px] bg-secondary" role="group" aria-label="Sort trades">
+          {SORTS.map(([k, label]) => (
+            <button key={k} onClick={() => { tap(); setSort(k); }} aria-pressed={sort === k}
+              className={`${FOCUS} px-3 py-1 rounded-[7px] text-[12.5px] font-semibold transition ${sort === k ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>{label}</button>
+          ))}
         </div>
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}</div>
-      ) : filtered.length === 0 ? (
-        <div className="glass rounded-xl p-12 text-center text-sm text-muted-foreground">No trades match your filters.</div>
-      ) : view === 'table' ? (
-        <div className="glass rounded-xl overflow-hidden">
-          <div className="overflow-x-auto scrollbar-thin">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/30">
-                <tr className="text-left text-xs text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Asset</th>
-                  <th className="font-medium">Side</th>
-                  <th className="font-medium">Date</th>
-                  <th className="font-medium text-right">Entry</th>
-                  <th className="font-medium text-right">Exit</th>
-                  <th className="font-medium text-right">P&L</th>
-                  <th className="font-medium text-right pr-4">R:R</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(t => (
-                  <tr key={t.id} className="border-t border-border/40 hover:bg-secondary/30 transition">
-                    <td className="px-4 py-3"><Link to={`/trades/${t.id}`} className="font-medium hover:text-primary inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} />{t.asset}</Link></td>
-                    <td><DirectionBadge dir={t.direction} /></td>
-                    <td className="text-muted-foreground text-xs">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d, yyyy') : '—'}</td>
-                    <td className="text-right tabular-nums text-xs">{t.entry_price ?? '—'}</td>
-                    <td className="text-right tabular-nums text-xs">{t.exit_price ?? '—'}</td>
-                    <td className={`text-right tabular-nums ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</td>
-                    <td className="text-right pr-4 tabular-nums text-xs text-muted-foreground">{t.risk_reward ? `${Number(t.risk_reward).toFixed(2)}R` : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-2 mt-3" aria-busy="true">{Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-[62px] rounded-[18px]" />)}</div>
+      ) : all.length === 0 ? (
+        <div className={`${SURFACE} p-8 text-center mt-3`} style={SHADOW}>
+          <div className="font-display text-[18px] font-bold">No trades yet</div>
+          <p className="text-[14px] text-muted-foreground mt-1">Log your first trade, or connect MT5 and they'll show up on their own.</p>
+          <Link to="/trades/new" className={`${FOCUS} inline-flex mt-4 h-11 items-center gap-2 px-5 rounded-[14px] bg-primary text-primary-foreground text-[15px] font-semibold`}><Plus className="size-4" /> Log a trade</Link>
+        </div>
+      ) : list.length === 0 ? (
+        <div className={`${SURFACE} p-8 text-center mt-3`} style={SHADOW}>
+          <div className="font-display text-[18px] font-bold">Nothing matches</div>
+          <p className="text-[14px] text-muted-foreground mt-1">No trades fit that search and filter.</p>
+          <button onClick={() => { setSearch(''); setFilter('all'); }} className={`${FOCUS} mt-4 h-10 px-4 rounded-[12px] bg-secondary text-[14px] font-semibold`}>Clear filters</button>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(t => (
-            <Link key={t.id} to={`/trades/${t.id}`} className="glass rounded-xl p-4 hover:border-primary/40 transition group">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="font-display font-semibold text-lg group-hover:text-primary transition inline-flex items-center gap-2"><SymbolLogo symbol={t.asset} size={24} />{t.asset}</div>
-                  <div className="text-xs text-muted-foreground">{t.entry_at ? format(parseISO(t.entry_at), 'MMM d, yyyy') : '—'}</div>
-                </div>
-                <DirectionBadge dir={t.direction} />
+        <div key={`${filter}-${sort}`} className="animate-fade-up">
+          {groups.map((g, gi) => (
+            <section key={g.label || gi}>
+              {g.label && <h2 className="text-[13px] font-semibold text-muted-foreground px-1.5 pt-5 pb-2">{g.label}</h2>}
+              <div className={`${SURFACE} px-4 ${g.label ? '' : 'mt-2'}`} style={SHADOW}>
+                {g.items.map((t) => {
+                  const r = t.risk_reward !== null && Number(t.risk_reward) !== 0 ? Number(t.risk_reward) : null;
+                  const strat = stratName(t.strategy_id);
+                  return (
+                    <Link key={t.id} to={`/trades/${t.id}`} className={`${FOCUS} flex items-center gap-3 py-3 border-t border-border first:border-t-0 rounded active:opacity-60 transition-opacity`}>
+                      <SymbolLogo symbol={t.asset} size={32} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[16px] font-semibold truncate">{t.asset} <span className="font-normal text-muted-foreground">{t.direction === 'short' ? 'Short' : 'Long'}</span></div>
+                        <div className="text-[12.5px] text-muted-foreground truncate">
+                          {format(parseISO(when(t)), 'MMM d, yyyy')}{strat ? ` · ${strat}` : ''}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {t.pnl === null
+                          ? <span className="inline-flex px-2 py-0.5 rounded-full bg-secondary text-[12px] font-semibold text-muted-foreground">Open</span>
+                          : <div className="text-[16px] font-semibold tabular-nums" style={{ color: tone(Number(t.pnl)) }}>{money(Number(t.pnl))}</div>}
+                        {r !== null && <div className="text-[12px] text-muted-foreground tabular-nums">{r.toFixed(1)}R</div>}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-[10px] text-muted-foreground">P&L</div>
-                  <div className={`tabular-nums text-xl font-semibold ${pnlClass(t.pnl)}`}>{formatCurrency(t.pnl, { sign: true })}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[10px] text-muted-foreground">R:R</div>
-                  <div className="tabular-nums text-sm">{t.risk_reward ? `${Number(t.risk_reward).toFixed(2)}R` : '—'}</div>
-                </div>
-              </div>
-            </Link>
+            </section>
           ))}
         </div>
       )}

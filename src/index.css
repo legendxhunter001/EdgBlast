@@ -521,3 +521,6 @@
 .eb-page-in > :first-child > :nth-child(7) { animation-delay: 280ms; }
 .eb-page-in > :first-child > :nth-child(n+8) { animation-delay: 310ms; }
 @media (prefers-reduced-motion: reduce) { .eb-page-in > :first-child > * { animation: none !important; } }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
