@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { format, parseISO, getDay, differenceInMinutes, startOfMonth, endOfMonth, subMonths, subDays, isBefore } from 'date-fns';
 import { formatCurrency } from '@/lib/format';
+import { plannedRiskReward, fmtRiskReward } from '@/lib/traderProfile';
 import { ArrowDownRight, ArrowUpRight, BarChart3, Camera, ChevronRight, Layers, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -224,7 +225,7 @@ const Analytics = () => {
       expectancy: n ? net / n : null,
       avgWin: winsL.length ? gp / winsL.length : null, avgLoss: lossL.length ? gl / lossL.length : null,
       maxDd, bestW, bestL, curve, dow, bestDow, pairs, long: side('long'), short: side('short'), emotions, strat,
-      avgHold, avgRr: rrs.length ? rrs.reduce((a, b) => a + b, 0) / rrs.length : null,
+      planned: plannedRiskReward(list), avgHold, avgRr: rrs.length ? rrs.reduce((a, b) => a + b, 0) / rrs.length : null,
     };
   }, [list]);
 
@@ -327,7 +328,7 @@ const Analytics = () => {
                 <Tile label="Biggest dip" value={S.maxDd > 0 ? `-${plain(S.maxDd)}` : '$0'} color={S.maxDd > 0 ? BEAR : undefined} sub="Largest fall from a peak in your running total" />
                 <Tile label="Avg hold" value={holdText} sub="Entry to exit" />
                 <Tile label="Streaks" value={`${S.bestW} / ${S.bestL}`} sub="Longest run of wins / losses" />
-                <Tile label="Avg R" value={S.avgRr === null ? '—' : `${S.avgRr.toFixed(2)}R`} sub="Average result in R per trade" />
+                <Tile label="Risk : reward" value={fmtRiskReward(S.planned.ratio)} sub={S.planned.ratio === null ? 'Needs a stop and a target on your trades' : `Planned reward for every 1 risked${S.avgRr === null ? '' : `. You actually made ${S.avgRr.toFixed(1)}R per trade`}`} />
               </div>
 
               <div className="grid lg:grid-cols-5 gap-4">

@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useTrades, Trade } from '@/hooks/useTrades';
 import { formatCurrency, pnlClass } from '@/lib/format';
+import { plannedRiskReward, fmtRiskReward } from '@/lib/traderProfile';
 import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Target, Activity, Trophy, AlertTriangle, ArrowUpRight, Flame, CalendarRange, CalendarDays, Sun, Brain, ShieldCheck } from 'lucide-react';
 import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Area, AreaChart } from 'recharts';
@@ -75,7 +76,7 @@ const Dashboard = () => {
       today: { pnl: sumPnl(today), count: today.length },
       week: { pnl: sumPnl(week), count: week.length },
       month: { pnl: sumPnl(month), count: month.length },
-      psychology, discipline,
+      psychology, discipline, planned: plannedRiskReward(closed),
     };
   }, [trades]);
 
@@ -143,7 +144,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <div className="animate-fade-up stagger-1"><Stat label="Total P&L" value={formatCurrency(stats.totalPnl, { sign: true })} sub={`${stats.totalTrades} closed trades`} icon={stats.totalPnl >= 0 ? TrendingUp : TrendingDown} glow={stats.totalPnl >= 0 ? 'bull' : 'bear'} /></div>
             <div className="animate-fade-up stagger-2"><Stat label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} sub={`${stats.wins}W · ${stats.losses}L`} icon={Target} glow="accent" /></div>
-            <div className="animate-fade-up stagger-3"><Stat label="Avg win/loss" value={stats.avgRR ? stats.avgRR.toFixed(2) : '—'} sub="Win/loss ratio" icon={Activity} glow="gold" /></div>
+            <div className="animate-fade-up stagger-3"><Stat label="Risk : Reward" value={fmtRiskReward(stats.planned.ratio)} sub={stats.planned.n ? `Planned, across ${stats.planned.n} trades` : 'Needs a stop and a target'} icon={Activity} glow="gold" /></div>
             <div className="animate-fade-up stagger-4"><Stat label="Streak" value={`${stats.streak}${stats.streakKind === 'win' ? 'W' : stats.streakKind === 'loss' ? 'L' : ''}`} sub={stats.streakKind === 'win' ? 'On a roll' : stats.streakKind === 'loss' ? 'Stay disciplined' : '—'} icon={Flame} glow={stats.streakKind === 'win' ? 'bull' : stats.streakKind === 'loss' ? 'bear' : 'violet'} /></div>
           </div>
 

@@ -159,3 +159,23 @@ export function computeProfile(closed: ClosedTrade[], rules: RiskRules | null) {
   };
 }
 
+
+/**
+ * Planned risk:reward from the stop and target you set on each trade.
+ * Reward per 1 of risk: |target - entry| / |entry - stop|. Trades whose levels don't make sense
+ * for their direction (or that are missing a level) are left out, never guessed.
+ */
+export function plannedRiskReward(trades: Trade[]): { ratio: number | null; n: number } {
+  const ratios: number[] = [];
+  trades.forEach((t) => {
+    const e = numOrNull(t.entry_price), sl = numOrNull(t.stop_loss), tp = numOrNull(t.take_profit);
+    if (e === null || sl === null || tp === null || e === sl) return;
+    const ok = t.direction === 'short' ? tp < e && e < sl : tp > e && e > sl;
+    if (!ok) return;
+    ratios.push(Math.abs(tp - e) / Math.abs(e - sl));
+  });
+  return { ratio: ratios.length ? ratios.reduce((a, b) => a + b, 0) / ratios.length : null, n: ratios.length };
+}
+
+/** 2.3 becomes "1:2.3" (1 risked to 2.3 of reward) */
+export const fmtRiskReward = (r: number | null) => (r === null ? '—' : `1:${r.toFixed(1)}`);
