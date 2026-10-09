@@ -1,23 +1,43 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
+import { format } from 'date-fns';
+import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useStrategies } from '@/hooks/useTrades';
 import { pipsBetween, getPipValue } from '@/lib/pips';
+import { fmtRiskReward } from '@/lib/traderProfile';
+
+const SURFACE = 'bg-card border border-border rounded-[24px]';
+const SHADOW = { boxShadow: 'var(--ios-sh, 0 1px 2px rgba(0,0,0,.05))' } as const;
+const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+const BARE = { background: 'transparent', border: 0, padding: 0, minHeight: 0, borderRadius: 0, boxShadow: 'none' } as const;
+const MOODS = ['calm', 'confident', 'excited', 'neutral', 'anxious', 'fearful', 'greedy', 'frustrated'];
+const tap = () => { try { navigator.vibrate?.(8); } catch { /* not supported */ } };
+
+const Group = ({ title, children, note }: { title: string; children: React.ReactNode; note?: string }) => (
+  <section>
+    <h2 className="text-[13px] font-semibold text-muted-foreground px-1.5 pb-2">{title}</h2>
+    <div className={`${SURFACE} px-4`} style={SHADOW}>{children}</div>
+    {note && <p className="text-[12.5px] text-muted-foreground px-1.5 pt-2">{note}</p>}
+  </section>
+);
+
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <label className="flex items-center justify-between gap-4 py-3.5 border-t border-border first:border-t-0 cursor-text">
+    <span className="text-[15px] shrink-0">{label}</span>
+    <span className="flex-1 min-w-0 flex justify-end">{children}</span>
+  </label>
+);
 
 const NewTrade = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const reduce = !!useReducedMotion();
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
@@ -29,7 +49,7 @@ const NewTrade = () => {
     stop_loss: '',
     take_profit: '',
     fees: '',
-    entry_at: new Date().toISOString().slice(0, 16),
+    entry_at: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
     exit_at: '',
     emotional_state: 'none',
     strategy_id: 'none',
@@ -48,6 +68,16 @@ const NewTrade = () => {
   const pipValue = form.asset ? getPipValue(form.asset) : 0;
   const riskAmount = stopPips !== null && sizeNum > 0 ? stopPips * pipValue * sizeNum : null;
   const potentialProfit = targetPips !== null && sizeNum > 0 ? targetPips * pipValue * sizeNum : null;
+
+  // planned risk to reward, only when the levels make sense for the direction
+  const e = Number(form.entry_price), sl = Number(form.stop_loss), tp = Number(form.take_profit);
+  const haveLevels = !!form.entry_price && !!form.stop_loss && !!form.take_profit && e !== sl;
+  const levelsOk = haveLevels && (form.direction === 'long' ? tp > e && e > sl : tp < e && e < sl);
+  const plannedRR = levelsOk ? Math.abs(tp - e) / Math.abs(e - sl) : null;
+  const levelHint = haveLevels && !levelsOk
+    ? (form.direction === 'long' ? 'For a long, the stop should be below your entry and the target above it.' : 'For a short, the stop should be above your entry and the target below it.')
+    : null;
+  const canSave = form.asset.trim().length > 0 && !saving;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,133 +137,130 @@ const NewTrade = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-3xl mx-auto">
-      <Link to="/trades" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition">
-        <ArrowLeft className="size-4" /> Back to trades
-      </Link>
+    <form onSubmit={handleSubmit} className="px-4 md:px-8 pt-3 pb-10 max-w-2xl mx-auto">
+      <div className="flex items-center justify-between gap-3">
+        <Link to="/trades" className={`${FOCUS} inline-flex items-center -ml-1.5 text-[17px] font-medium rounded`} style={{ color: 'hsl(var(--primary))' }}>
+          <ChevronLeft className="size-6" aria-hidden /> Trades
+        </Link>
+        <button type="submit" disabled={!canSave} className={`${FOCUS} h-9 px-4 rounded-full bg-primary text-primary-foreground text-[15px] font-semibold disabled:opacity-40 active:scale-95 transition`}>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      </div>
 
-      <h1 className="font-display text-3xl font-semibold mb-1">Log a new trade</h1>
-      <p className="text-sm text-muted-foreground mb-8">Capture the data, the reasoning, and the psychology.</p>
+      <h1 className="font-display text-[34px] leading-[1.1] font-bold tracking-tight mt-3">New trade</h1>
+      <p className="text-[14px] text-muted-foreground mt-1 mb-5">Log it while it's fresh. Only the pair is required.</p>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <section className="glass rounded-xl p-6 space-y-4">
-          <h3 className="font-display font-semibold">Trade details</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Asset / pair *</Label>
-              <Input required value={form.asset} onChange={e => set('asset', e.target.value)} placeholder="BTCUSD" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Direction</Label>
-              <Select value={form.direction} onValueChange={v => set('direction', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="long">Long</SelectItem>
-                  <SelectItem value="short">Short</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Entry price</Label>
-              <Input type="number" step="any" value={form.entry_price} onChange={e => set('entry_price', e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Exit price</Label>
-              <Input type="number" step="any" value={form.exit_price} onChange={e => set('exit_price', e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Position size</Label>
-              <Input type="number" step="any" value={form.position_size} onChange={e => set('position_size', e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Fees</Label>
-              <Input type="number" step="any" value={form.fees} onChange={e => set('fees', e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Stop loss</Label>
-              <Input type="number" step="any" value={form.stop_loss} onChange={e => set('stop_loss', e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Take profit</Label>
-              <Input type="number" step="any" value={form.take_profit} onChange={e => set('take_profit', e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Entry time</Label>
-              <Input type="datetime-local" value={form.entry_at} onChange={e => set('entry_at', e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Exit time</Label>
-              <Input type="datetime-local" value={form.exit_at} onChange={e => set('exit_at', e.target.value)} />
+      <div className="space-y-5">
+        <Group title="Trade">
+          <Field label="Pair">
+            <input required value={form.asset} onChange={(ev) => set('asset', ev.target.value.toUpperCase())} placeholder="EURUSD" autoCapitalize="characters" autoComplete="off"
+              style={BARE} className="w-full text-right text-[16px] font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60" />
+          </Field>
+          <div className="py-3 border-t border-border">
+            <div className="flex p-[3px] rounded-[12px] bg-secondary" role="group" aria-label="Direction">
+              {(['long', 'short'] as const).map((d) => {
+                const on = form.direction === d;
+                return (
+                  <button key={d} type="button" aria-pressed={on} onClick={() => { tap(); set('direction', d); }}
+                    className={`${FOCUS} relative flex-1 h-10 rounded-[10px] text-[15px] font-semibold transition-colors ${on ? 'text-white' : 'text-muted-foreground'}`}>
+                    {on && <motion.span layoutId="dir-thumb" className="absolute inset-0 rounded-[10px]" style={{ background: d === 'long' ? 'hsl(var(--bull))' : 'hsl(var(--bear))' }} transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 36 }} />}
+                    <span className="relative">{d === 'long' ? 'Long' : 'Short'}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
+        </Group>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
-              <div className="text-[11px] text-muted-foreground font-semibold">Stop distance</div>
-              <div className="tabular-nums text-lg font-semibold mt-0.5">{stopPips !== null ? `${stopPips.toFixed(1)} pips` : '—'}</div>
-              {riskAmount !== null && <div className="tabular-nums text-xs text-bear mt-0.5">-${riskAmount.toFixed(2)} risk</div>}
-              {stopPips !== null && riskAmount === null && <div className="text-xs text-muted-foreground mt-0.5">Add position size for $ risk</div>}
+        <Group title="Prices">
+          {([['Entry', 'entry_price'], ['Stop loss', 'stop_loss'], ['Take profit', 'take_profit'], ['Exit (when closed)', 'exit_price'], ['Position size', 'position_size'], ['Fees', 'fees']] as const).map(([label, key]) => (
+            <Field key={key} label={label}>
+              <input type="number" step="any" inputMode="decimal" value={form[key]} onChange={(ev) => set(key, ev.target.value)} placeholder="0"
+                style={BARE} className="w-full text-right text-[16px] tabular-nums outline-none placeholder:text-muted-foreground/50" />
+            </Field>
+          ))}
+        </Group>
+
+        <section aria-live="polite">
+          <h2 className="text-[13px] font-semibold text-muted-foreground px-1.5 pb-2">Your plan</h2>
+          <div className={`${SURFACE} p-4`} style={SHADOW}>
+            <div className="flex items-baseline justify-between">
+              <span className="text-[13px] text-muted-foreground">Risk : reward</span>
+              <span className="font-display text-[30px] leading-none font-bold tabular-nums">{fmtRiskReward(plannedRR)}</span>
             </div>
-            <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
-              <div className="text-[11px] text-muted-foreground font-semibold">Target distance</div>
-              <div className="tabular-nums text-lg font-semibold mt-0.5">{targetPips !== null ? `${targetPips.toFixed(1)} pips` : '—'}</div>
-              {potentialProfit !== null && <div className="tabular-nums text-xs text-bull mt-0.5">+${potentialProfit.toFixed(2)} profit</div>}
-              {targetPips !== null && potentialProfit === null && <div className="text-xs text-muted-foreground mt-0.5">Add position size for $ profit</div>}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="rounded-[14px] bg-secondary px-3 py-2.5">
+                <div className="text-[12px] text-muted-foreground">Stop distance</div>
+                <div className="text-[17px] font-semibold tabular-nums">{stopPips !== null ? `${stopPips.toFixed(1)} pips` : '—'}</div>
+                {riskAmount !== null && <div className="text-[12.5px] tabular-nums" style={{ color: 'hsl(var(--bear))' }}>-${riskAmount.toFixed(2)} at risk</div>}
+                {stopPips !== null && riskAmount === null && <div className="text-[12px] text-muted-foreground">Add a size for the dollar risk</div>}
+              </div>
+              <div className="rounded-[14px] bg-secondary px-3 py-2.5">
+                <div className="text-[12px] text-muted-foreground">Target distance</div>
+                <div className="text-[17px] font-semibold tabular-nums">{targetPips !== null ? `${targetPips.toFixed(1)} pips` : '—'}</div>
+                {potentialProfit !== null && <div className="text-[12.5px] tabular-nums" style={{ color: 'hsl(var(--bull))' }}>+${potentialProfit.toFixed(2)} if hit</div>}
+                {targetPips !== null && potentialProfit === null && <div className="text-[12px] text-muted-foreground">Add a size for the dollar profit</div>}
+              </div>
             </div>
+            {levelHint && <p className="text-[12.5px] mt-3" style={{ color: 'hsl(var(--gold))' }}>{levelHint}</p>}
+            {!haveLevels && <p className="text-[12.5px] text-muted-foreground mt-3">Add an entry, stop and target to see your planned risk to reward.</p>}
           </div>
         </section>
 
-        <section className="glass rounded-xl p-6 space-y-4">
-          <h3 className="font-display font-semibold">Psychology</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Strategy</Label>
-              <Select value={form.strategy_id} onValueChange={v => set('strategy_id', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No strategy</SelectItem>
-                  {strategies.map(st => <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Emotional state</Label>
-              <Select value={form.emotional_state} onValueChange={v => set('emotional_state', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not set</SelectItem>
-                  {['calm','confident','anxious','fearful','greedy','frustrated','excited','neutral'].map(e =>
-                    <SelectItem key={e} value={e}>{e[0].toUpperCase()+e.slice(1)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Confidence (1–10)</Label>
-              <Input type="number" min={1} max={10} value={form.confidence_rating} onChange={e => set('confidence_rating', e.target.value)} />
-            </div>
-          </div>
-        </section>
+        <Group title="Time">
+          <Field label="Entered">
+            <input type="datetime-local" value={form.entry_at} onChange={(ev) => set('entry_at', ev.target.value)} style={BARE} className="text-right text-[16px] outline-none" />
+          </Field>
+          <Field label="Exited">
+            <input type="datetime-local" value={form.exit_at} onChange={(ev) => set('exit_at', ev.target.value)} style={BARE} className="text-right text-[16px] outline-none" />
+          </Field>
+        </Group>
 
-        <section className="glass rounded-xl p-6 space-y-4">
-          <h3 className="font-display font-semibold">Notes</h3>
-          <div className="space-y-1.5">
-            <Label>Thesis</Label>
-            <Textarea rows={3} value={form.thesis} onChange={e => set('thesis', e.target.value)} placeholder="Why are you taking this trade?" />
+        <Group title="Mind and setup" note="Mood is optional. Leave it unset if you don't want it counted.">
+          <Field label="Strategy">
+            <select value={form.strategy_id} onChange={(ev) => set('strategy_id', ev.target.value)} style={{ ...BARE, textAlign: 'right' }} className="text-[16px] outline-none max-w-full">
+              <option value="none">None</option>
+              {strategies.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
+            </select>
+          </Field>
+          <div className="py-3.5 border-t border-border">
+            <div className="text-[15px] mb-2.5">How did you feel going in?</div>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Mood">
+              {MOODS.map((m) => {
+                const on = form.emotional_state === m;
+                return (
+                  <button key={m} type="button" aria-pressed={on} onClick={() => { tap(); set('emotional_state', on ? 'none' : m); }}
+                    className={`${FOCUS} h-9 px-3.5 rounded-full text-[14px] font-semibold capitalize transition active:scale-95 ${on ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'}`}>{m}</button>
+                );
+              })}
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Quick notes</Label>
-            <Textarea rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} />
+          <div className="py-3.5 border-t border-border">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[15px]">Confidence</span>
+              <span className="text-[15px] font-semibold tabular-nums">{form.confidence_rating} of 10</span>
+            </div>
+            <input type="range" min={1} max={10} step={1} value={form.confidence_rating} onChange={(ev) => set('confidence_rating', ev.target.value)} aria-label="Confidence from 1 to 10"
+              style={{ ...BARE, width: '100%', accentColor: 'hsl(var(--primary))' }} />
           </div>
-        </section>
+        </Group>
 
-        <div className="flex gap-3">
-          <Button type="submit" disabled={saving} className="bg-bull text-primary-foreground shadow-sm">
-            {saving ? 'Saving…' : 'Save trade'}
-          </Button>
-          <Link to="/trades"><Button type="button" variant="ghost">Cancel</Button></Link>
-        </div>
-      </form>
-    </div>
+        <Group title="Notes">
+          <div className="py-3.5">
+            <div className="text-[13px] text-muted-foreground mb-1.5">Why are you taking this trade?</div>
+            <textarea rows={3} value={form.thesis} onChange={(ev) => set('thesis', ev.target.value)} style={BARE} className="w-full text-[16px] outline-none resize-none" placeholder="Your reasoning" />
+          </div>
+          <div className="py-3.5 border-t border-border">
+            <div className="text-[13px] text-muted-foreground mb-1.5">Anything else</div>
+            <textarea rows={3} value={form.notes} onChange={(ev) => set('notes', ev.target.value)} style={BARE} className="w-full text-[16px] outline-none resize-none" placeholder="Notes" />
+          </div>
+        </Group>
+
+        <button type="submit" disabled={!canSave} className={`${FOCUS} w-full h-12 rounded-[16px] bg-primary text-primary-foreground text-[16px] font-semibold disabled:opacity-40 active:scale-[.98] transition`}>
+          {saving ? 'Saving…' : 'Save trade'}
+        </button>
+      </div>
+    </form>
   );
 };
 

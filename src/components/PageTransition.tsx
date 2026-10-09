@@ -9,13 +9,20 @@ import { useLocation, useNavigate, useNavigationType, useOutlet } from 'react-ro
  *  tab  : sibling pages cross-fade with a soft scale, like switching tabs
  * The shell (sidebar, dock, top bar) stays mounted; only the page animates.
  */
-type Kind = 'push' | 'pop' | 'tab';
-type Custom = { kind: Kind; scroll: number; reduce: boolean };
+type Kind = 'push' | 'pop' | 'tab' | 'open' | 'close';
+type Custom = { kind: Kind; scroll: number; reduce: boolean; origin: string };
+
+/** Opening a trade zooms out of the card you tapped; going back shrinks it into place. */
+const isTrade = (p: string) => /^\/trades\/(?!new$)[^/]+$/.test(p);
+let lastTap = { x: 0, y: 0 };
+let openOrigin = '50% 40%';
 
 const depth = (p: string) => p.split('/').filter(Boolean).length;
 const within = (child: string, parent: string) => child.startsWith(parent === '/' ? '/x' : `${parent}/`);
 
 const classify = (from: string, to: string): Kind => {
+  if (isTrade(to) && !isTrade(from)) return 'open';
+  if (isTrade(from) && !isTrade(to)) return 'close';
   const a = depth(from), b = depth(to);
   if (b > a && within(to, from)) return 'push';
   if (b < a && within(from, to)) return 'pop';
@@ -39,6 +46,8 @@ const variants: Variants = {
     c.reduce ? { opacity: 0 }
     : c.kind === 'push' ? { x: '100%', zIndex: 2, boxShadow: EDGE }
     : c.kind === 'pop' ? { x: '-28%', opacity: 0.55, zIndex: 1 }
+    : c.kind === 'open' ? { opacity: 0, scale: 0.88, y: 24, zIndex: 2, transformOrigin: c.origin }
+    : c.kind === 'close' ? { opacity: 0, scale: 0.97, zIndex: 1 }
     : { opacity: 0, scale: 0.985, y: 6, zIndex: 1 },
   center: (c: Custom) =>
     c.reduce ? { opacity: 1, transition: { duration: 0.14 } }
@@ -47,6 +56,8 @@ const variants: Variants = {
     c.reduce ? { opacity: 0, y: -c.scroll, transition: { duration: 0.1, y: { duration: 0 } } }
     : c.kind === 'push' ? { x: '-28%', y: -c.scroll, opacity: 0.55, zIndex: 1, transition: { ...SPRING, y: { duration: 0 } } }
     : c.kind === 'pop' ? { x: '100%', y: -c.scroll, zIndex: 2, boxShadow: EDGE, transition: { ...SPRING, y: { duration: 0 } } }
+    : c.kind === 'open' ? { opacity: 0, scale: 0.96, y: -c.scroll, zIndex: 1, transition: { ...SPRING, y: { duration: 0 } } }
+    : c.kind === 'close' ? { opacity: 0, scale: 0.9, y: -c.scroll, zIndex: 2, transformOrigin: c.origin, transition: { ...SPRING, y: { duration: 0 } } }
     : { opacity: 0, y: -c.scroll, transition: { duration: 0.14, y: { duration: 0 } } },
 };
 
@@ -69,13 +80,24 @@ export const AnimatedOutlet = () => {
   const prevPath = useRef(pathname);
   const kindRef = useRef<Kind>('tab');
   const exitScroll = useRef(0);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   if (prevPath.current !== pathname) {
     const k = classify(prevPath.current, pathname);
-    kindRef.current = navType === 'POP' && k === 'tab' ? 'tab' : k;
+    kindRef.current = k;
     exitScroll.current = scrollMap.current.get(prevPath.current) ?? 0;
+    if (kindRef.current === 'open') {
+      const top = wrapRef.current ? wrapRef.current.getBoundingClientRect().top + window.scrollY : 0;
+      openOrigin = `${Math.round(lastTap.x)}px ${Math.round(lastTap.y + window.scrollY - top)}px`;
+    }
     prevPath.current = pathname;
   }
+
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => { lastTap = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener('pointerdown', onDown, { capture: true, passive: true });
+    return () => window.removeEventListener('pointerdown', onDown, { capture: true } as EventListenerOptions);
+  }, []);
 
   // remember where each page was scrolled, restore it when you come back
   useEffect(() => {
@@ -85,7 +107,7 @@ export const AnimatedOutlet = () => {
   }, []);
   useLayoutEffect(() => {
     currentPath.current = pathname;
-    window.scrollTo(0, kindRef.current === 'pop' ? scrollMap.current.get(pathname) ?? 0 : 0);
+    window.scrollTo(0, kindRef.current === 'pop' || kindRef.current === 'close' ? scrollMap.current.get(pathname) ?? 0 : 0);
   }, [pathname]);
 
   // iOS edge-swipe to go back on detail pages
@@ -107,12 +129,12 @@ export const AnimatedOutlet = () => {
     return () => { window.removeEventListener('touchstart', start); window.removeEventListener('touchend', end); };
   }, [navigate]);
 
-  const custom: Custom = { kind: kindRef.current, scroll: exitScroll.current, reduce };
+  const custom: Custom = { kind: kindRef.current, scroll: exitScroll.current, reduce, origin: openOrigin };
   const seg = pathname.split('/')[1] ?? '';
   const flavor = depth(pathname) >= 2 ? 'rise' : FLAVOR[seg] ?? 'rise';
 
   return (
-    <div className="relative flex-1 overflow-x-clip">
+    <div ref={wrapRef} className="relative flex-1 overflow-x-clip">
       <AnimatePresence mode="popLayout" initial={false} custom={custom}>
         <motion.div key={pathname} custom={custom} variants={variants} initial="enter" animate="center" exit="exit"
           className="eb-page-in bg-background min-h-[70vh]" data-flavor={flavor}>

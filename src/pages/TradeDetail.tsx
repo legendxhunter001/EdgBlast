@@ -163,17 +163,25 @@ const TradeDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-40 rounded-2xl" />
-        <div className="grid md:grid-cols-3 gap-3">
-          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
-        </div>
-        <Skeleton className="h-64 rounded-xl" />
+      <div className="px-4 md:px-8 pt-3 pb-10 max-w-3xl mx-auto space-y-4" aria-busy="true">
+        <Skeleton className="h-9 w-28" />
+        <Skeleton className="h-[290px] rounded-[24px]" />
+        <Skeleton className="h-[120px] rounded-[24px]" />
+        <Skeleton className="h-[260px] rounded-[24px]" />
       </div>
     );
   }
-  if (!trade) return <div className="p-8 text-center text-muted-foreground">Trade not found</div>;
+  if (!trade) {
+    return (
+      <div className="px-4 md:px-8 pt-3 pb-10 max-w-3xl mx-auto">
+        <Link to="/trades" className="inline-flex items-center -ml-1.5 text-[17px] font-medium" style={{ color: 'hsl(var(--primary))' }}><ChevronLeft className="size-6" /> Trades</Link>
+        <div className="bg-card border border-border rounded-[24px] p-8 text-center mt-4">
+          <div className="font-display text-[18px] font-bold">Trade not found</div>
+          <p className="text-[14px] text-muted-foreground mt-1">It may have been deleted, or the link is wrong.</p>
+        </div>
+      </div>
+    );
+  }
 
   const stepIndex = STEPS.findIndex(s => s.id === step);
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
