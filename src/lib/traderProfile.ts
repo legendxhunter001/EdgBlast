@@ -178,4 +178,4 @@ export function plannedRiskReward(trades: Trade[]): { ratio: number | null; n: n
 }
 
 /** 2.3 becomes "1:2.3" (1 risked to 2.3 of reward) */
-export const fmtRiskReward = (r: number | null) => (r === null ? '—' : `1:${r.toFixed(1)}`);
+export const fmtRiskReward = (r: number | null) => (r === null ? '—' : `1:${r.toFixed(1).replace(/\.0$/, '')}`);
