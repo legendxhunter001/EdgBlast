@@ -58,6 +58,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route element={<ShellLayout />}>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Navigate to="/" replace />} />
                 <Route path="/trades" element={<Trades />} />
                 <Route path="/trades/new" element={<NewTrade />} />
                 <Route path="/trades/:id" element={<TradeDetail />} />

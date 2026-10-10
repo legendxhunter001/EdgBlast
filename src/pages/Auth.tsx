@@ -17,8 +17,8 @@ const Auth = () => {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const rawNext = searchParams.get('next') ?? '/dashboard';
-  const nextPath = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/dashboard';
+  const rawNext = searchParams.get('next') ?? '/';
+  const nextPath = rawNext.startsWith('/') && !rawNext.startsWith('//') && rawNext !== '/dashboard' ? rawNext : '/';
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -146,13 +146,13 @@ const Auth = () => {
             <p className="text-sm text-muted-foreground mt-1.5">Sign in to continue to your journal</p>
           </div>
 
-          <div className="luxe-card p-6 md:p-7 space-y-5">
+          <div className="bg-card border border-border rounded-[28px] p-6 md:p-7 space-y-5 animate-fade-up" style={{ boxShadow: '0 1px 2px rgba(0,0,0,.05), 0 16px 40px -20px rgba(0,0,0,.25)' }}>
             <Button
               type="button"
               onClick={handleGoogle}
               disabled={googleLoading}
               variant="outline"
-              className="w-full h-11 bg-card hover:bg-secondary/60 border-border font-medium text-foreground gap-3 tap"
+              className="w-full h-12 rounded-[14px] text-[16px] bg-card hover:bg-secondary/60 border-border font-medium text-foreground gap-3 tap"
             >
               <GoogleIcon />
               {googleLoading ? 'Connecting…' : 'Continue with Google'}
@@ -175,7 +175,7 @@ const Auth = () => {
                   <div className="space-y-4 animate-fade-up">
                     <div className="space-y-1.5">
                       <Label>Email</Label>
-                      <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@trader.com" />
+                      <Input className="h-12 rounded-[14px] text-[16px]" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@trader.com" />
                       <p className="text-xs text-muted-foreground">We'll send a secure reset link.</p>
                     </div>
                     <div className="flex gap-2">
@@ -187,20 +187,20 @@ const Auth = () => {
                   <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="space-y-1.5">
                       <Label>Email</Label>
-                      <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@trader.com" />
+                      <Input className="h-12 rounded-[14px] text-[16px]" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@trader.com" />
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <Label>Password</Label>
                         <button type="button" onClick={() => setForgotOpen(true)} className="text-xs text-primary hover:underline">Forgot?</button>
                       </div>
-                      <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
+                      <Input className="h-12 rounded-[14px] text-[16px]" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
                     </div>
                     <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                       <Checkbox checked={remember} onCheckedChange={(c) => setRemember(!!c)} />
                       Remember me on this device
                     </label>
-                    <Button type="submit" disabled={loading} className="w-full h-11">
+                    <Button type="submit" disabled={loading} className="w-full h-12 rounded-[14px] text-[16px] font-semibold">
                       {loading ? 'Signing in…' : 'Sign in'}
                     </Button>
                   </form>
@@ -211,21 +211,21 @@ const Auth = () => {
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-1.5">
                     <Label>Display name</Label>
-                    <Input value={name} onChange={e => setName(e.target.value)} placeholder="Jane Trader" />
+                    <Input className="h-12 rounded-[14px] text-[16px]" value={name} onChange={e => setName(e.target.value)} placeholder="Jane Trader" />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Email</Label>
-                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@trader.com" />
+                    <Input className="h-12 rounded-[14px] text-[16px]" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@trader.com" />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Password</Label>
-                    <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} placeholder="At least 8 characters" />
+                    <Input className="h-12 rounded-[14px] text-[16px]" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} placeholder="At least 8 characters" />
                   </div>
                   <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                     <Checkbox checked={remember} onCheckedChange={(c) => setRemember(!!c)} />
                     Keep me signed in
                   </label>
-                  <Button type="submit" disabled={loading} className="w-full h-11">
+                  <Button type="submit" disabled={loading} className="w-full h-12 rounded-[14px] text-[16px] font-semibold">
                     {loading ? 'Creating…' : 'Create account'}
                   </Button>
                 </form>
@@ -234,7 +234,7 @@ const Auth = () => {
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-6 px-4">
-            By continuing you agree to journal responsibly. Edge Blast does not execute trades or connect to brokers.
+            By continuing you agree to journal responsibly. Edge Blast is a journal, not financial advice.
           </p>
         </div>
       </main>
@@ -243,7 +243,7 @@ const Auth = () => {
 };
 
 const Feature = ({ icon, label }: { icon: ReactNode; label: string }) => (
-  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 ">
     <div className="size-7 rounded-lg bg-white/10 flex items-center justify-center text-white/80">{icon}</div>
     <span className="text-sm text-white/85 font-medium">{label}</span>
   </div>
