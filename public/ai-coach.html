@@ -663,6 +663,9 @@ a{ color:inherit; text-decoration:none; }
   100%{ background-position: -200% 0; }
 }
 
+.thinking-particles{ width:54px; height:54px; flex-shrink:0; margin:-8px 0 -8px -6px; display:block; }
+.thinking-indicator{ gap:var(--sp-1); }
+
 /* ---------- EMPTY STATE ---------- */
 .workspace-empty{
   flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -1211,8 +1214,9 @@ a{ color:inherit; text-decoration:none; }
 }
 
 /* phone: keep the writing box above the floating navigation dock */
-html.with-dock .composer-wrap{ padding-bottom:calc(98px + env(safe-area-inset-bottom,0px)) !important; }
+html.with-dock .composer-wrap{ padding-bottom:calc(14px + env(safe-area-inset-bottom,0px)) !important; }
 html.with-dock.typing .composer-wrap{ padding-bottom:12px !important; }
+.sidebar{ height:100dvh; }
 
 /* smooth reply reveal: each word fades and un-blurs in on one clock */
 .sw{ display:inline-block; animation: swIn .5s cubic-bezier(.2,.7,.2,1) both; }
@@ -1798,17 +1802,7 @@ function handleComposerKey(e){
 }
 let generating = false;
 function thinkingMarkupHTML(label){
-  return `<svg class="thinking-mark" viewBox="0 0 32 32" fill="none">
-      <line class="tm-line" x1="16" y1="16" x2="16" y2="6" stroke="var(--accent-2)" stroke-width="1.5"/>
-      <line class="tm-line" x1="16" y1="16" x2="16" y2="26" stroke="var(--accent)" stroke-width="1.5"/>
-      <line class="tm-line" x1="16" y1="16" x2="6" y2="16" stroke="var(--accent)" stroke-width="1.5"/>
-      <line class="tm-line" x1="16" y1="16" x2="26" y2="16" stroke="var(--accent-2)" stroke-width="1.5"/>
-      <circle class="tm-sat" cx="16" cy="6" r="1.8" fill="var(--accent-2)"/>
-      <circle class="tm-sat" cx="26" cy="16" r="1.8" fill="var(--accent-2)"/>
-      <circle class="tm-sat" cx="16" cy="26" r="1.8" fill="var(--accent)"/>
-      <circle class="tm-sat" cx="6" cy="16" r="1.8" fill="var(--accent)"/>
-      <circle class="tm-center" cx="16" cy="16" r="2.6" fill="var(--accent)"/>
-    </svg><span class="thinking-label">${label}</span>`;
+  return `<canvas class="thinking-particles" width="108" height="108" aria-hidden="true"></canvas><span class="thinking-label">${label}</span>`;
 }
 
 function sendMessage(){
@@ -2749,6 +2743,59 @@ document.addEventListener('DOMContentLoaded', ()=>{
   function tell(on){ document.documentElement.classList.toggle('typing', on); try { parent.postMessage({ type: 'eb-composing', on: on }, '*'); } catch(e){} }
   document.addEventListener('focusin', function(e){ if (e.target && e.target.classList && e.target.classList.contains('composer-textarea')) tell(true); });
   document.addEventListener('focusout', function(e){ if (e.target && e.target.classList && e.target.classList.contains('composer-textarea')) tell(false); });
+})();
+</script>
+<script>
+/* Thinking particles: a small swarm that orbits, breathes and links up while the reply is being written. */
+(function(){
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function start(cv){
+    if (cv._on) return; cv._on = true;
+    var ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W/2, cy = H/2;
+    var cs = getComputedStyle(document.documentElement);
+    var c1 = (cs.getPropertyValue('--accent') || '#9585FF').trim(), c2 = (cs.getPropertyValue('--accent-2') || c1).trim();
+    var N = 30, ps = [];
+    for (var i = 0; i < N; i++) {
+      ps.push({ a: Math.random()*Math.PI*2, r0: 10 + Math.random()*30, sp: (0.35 + Math.random()*0.9) * (Math.random() < .5 ? -1 : 1),
+                ph: Math.random()*6.28, sz: 1.2 + Math.random()*1.9, tilt: 0.55 + Math.random()*0.45, col: Math.random() < .5 ? c1 : c2 });
+    }
+    var t0 = performance.now(), last = t0;
+    function frame(now){
+      if (!cv.isConnected) return;
+      var t = (now - t0) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
+      ctx.clearRect(0, 0, W, H);
+      var pts = [];
+      for (var i = 0; i < N; i++) {
+        var p = ps[i];
+        p.a += p.sp * dt * (reduce ? 0 : 1);
+        var breathe = 1 + 0.18 * Math.sin(t * 1.7 + p.ph);
+        var r = p.r0 * breathe;
+        var x = cx + Math.cos(p.a) * r, y = cy + Math.sin(p.a) * r * p.tilt;
+        pts.push([x, y, p]);
+      }
+      ctx.lineWidth = 1;
+      for (var i = 0; i < N; i++) for (var j = i + 1; j < N; j++) {
+        var dx = pts[i][0] - pts[j][0], dy = pts[i][1] - pts[j][1], d = Math.sqrt(dx*dx + dy*dy);
+        if (d < 24) { ctx.globalAlpha = (1 - d / 24) * 0.35; ctx.strokeStyle = c1; ctx.beginPath(); ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(pts[j][0], pts[j][1]); ctx.stroke(); }
+      }
+      for (var i = 0; i < N; i++) {
+        var q = pts[i], p = q[2], tw = 0.55 + 0.45 * Math.sin(t * 2.4 + p.ph);
+        ctx.globalAlpha = 0.35 + 0.65 * tw; ctx.fillStyle = p.col;
+        ctx.beginPath(); ctx.arc(q[0], q[1], p.sz * (0.8 + 0.4 * tw), 0, 6.2832); ctx.fill();
+      }
+      ctx.globalAlpha = 0.9; ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(cx, cy, 2.6 + 0.8 * Math.sin(t * 2.2), 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = 1;
+      if (!reduce) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  function scan(n){
+    if (!n || n.nodeType !== 1) return;
+    if (n.matches && n.matches('canvas.thinking-particles')) start(n);
+    if (n.querySelectorAll) n.querySelectorAll('canvas.thinking-particles').forEach(start);
+  }
+  new MutationObserver(function(ms){ ms.forEach(function(m){ m.addedNodes.forEach(scan); }); }).observe(document.body, { childList: true, subtree: true });
+  scan(document.body);
 })();
 </script>
 </body>

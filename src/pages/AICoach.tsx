@@ -8,6 +8,12 @@ export default function AICoach() {
   const { theme } = useTheme();
   const navigate = useNavigate();
 
+  // the chat is full screen: the floating dock would sit on top of its sidebar and composer
+  useEffect(() => {
+    document.documentElement.classList.add('eb-chat-page');
+    return () => document.documentElement.classList.remove('eb-chat-page');
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -65,9 +71,9 @@ export default function AICoach() {
   return (
     <iframe
       ref={frameRef}
-      src={typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? '/ai-coach.html?m=1' : '/ai-coach.html'}
-      title="AI Coach"
-      style={{ width: '100%', height: 'calc(100vh - 56px)', border: 'none', display: 'block' }}
+      src="/ai-coach.html?m=1"
+      title="Coach"
+      style={{ width: '100%', height: 'calc(100dvh - 56px)', border: 'none', display: 'block' }}
     />
   );
 }

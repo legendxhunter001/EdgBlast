@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Plus, MoreVertical, Settings, Sun, Moon, Monitor, HelpCircle, Download, User, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { NavSheet } from './NavSheet';
+import { Search, Plus, Menu, MoreVertical, Settings, Sun, Moon, Monitor, HelpCircle, Download, User, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -20,7 +22,7 @@ const titleFor = (path: string) => {
   if (path.startsWith('/calendar')) return 'Calendar';
   if (path.startsWith('/analytics')) return 'Analytics';
   if (path.startsWith('/reviews')) return 'Reviews';
-  if (path.startsWith('/ai-coach')) return 'AI Coach';
+  if (path.startsWith('/ai-coach')) return 'Coach';
   if (path.startsWith('/journey')) return 'Journey';
   if (path.startsWith('/connections')) return 'Connections';
   if (path.startsWith('/mt5')) return 'MT5';
@@ -35,6 +37,7 @@ export const TopBar = () => {
   const { mode, setMode } = useTheme();
   const { user, signOut } = useAuth();
   const { data: trades } = useTrades();
+  const [navOpen, setNavOpen] = useState(false);
 
   const handleExport = () => {
     if (!trades?.length) return toast.error('No trades to export');
@@ -56,10 +59,12 @@ export const TopBar = () => {
   };
 
   return (
+    <>
+    {navOpen && <NavSheet onClose={() => setNavOpen(false)} />}
     <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/60 eb-toolbar">
       <div className="flex items-center justify-between px-3 md:px-6 h-14">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="md:hidden"><Logo size={26} /></div>
+          <button type="button" className="md:hidden size-9 -ml-1 rounded-full grid place-items-center active:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onClick={() => setNavOpen(true)} aria-label="Open menu"><Menu className="size-[22px]" /></button>
           <div className="font-display text-base md:text-lg font-semibold truncate eb-title">{titleFor(pathname)}</div>
         </div>
 
@@ -124,5 +129,6 @@ export const TopBar = () => {
         </div>
       </div>
     </header>
+    </>
   );
 };

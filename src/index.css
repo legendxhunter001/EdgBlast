@@ -524,3 +524,6 @@
 
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* the coach chat is full screen on phones */
+html.eb-chat-page .ios-dock, html.eb-chat-page .ios-dockfade { display: none !important; }
