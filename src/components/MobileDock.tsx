@@ -6,10 +6,25 @@ import {
   Compass, LineChart, Wrench, Plug,
 } from 'lucide-react';
 
-/** Every main page lives in the dock. Settings lives in the top-bar three-dots menu. */
-const tabs = [
+/** The Edge Blast mark, drawn to match the other dock icons. */
+const CoachIcon = ({ strokeWidth = 1.9 }: { strokeWidth?: number }) => (
+  <svg viewBox="0 0 32 32" fill="none" aria-hidden>
+    <g stroke="currentColor" strokeWidth={strokeWidth * 0.55} strokeLinecap="round" opacity=".55">
+      <line x1="16" y1="16" x2="16" y2="6" /><line x1="16" y1="16" x2="16" y2="26" /><line x1="16" y1="16" x2="6" y2="16" /><line x1="16" y1="16" x2="26" y2="16" />
+    </g>
+    <g fill="currentColor">
+      <circle cx="16" cy="6" r="2.3" /><circle cx="16" cy="26" r="2.3" /><circle cx="6" cy="16" r="2.3" /><circle cx="26" cy="16" r="2.3" />
+      <circle cx="9" cy="9" r="1.8" opacity=".65" /><circle cx="23" cy="9" r="1.8" opacity=".65" /><circle cx="9" cy="23" r="1.8" opacity=".65" /><circle cx="23" cy="23" r="1.8" opacity=".65" />
+      <circle cx="16" cy="16" r="3.2" />
+    </g>
+  </svg>
+);
+
+/** Every main page lives in the dock. Coach sits in the middle of the first five. Settings is in the menu. */
+const tabs: { to: string; label: string; icon: React.ComponentType<{ strokeWidth?: number }> }[] = [
   { to: '/', label: 'Home', icon: LayoutDashboard },
   { to: '/trades', label: 'Trades', icon: ListOrdered },
+  { to: '/ai-coach', label: 'Coach', icon: CoachIcon },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/reviews', label: 'Reviews', icon: NotebookPen },
@@ -204,24 +219,6 @@ export const MobileDock = () => {
 
   return (
     <>
-      <NavLink
-        to="/ai-coach"
-        onPointerDown={() => prefetch('/ai-coach')}
-        aria-label="Open the coach"
-        className={`ios-coach md:hidden ${hidden ? 'hide' : ''} ${pathname.startsWith('/ai-coach') ? 'on' : ''}`}
-      >
-        <svg viewBox="0 0 32 32" fill="none" aria-hidden>
-          <line x1="16" y1="16" x2="16" y2="5" stroke="currentColor" strokeWidth="1.2" opacity=".5" />
-          <line x1="16" y1="16" x2="16" y2="27" stroke="currentColor" strokeWidth="1.2" opacity=".5" />
-          <line x1="16" y1="16" x2="5" y2="16" stroke="currentColor" strokeWidth="1.2" opacity=".5" />
-          <line x1="16" y1="16" x2="27" y2="16" stroke="currentColor" strokeWidth="1.2" opacity=".5" />
-          <circle cx="16" cy="5" r="1.9" fill="currentColor" /><circle cx="16" cy="27" r="1.9" fill="currentColor" />
-          <circle cx="5" cy="16" r="1.9" fill="currentColor" /><circle cx="27" cy="16" r="1.9" fill="currentColor" />
-          <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" opacity=".7" /><circle cx="23.5" cy="23.5" r="1.5" fill="currentColor" opacity=".7" />
-          <circle cx="23.5" cy="8.5" r="1.5" fill="currentColor" opacity=".7" /><circle cx="8.5" cy="23.5" r="1.5" fill="currentColor" opacity=".7" />
-          <circle cx="16" cy="16" r="2.8" fill="currentColor" />
-        </svg>
-      </NavLink>
       <div className={`ios-dockfade md:hidden ${hidden ? 'hide' : ''}`} aria-hidden />
       <nav
         className={`ios-dock md:hidden ${scrolling ? 'scrolling' : ''} ${hidden ? 'hide' : ''} ${holding ? 'hold' : ''} ${edge.l ? 'can-l' : ''} ${edge.r ? 'can-r' : ''}`}

@@ -526,4 +526,4 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
 /* the coach chat is full screen on phones */
-html.eb-chat-page .ios-dock, html.eb-chat-page .ios-dockfade, html.eb-chat-page .ios-coach { display: none !important; }
+html.eb-chat-page .ios-dock, html.eb-chat-page .ios-dockfade { display: none !important; }
