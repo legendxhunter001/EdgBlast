@@ -1222,7 +1222,10 @@ html.with-dock.typing .composer-wrap{ padding-bottom:12px !important; }
 .sw{ display:inline-block; animation: swIn .5s cubic-bezier(.2,.7,.2,1) both; }
 .sw-hide{ display:none; }
 .sw-pending{ display:none !important; }
-@keyframes swIn{ from{ opacity:0; filter:blur(6px); transform:translateY(4px); } to{ opacity:1; filter:blur(0); transform:none; } }
+@keyframes swIn{ from{ opacity:0; filter:blur(3px); transform:translateY(3px); } to{ opacity:1; filter:blur(0); transform:none; } }
+.sw{ will-change:opacity,transform; animation-duration:.42s !important; animation-timing-function:cubic-bezier(.22,.8,.3,1) !important; }
+.sw-caret{ display:inline-block; width:7px; height:7px; margin-left:3px; border-radius:50%; background:var(--accent); vertical-align:middle; box-shadow:0 0 10px 1px var(--accent-glow); animation:swCaret 1s ease-in-out infinite; }
+@keyframes swCaret{ 0%,100%{ opacity:.35; transform:scale(.75); } 50%{ opacity:1; transform:scale(1.1); } }
 @media (prefers-reduced-motion: reduce){ .sw{ animation:none; } }
 
 /* ---- AI replies read like a document: real bold, headings, lists, code, tables ---- */
@@ -1246,6 +1249,30 @@ html.with-dock.typing .composer-wrap{ padding-bottom:12px !important; }
 .msg-text th{ text-align:left; font-weight:650; background:var(--accent-active-bg); }
 .msg-text th,.msg-text td{ padding:8px 12px; border-bottom:1px solid var(--border); white-space:nowrap; }
 .msg-text tr:last-child td{ border-bottom:0; }
+/* ---- new chat screen ---- */
+.workspace-empty{ min-height:64vh; animation: thinkingIn .55s var(--ease-out); }
+.thinking-particles.hero{ width:132px; height:132px; margin:0 0 4px; }
+.empty-title{ font-size:var(--text-xl); font-weight:700; letter-spacing:-0.02em; margin-bottom:6px; }
+.empty-sub{ max-width:420px; margin:0 auto 22px; line-height:1.45; }
+.suggestion-row{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:540px; }
+.suggestion-chip{ padding:10px 15px; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--text-primary); font-size:var(--text-base); font-weight:500; cursor:pointer; transition:transform .2s, border-color .2s, background .2s; }
+.suggestion-chip:hover{ border-color:var(--accent); background:var(--accent-active-bg); }
+.suggestion-chip:active{ transform:scale(.96); }
+
+/* ---- sidebar drawer: slides like a native navigation drawer ---- */
+@media (max-width: 720px){
+  .sidebar, .sidebar.collapsed{ width:min(86vw,320px); border-radius:0 26px 26px 0; transition:transform .46s cubic-bezier(.22,1,.36,1), box-shadow .4s; will-change:transform; }
+  .sidebar.dragging{ transition:none; }
+  .sidebar.mobile-open{ box-shadow:0 0 0 .5px var(--border), 24px 0 60px -20px rgba(0,0,0,.55); }
+  .sidebar-scrim{ display:block; opacity:0; pointer-events:none; transition:opacity .38s ease; backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
+  .sidebar-scrim.open{ opacity:1; pointer-events:auto; }
+  .nav-group-label{ text-transform:none; letter-spacing:0; font-size:12.5px; }
+  .conv-item{ min-height:46px; border-radius:14px; margin-bottom:2px; }
+  .sidebar.mobile-open .conv-item{ animation:convIn .5s cubic-bezier(.22,1,.36,1) both; }
+  .sidebar.mobile-open .conv-item:nth-child(2){ animation-delay:.04s; } .sidebar.mobile-open .conv-item:nth-child(3){ animation-delay:.08s; }
+  .sidebar.mobile-open .conv-item:nth-child(4){ animation-delay:.12s; } .sidebar.mobile-open .conv-item:nth-child(n+5){ animation-delay:.16s; }
+}
+@keyframes convIn{ from{ opacity:0; transform:translateX(-14px); } to{ opacity:1; transform:none; } }
 </style>
 </head>
 <body>
@@ -1686,49 +1713,47 @@ function closeMobileSidebar(){
   document.getElementById('sidebarScrim').classList.remove('open');
 }
 
-/* Edge-swipe to open/close the sidebar on mobile, like ChatGPT's app.
-   Handles both touch (real phones) and mouse-drag (desktop preview/testing),
-   sharing the same tracking logic so behavior stays identical either way. */
+/* The drawer follows your finger from the left edge (or anywhere while it is open) and settles with the
+   direction and speed of the swipe, so it feels like a native navigation drawer. */
 (function(){
-  let startX = 0, startY = 0, tracking = false, handled = false, mouseDown = false;
-
-  function onStart(x, y){
-    if(window.innerWidth > 720) return;
-    const sidebar = document.getElementById('sidebar');
-    startX = x; startY = y;
-    handled = false;
-    if(!sidebar.classList.contains('mobile-open')){
-      tracking = 'open';
-    } else {
-      tracking = 'close';
+  var sb = document.getElementById('sidebar'), scrim = document.getElementById('sidebarScrim');
+  var sx = 0, sy = 0, mode = null, dragging = false, pos = 0, lastX = 0, lastT = 0, vx = 0;
+  function mobile(){ return window.innerWidth <= 720; }
+  function width(){ return sb.offsetWidth || 300; }
+  function setPos(p){
+    pos = Math.max(0, Math.min(1, p));
+    sb.style.transform = 'translateX(' + ((pos - 1) * 100) + '%)';
+    scrim.style.opacity = pos; scrim.style.pointerEvents = pos > 0.02 ? 'auto' : 'none';
+  }
+  function settle(open){
+    sb.classList.remove('dragging'); sb.style.transform = ''; scrim.style.opacity = ''; scrim.style.pointerEvents = '';
+    if (open) openMobileSidebar(); else closeMobileSidebar();
+  }
+  document.addEventListener('touchstart', function(e){
+    if (!mobile()) return;
+    var t = e.touches[0], open = sb.classList.contains('mobile-open');
+    if (!open && t.clientX > 32) return;
+    mode = open ? 'close' : 'open'; sx = t.clientX; sy = t.clientY; dragging = false; lastX = sx; lastT = performance.now(); vx = 0;
+  }, { passive: true });
+  document.addEventListener('touchmove', function(e){
+    if (!mode) return;
+    var t = e.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if (!dragging) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) { mode = null; return; }
+      if (Math.abs(dx) <= 8) return;
+      dragging = true; sb.classList.add('dragging');
     }
+    var now = performance.now(); vx = (t.clientX - lastX) / Math.max(1, now - lastT); lastX = t.clientX; lastT = now;
+    setPos((mode === 'open' ? 0 : 1) + dx / width());
+  }, { passive: true });
+  function end(){
+    if (!mode) return;
+    var was = dragging; mode = null; dragging = false;
+    if (!was) return;
+    settle(vx > 0.35 ? true : vx < -0.35 ? false : pos > 0.5);
   }
-  function onMove(x, y){
-    if(!tracking || handled) return;
-    const dx = x - startX;
-    const dy = y - startY;
-    if(Math.abs(dy) > Math.abs(dx)) return; // vertical scroll — not a sidebar swipe
-    if(tracking === 'open' && dx > 100){
-      openMobileSidebar();
-      handled = true;
-    } else if(tracking === 'close' && dx < -100){
-      closeMobileSidebar();
-      handled = true;
-    }
-  }
-  function onEnd(){
-    tracking = false;
-    handled = false;
-    mouseDown = false;
-  }
-
-  document.addEventListener('touchstart', (e)=>{ onStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
-  document.addEventListener('touchmove', (e)=>{ onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
-  document.addEventListener('touchend', onEnd, { passive: true });
-
-  document.addEventListener('mousedown', (e)=>{ mouseDown = true; onStart(e.clientX, e.clientY); });
-  document.addEventListener('mousemove', (e)=>{ if(mouseDown) onMove(e.clientX, e.clientY); });
-  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchend', end, { passive: true });
+  document.addEventListener('touchcancel', end, { passive: true });
 })();
 
 /* ============================================================
@@ -1922,8 +1947,18 @@ function streamWords(container, text, onDone){
 
   const N = words.length;
   if(!N){ if(onDone) onDone(); return; }
-  const seconds = Math.min(9, Math.max(1.8, N * 0.055));
-  const rate = N / seconds;
+  // Natural cadence: a steady pace that adapts to the reply length, a small breath at commas and
+  // a longer one at the end of a sentence, so it reads the way a person would say it.
+  const budget = Math.min(8.5, Math.max(1.5, N * 0.042));
+  const weights = words.map(function(w){
+    const t = w.textContent;
+    let wt = 1 + Math.min(0.5, t.length * 0.03);
+    if(/[.!?]["')\]]*$/.test(t)) wt += 2.2; else if(/[,;:]["')\]]*$/.test(t)) wt += 0.9;
+    return wt;
+  });
+  const total = weights.reduce(function(a, b){ return a + b; }, 0);
+  const sched = []; let acc = 0;
+  weights.forEach(function(wt){ sched.push(0.12 + (acc / total) * budget); acc += wt; });
 
   const sc = document.getElementById('convScroll');
   const prevBehavior = sc ? sc.style.scrollBehavior : '';
@@ -1931,40 +1966,40 @@ function streamWords(container, text, onDone){
   let stick = sc ? (sc.scrollHeight - sc.scrollTop - sc.clientHeight < 180) : false;
   let lastTop = sc ? sc.scrollTop : 0;
   let start = null, shown = 0, raf = 0, cancelled = false;
+  const caret = document.createElement('span'); caret.className = 'sw-caret';
 
   function reveal(w, k){
     w.classList.remove('sw-hide');
-    w.style.animationDelay = (k * 26) + 'ms';
+    w.style.animationDelay = (k * 16) + 'ms';
     let el = w.parentElement;
     while(el && el !== container){ el.classList.remove('sw-pending'); el = el.parentElement; }
+    w.after(caret);
   }
   function follow(){
     if(!sc) return;
     if(sc.scrollTop < lastTop - 3) stick = false;      // the reader scrolled up: stop pulling them down
     if(stick){
       const gap = sc.scrollHeight - sc.scrollTop - sc.clientHeight;
-      if(gap > 1) sc.scrollTop += Math.max(1, gap * 0.22);
+      if(gap > 1) sc.scrollTop += Math.max(1, gap * 0.18);
     }
     lastTop = sc.scrollTop;
   }
   function restore(){ if(sc) sc.style.scrollBehavior = prevBehavior; }
   function finish(){
     window._streamCancel = null;
-    window._streamTimeout = setTimeout(function(){ restore(); if(onDone) onDone(); }, 520);
+    window._streamTimeout = setTimeout(function(){ caret.remove(); restore(); if(onDone) onDone(); }, 520);
   }
   function frame(ts){
     if(cancelled) return;
     if(start === null) start = ts;
     const t = (ts - start) / 1000;
-    const eased = t < 0.5 ? (t * t) : (t - 0.25);       // soft ease-in, then steady
-    const target = Math.min(N, Math.floor(eased * rate));
     let k = 0;
-    while(shown < target){ reveal(words[shown], k++); shown++; }
+    while(shown < N && t >= sched[shown]){ reveal(words[shown], k++); shown++; }
     follow();
     if(shown < N) raf = requestAnimationFrame(frame); else finish();
   }
   window._streamCancel = function(){
-    cancelled = true; cancelAnimationFrame(raf);
+    cancelled = true; cancelAnimationFrame(raf); caret.remove();
     words.forEach(function(w){ w.classList.remove('sw-hide'); w.style.animation = 'none'; });
     blocks.forEach(function(b){ b.classList.remove('sw-pending'); });
     restore(); window._streamCancel = null;
@@ -2409,9 +2444,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
         currentConversationId = convs[0].id;
         await loadConversationMessages(currentConversationId);
       } else {
-        document.getElementById('convInner').innerHTML = '';
+        showEmptyState();
       }
-    } catch (e) { document.getElementById('convInner').innerHTML = ''; }
+    } catch (e) { showEmptyState(); }
   }
 
   function renderConversationList(convs){
@@ -2450,6 +2485,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
       const res = await fetch(SUPABASE_URL + '/rest/v1/ai_chat_messages?select=role,content&conversation_id=eq.' + convId + '&order=created_at.asc', { headers: authHeaders() });
       const msgs = await res.json();
       if (!Array.isArray(msgs)) return;
+      if (!msgs.length) { showEmptyState(); return; }
       msgs.forEach(m => appendMessage(m.role === 'user' ? 'user' : 'ai', m.content, false));
       scrollConvToBottom(true);
     } catch (e) { /* leave the transcript empty for this conversation */ }
@@ -2600,6 +2636,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   };
 
   function appendMessage(role, text, animate){
+    var es = document.getElementById('emptyState'); if (es) es.remove();
     const inner = document.getElementById('convInner');
     const msg = document.createElement('div');
     msg.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
@@ -2675,6 +2712,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if (generating || (!text && !attachment)) return;
     if (!authToken) { showToast('warning', "Still connecting — try again in a second."); return; }
 
+    var es0 = document.getElementById('emptyState'); if (es0) es0.remove();
     if (attachment) appendUserImageBubble(attachment.previewUrl);
     if (text) appendMessage('user', text, false);
     input.value = '';
@@ -2728,10 +2766,26 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }
   };
 
+  function showEmptyState(){
+    var SUGGESTIONS = ['Go over my last trade', 'What am I doing wrong this week?', 'Check my risk to reward', 'Help me plan tomorrow'];
+    var inner = document.getElementById('convInner');
+    if (!inner) return;
+    inner.innerHTML = '<div class="workspace-empty" id="emptyState">' +
+      '<canvas class="thinking-particles hero" data-hero width="264" height="264" aria-hidden="true"></canvas>' +
+      '<div class="empty-title">How can I help today?</div>' +
+      '<div class="empty-sub">Ask about a trade, a rule you keep breaking, or how your week went.</div>' +
+      '<div class="suggestion-row">' + SUGGESTIONS.map(function(t){ return '<button class="suggestion-chip" type="button">' + escapeHtml(t) + '</button>'; }).join('') + '</div></div>';
+    inner.querySelectorAll('.suggestion-chip').forEach(function(b){
+      b.addEventListener('click', function(){
+        var i = document.getElementById('composerInput'); i.value = b.textContent; autoGrow(i); i.focus();
+      });
+    });
+  }
   window.newChat = function(){
     currentConversationId = null;
-    document.getElementById('convInner').innerHTML = '';
+    showEmptyState();
     document.querySelectorAll('.conv-item').forEach(c => c.classList.remove('active'));
+    if (window.innerWidth <= 720) closeMobileSidebar();
   };
 })();
 </script>
@@ -2746,20 +2800,34 @@ document.addEventListener('DOMContentLoaded', ()=>{
 })();
 </script>
 <script>
-/* Thinking particles: a small swarm that orbits, breathes and links up while the reply is being written. */
+/* Logo and particles together: the Edge Blast mark sits in the middle, a swarm orbits it, breathes, links up and
+   sends out a soft pulse. Used while the coach is thinking (small) and on the new-chat screen (large). */
 (function(){
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function start(cv){
     if (cv._on) return; cv._on = true;
-    var ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W/2, cy = H/2;
+    var hero = cv.hasAttribute('data-hero');
+    var ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W/2, cy = H/2, f = W/108;
     var cs = getComputedStyle(document.documentElement);
     var c1 = (cs.getPropertyValue('--accent') || '#9585FF').trim(), c2 = (cs.getPropertyValue('--accent-2') || c1).trim();
-    var N = 30, ps = [];
+    var N = hero ? 54 : 30, ps = [];
     for (var i = 0; i < N; i++) {
-      ps.push({ a: Math.random()*Math.PI*2, r0: 10 + Math.random()*30, sp: (0.35 + Math.random()*0.9) * (Math.random() < .5 ? -1 : 1),
-                ph: Math.random()*6.28, sz: 1.2 + Math.random()*1.9, tilt: 0.55 + Math.random()*0.45, col: Math.random() < .5 ? c1 : c2 });
+      ps.push({ a: Math.random()*6.2832, r0: (17 + Math.random()*29) * f, sp: (0.28 + Math.random()*0.7) * (Math.random() < .5 ? -1 : 1) * (hero ? 0.7 : 1),
+                ph: Math.random()*6.2832, sz: (1 + Math.random()*1.7) * f * (hero ? 0.8 : 1), tilt: 0.6 + Math.random()*0.4, col: Math.random() < .5 ? c1 : c2 });
     }
+    var u = 1.15 * f;                       /* logo units to pixels (the mark is drawn on a 32 unit grid) */
     var t0 = performance.now(), last = t0;
+    function logo(t){
+      var rot = reduce ? 0 : t * 0.45, pulse = 1 + 0.06 * Math.sin(t * 2.0);
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot); ctx.scale(pulse, pulse);
+      var cardinal = [[0,-11],[11,0],[0,11],[-11,0]], diag = [[-7.5,-7.5],[7.5,-7.5],[7.5,7.5],[-7.5,7.5]];
+      ctx.lineWidth = Math.max(1, f * 1); ctx.strokeStyle = c2; ctx.globalAlpha = 0.5;
+      cardinal.forEach(function(p){ ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(p[0]*u, p[1]*u); ctx.stroke(); });
+      cardinal.forEach(function(p, i){ ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 2 + i); ctx.fillStyle = i % 2 ? c1 : c2; ctx.beginPath(); ctx.arc(p[0]*u, p[1]*u, 1.7*u, 0, 6.2832); ctx.fill(); });
+      diag.forEach(function(p, i){ ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 2.3 + i * 1.7); ctx.fillStyle = i % 2 ? c2 : c1; ctx.beginPath(); ctx.arc(p[0]*u, p[1]*u, 1.4*u, 0, 6.2832); ctx.fill(); });
+      ctx.globalAlpha = 1; ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(0, 0, 2.5*u, 0, 6.2832); ctx.fill();
+      ctx.restore();
+    }
     function frame(now){
       if (!cv.isConnected) return;
       var t = (now - t0) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -2767,24 +2835,26 @@ document.addEventListener('DOMContentLoaded', ()=>{
       var pts = [];
       for (var i = 0; i < N; i++) {
         var p = ps[i];
-        p.a += p.sp * dt * (reduce ? 0 : 1);
-        var breathe = 1 + 0.18 * Math.sin(t * 1.7 + p.ph);
-        var r = p.r0 * breathe;
-        var x = cx + Math.cos(p.a) * r, y = cy + Math.sin(p.a) * r * p.tilt;
-        pts.push([x, y, p]);
+        if (!reduce) p.a += p.sp * dt;
+        var r = p.r0 * (1 + 0.16 * Math.sin(t * 1.5 + p.ph)) * (0.92 + 0.08 * Math.sin(t * 0.8 + p.ph * 2));
+        pts.push([cx + Math.cos(p.a) * r, cy + Math.sin(p.a) * r * p.tilt, p]);
       }
-      ctx.lineWidth = 1;
+      var link = 22 * f;
+      ctx.lineWidth = Math.max(0.6, f * 0.8); ctx.strokeStyle = c1;
       for (var i = 0; i < N; i++) for (var j = i + 1; j < N; j++) {
         var dx = pts[i][0] - pts[j][0], dy = pts[i][1] - pts[j][1], d = Math.sqrt(dx*dx + dy*dy);
-        if (d < 24) { ctx.globalAlpha = (1 - d / 24) * 0.35; ctx.strokeStyle = c1; ctx.beginPath(); ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(pts[j][0], pts[j][1]); ctx.stroke(); }
+        if (d < link) { ctx.globalAlpha = (1 - d / link) * 0.32; ctx.beginPath(); ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(pts[j][0], pts[j][1]); ctx.stroke(); }
       }
       for (var i = 0; i < N; i++) {
-        var q = pts[i], p = q[2], tw = 0.55 + 0.45 * Math.sin(t * 2.4 + p.ph);
-        ctx.globalAlpha = 0.35 + 0.65 * tw; ctx.fillStyle = p.col;
+        var q = pts[i], p = q[2], tw = 0.55 + 0.45 * Math.sin(t * 2.2 + p.ph);
+        ctx.globalAlpha = 0.3 + 0.7 * tw; ctx.fillStyle = p.col;
         ctx.beginPath(); ctx.arc(q[0], q[1], p.sz * (0.8 + 0.4 * tw), 0, 6.2832); ctx.fill();
       }
-      ctx.globalAlpha = 0.9; ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(cx, cy, 2.6 + 0.8 * Math.sin(t * 2.2), 0, 6.2832); ctx.fill();
+      /* a soft pulse leaving the logo every few seconds */
+      var ph = (t % 3.2) / 3.2;
+      if (!reduce) { ctx.globalAlpha = (1 - ph) * 0.35; ctx.strokeStyle = c1; ctx.lineWidth = Math.max(1, f); ctx.beginPath(); ctx.arc(cx, cy, (13 + ph * 32) * f, 0, 6.2832); ctx.stroke(); }
       ctx.globalAlpha = 1;
+      logo(t);
       if (!reduce) requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);

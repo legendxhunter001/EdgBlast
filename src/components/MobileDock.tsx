@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { prefetch } from '@/lib/routes';
 import {
   LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen,
-  MessageCircle, Compass, LineChart, Wrench, Plug,
+  Compass, LineChart, Wrench, Plug,
 } from 'lucide-react';
 
 /** Every main page lives in the dock. Settings lives in the top-bar three-dots menu. */
@@ -13,7 +13,6 @@ const tabs = [
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/reviews', label: 'Reviews', icon: NotebookPen },
-  { to: '/ai-coach', label: 'Coach', icon: MessageCircle },
   { to: '/journey', label: 'Journey', icon: Compass },
   { to: '/mt5', label: 'MT5', icon: LineChart },
   { to: '/trading-tools', label: 'Tools', icon: Wrench },
@@ -205,6 +204,24 @@ export const MobileDock = () => {
 
   return (
     <>
+      <NavLink
+        to="/ai-coach"
+        onPointerDown={() => prefetch('/ai-coach')}
+        aria-label="Open the coach"
+        className={`ios-coach md:hidden ${hidden ? 'hide' : ''} ${pathname.startsWith('/ai-coach') ? 'on' : ''}`}
+      >
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden>
+          <line x1="16" y1="16" x2="16" y2="5" stroke="currentColor" strokeWidth="1.2" opacity=".5" />
+          <line x1="16" y1="16" x2="16" y2="27" stroke="currentColor" strokeWidth="1.2" opacity=".5" />
+          <line x1="16" y1="16" x2="5" y2="16" stroke="currentColor" strokeWidth="1.2" opacity=".5" />
+          <line x1="16" y1="16" x2="27" y2="16" stroke="currentColor" strokeWidth="1.2" opacity=".5" />
+          <circle cx="16" cy="5" r="1.9" fill="currentColor" /><circle cx="16" cy="27" r="1.9" fill="currentColor" />
+          <circle cx="5" cy="16" r="1.9" fill="currentColor" /><circle cx="27" cy="16" r="1.9" fill="currentColor" />
+          <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" opacity=".7" /><circle cx="23.5" cy="23.5" r="1.5" fill="currentColor" opacity=".7" />
+          <circle cx="23.5" cy="8.5" r="1.5" fill="currentColor" opacity=".7" /><circle cx="8.5" cy="23.5" r="1.5" fill="currentColor" opacity=".7" />
+          <circle cx="16" cy="16" r="2.8" fill="currentColor" />
+        </svg>
+      </NavLink>
       <div className={`ios-dockfade md:hidden ${hidden ? 'hide' : ''}`} aria-hidden />
       <nav
         className={`ios-dock md:hidden ${scrolling ? 'scrolling' : ''} ${hidden ? 'hide' : ''} ${holding ? 'hold' : ''} ${edge.l ? 'can-l' : ''} ${edge.r ? 'can-r' : ''}`}

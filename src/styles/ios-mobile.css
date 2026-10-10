@@ -74,6 +74,15 @@
     box-shadow:0 22px 44px -12px rgba(0,0,0,.28),0 6px 14px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.4);
     transition:transform .45s cubic-bezier(.2,.8,.2,1),background .35s,opacity .35s}
   .ios-dock.hide{transform:translateY(calc(100% + 28px));opacity:0}
+  .ios-coach{position:fixed;z-index:46;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 88px);width:54px;height:54px;margin-left:-27px;border-radius:50%;
+    display:grid;place-items:center;color:hsl(var(--primary-foreground));background:hsl(var(--primary));
+    box-shadow:0 14px 30px -8px color-mix(in srgb,hsl(var(--primary)) 55%,transparent),0 4px 10px rgba(0,0,0,.18);
+    transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .35s,box-shadow .3s}
+  .ios-coach svg{width:30px;height:30px;animation:coachSpin 24s linear infinite}
+  .ios-coach:active{transform:scale(.92)}
+  .ios-coach.hide{transform:translateY(calc(100% + 120px));opacity:0}
+  @keyframes coachSpin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.ios-coach svg{animation:none}}
   .ios-dock-track{position:relative;display:flex;gap:2px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;
     -webkit-overflow-scrolling:touch;border-radius:999px;}
   .ios-dock-track::-webkit-scrollbar{display:none}
