@@ -10,23 +10,23 @@
    * Brand teal · MT5 blue wins · MT5 red losses · calm surfaces
    * ============================================================ */
   :root, .light {
-    --background: 200 11% 97%;
-    --foreground: 215 28% 17%;
+    --background: 0 0% 100%;
+    --foreground: 222 24% 11%;
 
-    --card: 210 20% 98%;
+    --card: 0 0% 100%;
     --card-foreground: 215 28% 17%;
 
-    --popover: 210 20% 98%;
+    --popover: 0 0% 100%;
     --popover-foreground: 215 28% 17%;
 
     --primary: 186 22% 48%;
     --primary-foreground: 210 20% 98%;
     --primary-glow: 186 22% 58%;
 
-    --secondary: 197 19% 94%;
+    --secondary: 220 14% 96%;
     --secondary-foreground: 215 28% 17%;
 
-    --muted: 197 19% 94%;
+    --muted: 220 14% 96%;
     --muted-foreground: 218 13% 46%;
 
     --accent: 186 22% 48%;
@@ -48,15 +48,15 @@
     --dim-blue: 213 18% 51%;
     --slate-blue: 213 18% 51%;
 
-    --border: 204 14% 88%;
-    --input: 204 14% 88%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 186 22% 48%;
 
     --radius: 0.875rem;
 
-    --surface-1: 210 20% 98%;
-    --surface-2: 197 19% 94%;
-    --surface-3: 204 14% 88%;
+    --surface-1: 0 0% 100%;
+    --surface-2: 220 14% 96%;
+    --surface-3: 220 13% 91%;
 
     /* Premium calendar palette — Wealth Blue / Dusty Rose with intensity tiers */
     --cal-win-sm: 213 75% 96%;

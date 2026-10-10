@@ -6,26 +6,26 @@
   /* Edge Blast mobile color system — the iOS system palette:
      indigo for action, green for profit, red for loss, orange for caution; grouped iOS neutrals. */
   :root,.light{
-    --background:240 24% 96%;--foreground:240 3% 11%;
+    --background:0 0% 100%;--foreground:240 3% 11%;
     --card:0 0% 100%;--card-foreground:240 3% 11%;
     --popover:0 0% 100%;--popover-foreground:240 3% 11%;
     --primary:248 85% 64%;--primary-foreground:0 0% 100%;--primary-glow:248 90% 74%;
-    --secondary:240 12% 93%;--secondary-foreground:240 3% 11%;
-    --muted:240 12% 93%;--muted-foreground:240 2% 43%;
+    --secondary:240 6% 96%;--secondary-foreground:240 3% 11%;
+    --muted:240 6% 96%;--muted-foreground:240 2% 43%;
     --accent:248 85% 64%;--accent-foreground:0 0% 100%;
     --destructive:3 100% 59%;--destructive-foreground:0 0% 100%;
     --success:135 59% 43%;--success-foreground:0 0% 100%;
     --bull:135 59% 43%;--bear:3 100% 59%;--gold:37 100% 50%;
     --navy:228 45% 14%;
-    --border:240 9% 90%;--input:240 9% 90%;--ring:248 85% 64%;
-    --surface-1:0 0% 100%;--surface-2:240 12% 93%;--surface-3:240 9% 90%;
+    --border:240 6% 91%;--input:240 6% 91%;--ring:248 85% 64%;
+    --surface-1:0 0% 100%;--surface-2:240 6% 96%;--surface-3:240 6% 91%;
     --radius:1.25rem;
     --gradient-primary:linear-gradient(135deg,hsl(248 90% 70%),hsl(250 80% 58%));
     --gradient-bull:linear-gradient(135deg,hsl(135 59% 50%),hsl(135 59% 41%));
     --gradient-bear:linear-gradient(135deg,hsl(3 100% 63%),hsl(3 100% 54%));
     --cal-win-sm:135 55% 95%;--cal-win-md:135 45% 78%;--cal-win-lg:135 45% 52%;
     --cal-loss-sm:3 100% 97%;--cal-loss-md:3 80% 86%;--cal-loss-lg:3 75% 70%;
-    --cal-even:240 12% 93%;--cal-win-fg-soft:135 55% 20%;--cal-loss-fg-soft:3 60% 32%;
+    --cal-even:240 6% 95%;--cal-win-fg-soft:135 55% 20%;--cal-loss-fg-soft:3 60% 32%;
   }
   .dark{
     --background:0 0% 0%;--foreground:0 0% 100%;
@@ -74,15 +74,15 @@
     box-shadow:0 22px 44px -12px rgba(0,0,0,.28),0 6px 14px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.4);
     transition:transform .45s cubic-bezier(.2,.8,.2,1),background .35s,opacity .35s}
   .ios-dock.hide{transform:translateY(calc(100% + 28px));opacity:0}
-  .ios-coach{position:fixed;z-index:46;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 88px);width:54px;height:54px;margin-left:-27px;border-radius:50%;
-    display:grid;place-items:center;color:hsl(var(--primary-foreground));background:hsl(var(--primary));
-    box-shadow:0 14px 30px -8px color-mix(in srgb,hsl(var(--primary)) 55%,transparent),0 4px 10px rgba(0,0,0,.18);
-    transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .35s,box-shadow .3s}
-  .ios-coach svg{width:30px;height:30px;animation:coachSpin 24s linear infinite}
-  .ios-coach:active{transform:scale(.92)}
-  .ios-coach.hide{transform:translateY(calc(100% + 120px));opacity:0}
-  @keyframes coachSpin{to{transform:rotate(360deg)}}
-  @media (prefers-reduced-motion:reduce){.ios-coach svg{animation:none}}
+  .ios-coach{position:fixed;z-index:46;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 88px);width:56px;height:56px;margin-left:-28px;border-radius:50%;
+    display:grid;place-items:center;color:hsl(var(--primary));background:hsl(var(--card));border:1px solid hsl(var(--border));
+    box-shadow:0 12px 28px -10px rgba(20,20,40,.30),0 2px 6px rgba(20,20,40,.08);
+    transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .35s,box-shadow .3s;animation:coachBreathe 3.8s ease-in-out infinite}
+  .ios-coach svg{width:30px;height:30px}
+  .ios-coach:active{animation:none;transform:scale(.92);box-shadow:0 6px 16px -8px rgba(20,20,40,.30)}
+  .ios-coach.hide{animation:none;transform:translateY(calc(100% + 120px));opacity:0}
+  @keyframes coachBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+  @media (prefers-reduced-motion:reduce){.ios-coach{animation:none}}
   .ios-dock-track{position:relative;display:flex;gap:2px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;
     -webkit-overflow-scrolling:touch;border-radius:999px;}
   .ios-dock-track::-webkit-scrollbar{display:none}
@@ -157,7 +157,7 @@
   a[aria-label="New trade"]{bottom:calc(env(safe-area-inset-bottom,0px) + 94px)!important}
 
   /* ===== HabitFlow-style clean surfaces (phones only) ===== */
-  :root,.light{--ios-sh:0 1px 1px rgba(20,20,40,.03),0 3px 8px rgba(20,20,40,.05),0 14px 28px -10px rgba(20,20,40,.10)}
+  :root,.light{--ios-sh:0 1px 2px rgba(20,20,40,.04),0 8px 24px -12px rgba(20,20,40,.12)}
   .dark{--ios-sh:inset 0 1px 0 rgba(255,255,255,.05),0 10px 24px -10px rgba(0,0,0,.7)}
   /* sans display type instead of the serif */
   .font-display{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",system-ui,sans-serif!important;letter-spacing:-.03em}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1183,7 +1183,7 @@ a{ color:inherit; text-decoration:none; }
 /* ===== macOS desktop layer: same Apple palette and Messages-style bubbles as the rest of Edge Blast ===== */
 @media (min-width: 768px){
   [data-theme="light"]{
-    --bg:#F5F5F7; --surface:#FFFFFF; --surface-elevated:#FFFFFF; --surface-overlay:#FFFFFF;
+    --bg:#FFFFFF; --surface:#FFFFFF; --surface-elevated:#FFFFFF; --surface-overlay:#FFFFFF;
     --border:#E3E3E8; --border-strong:#D1D1D6;
     --text-primary:#1D1D1F; --text-secondary:#6E6E73; --text-tertiary:#8E8E93;
     --code-bg:#F2F2F7;
@@ -1191,7 +1191,7 @@ a{ color:inherit; text-decoration:none; }
     --accent-active-bg:rgba(106,85,241,.12); --accent-active-border:rgba(106,85,241,.35); --accent-glow:rgba(106,85,241,.16);
     --success:#248A3D; --success-bg:rgba(52,199,89,.14); --warning:#C77700; --warning-bg:rgba(255,159,10,.15);
     --danger:#D70015; --danger-bg:rgba(255,59,48,.12); --info:#6A55F1;
-    --bubble-user:#6A55F1; --bubble-ai:#EBEBF0;
+    --bubble-user:#6A55F1; --bubble-ai:#F3F3F7;
     --shadow-pill:0 1px 2px rgba(20,20,40,.05), 0 10px 24px -10px rgba(20,20,40,.16);
   }
   [data-theme="dark"]{
@@ -2800,61 +2800,40 @@ document.addEventListener('DOMContentLoaded', ()=>{
 })();
 </script>
 <script>
-/* Logo and particles together: the Edge Blast mark sits in the middle, a swarm orbits it, breathes, links up and
-   sends out a soft pulse. Used while the coach is thinking (small) and on the new-chat screen (large). */
+/* The coach mark: the Edge Blast logo turning slowly with a small ring of dots orbiting it.
+   Used while the coach is thinking (small) and on the new-chat screen (large). Kept deliberately simple. */
 (function(){
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function start(cv){
     if (cv._on) return; cv._on = true;
-    var hero = cv.hasAttribute('data-hero');
     var ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W/2, cy = H/2, f = W/108;
     var cs = getComputedStyle(document.documentElement);
-    var c1 = (cs.getPropertyValue('--accent') || '#9585FF').trim(), c2 = (cs.getPropertyValue('--accent-2') || c1).trim();
-    var N = hero ? 54 : 30, ps = [];
-    for (var i = 0; i < N; i++) {
-      ps.push({ a: Math.random()*6.2832, r0: (17 + Math.random()*29) * f, sp: (0.28 + Math.random()*0.7) * (Math.random() < .5 ? -1 : 1) * (hero ? 0.7 : 1),
-                ph: Math.random()*6.2832, sz: (1 + Math.random()*1.7) * f * (hero ? 0.8 : 1), tilt: 0.6 + Math.random()*0.4, col: Math.random() < .5 ? c1 : c2 });
-    }
-    var u = 1.15 * f;                       /* logo units to pixels (the mark is drawn on a 32 unit grid) */
-    var t0 = performance.now(), last = t0;
-    function logo(t){
-      var rot = reduce ? 0 : t * 0.45, pulse = 1 + 0.06 * Math.sin(t * 2.0);
-      ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot); ctx.scale(pulse, pulse);
-      var cardinal = [[0,-11],[11,0],[0,11],[-11,0]], diag = [[-7.5,-7.5],[7.5,-7.5],[7.5,7.5],[-7.5,7.5]];
-      ctx.lineWidth = Math.max(1, f * 1); ctx.strokeStyle = c2; ctx.globalAlpha = 0.5;
-      cardinal.forEach(function(p){ ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(p[0]*u, p[1]*u); ctx.stroke(); });
-      cardinal.forEach(function(p, i){ ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 2 + i); ctx.fillStyle = i % 2 ? c1 : c2; ctx.beginPath(); ctx.arc(p[0]*u, p[1]*u, 1.7*u, 0, 6.2832); ctx.fill(); });
-      diag.forEach(function(p, i){ ctx.globalAlpha = 0.55 + 0.2 * Math.sin(t * 2.3 + i * 1.7); ctx.fillStyle = i % 2 ? c2 : c1; ctx.beginPath(); ctx.arc(p[0]*u, p[1]*u, 1.4*u, 0, 6.2832); ctx.fill(); });
-      ctx.globalAlpha = 1; ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(0, 0, 2.5*u, 0, 6.2832); ctx.fill();
-      ctx.restore();
-    }
+    var col = (cs.getPropertyValue('--accent') || '#6A55F1').trim();
+    var N = 8, u = 1.1 * f, t0 = performance.now();
     function frame(now){
       if (!cv.isConnected) return;
-      var t = (now - t0) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
+      var t = (now - t0) / 1000;
       ctx.clearRect(0, 0, W, H);
-      var pts = [];
+      /* ring of dots, each one breathing a little behind the one before it */
       for (var i = 0; i < N; i++) {
-        var p = ps[i];
-        if (!reduce) p.a += p.sp * dt;
-        var r = p.r0 * (1 + 0.16 * Math.sin(t * 1.5 + p.ph)) * (0.92 + 0.08 * Math.sin(t * 0.8 + p.ph * 2));
-        pts.push([cx + Math.cos(p.a) * r, cy + Math.sin(p.a) * r * p.tilt, p]);
+        var a = (reduce ? 0 : t * 0.9) + i * (6.2832 / N), r = 28 * f * (1 + 0.05 * Math.sin(t * 1.6));
+        var k = 0.5 + 0.5 * Math.sin(t * 2.2 - i * 0.8);
+        ctx.globalAlpha = 0.22 + 0.7 * k; ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, f * (1.5 + 0.9 * k), 0, 6.2832); ctx.fill();
       }
-      var link = 22 * f;
-      ctx.lineWidth = Math.max(0.6, f * 0.8); ctx.strokeStyle = c1;
-      for (var i = 0; i < N; i++) for (var j = i + 1; j < N; j++) {
-        var dx = pts[i][0] - pts[j][0], dy = pts[i][1] - pts[j][1], d = Math.sqrt(dx*dx + dy*dy);
-        if (d < link) { ctx.globalAlpha = (1 - d / link) * 0.32; ctx.beginPath(); ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(pts[j][0], pts[j][1]); ctx.stroke(); }
-      }
-      for (var i = 0; i < N; i++) {
-        var q = pts[i], p = q[2], tw = 0.55 + 0.45 * Math.sin(t * 2.2 + p.ph);
-        ctx.globalAlpha = 0.3 + 0.7 * tw; ctx.fillStyle = p.col;
-        ctx.beginPath(); ctx.arc(q[0], q[1], p.sz * (0.8 + 0.4 * tw), 0, 6.2832); ctx.fill();
-      }
-      /* a soft pulse leaving the logo every few seconds */
-      var ph = (t % 3.2) / 3.2;
-      if (!reduce) { ctx.globalAlpha = (1 - ph) * 0.35; ctx.strokeStyle = c1; ctx.lineWidth = Math.max(1, f); ctx.beginPath(); ctx.arc(cx, cy, (13 + ph * 32) * f, 0, 6.2832); ctx.stroke(); }
-      ctx.globalAlpha = 1;
-      logo(t);
+      /* the mark itself */
+      var rot = reduce ? 0 : t * 0.5, pulse = 1 + 0.05 * Math.sin(t * 1.8);
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot); ctx.scale(pulse, pulse);
+      ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = Math.max(1, f);
+      [[0,-11],[11,0],[0,11],[-11,0]].forEach(function(p){
+        ctx.globalAlpha = 0.45; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(p[0]*u, p[1]*u); ctx.stroke();
+        ctx.globalAlpha = 0.95; ctx.beginPath(); ctx.arc(p[0]*u, p[1]*u, 1.7*u, 0, 6.2832); ctx.fill();
+      });
+      [[-7.5,-7.5],[7.5,-7.5],[7.5,7.5],[-7.5,7.5]].forEach(function(p){
+        ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(p[0]*u, p[1]*u, 1.4*u, 0, 6.2832); ctx.fill();
+      });
+      ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(0, 0, 2.5*u, 0, 6.2832); ctx.fill();
+      ctx.restore(); ctx.globalAlpha = 1;
       if (!reduce) requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);

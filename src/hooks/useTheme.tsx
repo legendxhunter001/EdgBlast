@@ -42,6 +42,10 @@ const readSystem = (): ResolvedTheme =>
 
 const getInitialMode = (): ThemeMode => {
   if (typeof window === 'undefined') return 'system';
+  // the app is clean and white by default: reset to light once, after that the person's own choice wins
+  try {
+    if (!localStorage.getItem('eb-white-default-v1')) { localStorage.setItem('eb-white-default-v1', '1'); localStorage.setItem(KEY_MODE, 'light'); return 'light'; }
+  } catch { /* storage unavailable */ }
   const stored = localStorage.getItem(KEY_MODE);
   const legacy = localStorage.getItem('edge-theme');
   if (!stored && (legacy === 'light' || legacy === 'dark')) return legacy as ThemeMode;
