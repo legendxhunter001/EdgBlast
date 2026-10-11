@@ -175,7 +175,7 @@ const Trades = () => {
               const pnl = t.pnl === null ? null : Number(t.pnl);
               const meta = `${t.direction === 'short' ? 'Short' : 'Long'} · ${format(parseISO(when(t)), 'MMM d, yyyy')}${strat ? ` · ${strat}` : ''}`;
               const result = (
-                <div className="text-right shrink-0 mr-[60px]">
+                <div className={`text-right shrink-0 ${view === 'cards' ? 'mr-[60px]' : ''}`}>
                   {pnl === null
                     ? <span className="inline-flex px-2.5 py-1 rounded-full bg-secondary text-[12px] font-semibold text-muted-foreground">Open</span>
                     : <div className={`${view === 'list' ? 'text-[16px]' : 'text-[19px]'} font-semibold tabular-nums leading-tight`} style={{ color: tone(pnl) }}>{money(pnl)}</div>}
@@ -185,7 +185,7 @@ const Trades = () => {
               if (view === 'list') {
                 const first = i === 0 || rows[i - 1].kind === 'head';
                 return (
-                  <motion.div key={r.id} {...motionProps} className={`relative ${first ? '' : 'border-t border-border'}`}>
+                  <motion.div key={r.id} {...motionProps} className={first ? '' : 'border-t border-border'}>
                     <Link to={`/trades/${t.id}`} className={`${FOCUS} flex items-center gap-3 py-3 rounded active:opacity-60 transition-opacity`}>
                       <SymbolLogo symbol={t.asset} size={32} />
                       <div className="flex-1 min-w-0">
@@ -194,8 +194,6 @@ const Trades = () => {
                       </div>
                       {result}
                     </Link>
-                    <button type="button" onClick={() => { tap(); setEditing(t); }} aria-label={`Edit ${t.asset}`}
-                    className={`${FOCUS} absolute right-3 top-1/2 -translate-y-1/2 h-8 px-3.5 rounded-full bg-primary/10 text-primary text-[13.5px] font-semibold active:scale-95 transition`}>Edit</button>
                   </motion.div>
                 );
               }

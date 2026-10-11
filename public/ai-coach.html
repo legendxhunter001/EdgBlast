@@ -1274,6 +1274,16 @@ html.with-dock.typing .composer-wrap{ padding-bottom:12px !important; }
   .sidebar.mobile-open .conv-item:nth-child(4){ animation-delay:.12s; } .sidebar.mobile-open .conv-item:nth-child(n+5){ animation-delay:.16s; }
 }
 @keyframes convIn{ from{ opacity:0; transform:translateX(-14px); } to{ opacity:1; transform:none; } }
+/* ---- layout: messages scroll inside their own box, the message box stays fixed at the bottom ---- */
+.app, .main{ height:100dvh; }
+.workspace{ flex:1 1 0; min-height:0; }
+.conversation{ flex:1 1 0; min-height:0; height:100%; }
+.conv-scroll{ flex:1 1 0; min-height:0; }
+.composer-wrap{ flex:0 0 auto; position:relative; z-index:3; background:var(--bg); }
+.conv-inner{ min-height:100%; display:flex; flex-direction:column; }
+.conv-inner > :first-child{ margin-top:auto; }                    /* few messages sit just above the box, not at the top */
+.conv-inner > .workspace-empty{ margin-top:auto; margin-bottom:auto; }
+
 /* ---- steadiness: no bounce, no tap delay, no zoom when a field is focused ---- */
 html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 @media (max-width: 720px){
