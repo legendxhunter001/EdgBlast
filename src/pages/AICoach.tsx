@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate } from 'react-router-dom';
@@ -6,9 +6,21 @@ import { useNavigate } from 'react-router-dom';
 export default function AICoach() {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const { theme } = useTheme();
+  // the theme goes in the address so the chat is painted in it from the very first frame (no flash)
+  const frameSrc = useRef(`/ai-coach.html?m=1&t=${theme}`);
+  const [frameHeight, setFrameHeight] = useState('calc(100dvh - 57px)');
   const navigate = useNavigate();
 
   // the chat is full screen: the floating dock would sit on top of its sidebar and composer
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const fit = () => { setFrameHeight(`${Math.max(240, Math.round(vv.height) - 57)}px`); window.scrollTo(0, 0); };
+    fit();
+    vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
+    return () => { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit); };
+  }, []);
+
   useEffect(() => {
     document.documentElement.classList.add('eb-chat-page');
     return () => document.documentElement.classList.remove('eb-chat-page');
@@ -71,9 +83,9 @@ export default function AICoach() {
   return (
     <iframe
       ref={frameRef}
-      src="/ai-coach.html?m=1"
+      src={frameSrc.current}
       title="Coach"
-      style={{ width: '100%', height: 'calc(100dvh - 56px)', border: 'none', display: 'block' }}
+      style={{ width: '100%', height: frameHeight, border: 'none', display: 'block' }}
     />
   );
 }

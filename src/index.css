@@ -527,3 +527,6 @@
 
 /* the coach chat is full screen on phones */
 html.eb-chat-page .ios-dock, html.eb-chat-page .ios-dockfade { display: none !important; }
+
+/* the coach chat owns the screen: the page behind it never scrolls or bounces */
+html.eb-chat-page, html.eb-chat-page body { overflow: hidden; overscroll-behavior: none; height: 100%; }
