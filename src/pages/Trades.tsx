@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
-import { LayoutGrid, List, Plus, Search, X } from 'lucide-react';
+import { LayoutGrid, List, Pencil, Plus, Search, X } from 'lucide-react';
+import { EditTradeSheet } from '@/components/EditTradeSheet';
 import { useStrategies, useTrades, type Trade } from '@/hooks/useTrades';
 import { formatCurrency } from '@/lib/format';
 import { SymbolLogo } from '@/components/SymbolLogo';
@@ -32,6 +33,7 @@ const Trades = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [sort, setSort] = useState<Sort>('date');
+  const [editing, setEditing] = useState<Trade | null>(null);
   // remembered on this device: cards by default, the list only if that's what they picked last
   const [view, setView] = useState<View>(() => { try { return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'cards'; } catch { return 'cards'; } });
   const chooseView = (v: View) => { tap(); setView(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* storage unavailable */ } };
@@ -173,7 +175,7 @@ const Trades = () => {
               const pnl = t.pnl === null ? null : Number(t.pnl);
               const meta = `${t.direction === 'short' ? 'Short' : 'Long'} · ${format(parseISO(when(t)), 'MMM d, yyyy')}${strat ? ` · ${strat}` : ''}`;
               const result = (
-                <div className="text-right shrink-0">
+                <div className="text-right shrink-0 mr-10">
                   {pnl === null
                     ? <span className="inline-flex px-2.5 py-1 rounded-full bg-secondary text-[12px] font-semibold text-muted-foreground">Open</span>
                     : <div className={`${view === 'list' ? 'text-[16px]' : 'text-[19px]'} font-semibold tabular-nums leading-tight`} style={{ color: tone(pnl) }}>{money(pnl)}</div>}
@@ -183,7 +185,7 @@ const Trades = () => {
               if (view === 'list') {
                 const first = i === 0 || rows[i - 1].kind === 'head';
                 return (
-                  <motion.div key={r.id} {...motionProps} className={first ? '' : 'border-t border-border'}>
+                  <motion.div key={r.id} {...motionProps} className={`relative ${first ? '' : 'border-t border-border'}`}>
                     <Link to={`/trades/${t.id}`} className={`${FOCUS} flex items-center gap-3 py-3 rounded active:opacity-60 transition-opacity`}>
                       <SymbolLogo symbol={t.asset} size={32} />
                       <div className="flex-1 min-w-0">
@@ -192,11 +194,13 @@ const Trades = () => {
                       </div>
                       {result}
                     </Link>
+                    <button type="button" onClick={() => { tap(); setEditing(t); }} aria-label={`Edit ${t.asset}`}
+                    className={`${FOCUS} absolute right-2.5 top-1/2 -translate-y-1/2 size-9 rounded-full grid place-items-center text-muted-foreground hover:bg-secondary active:bg-secondary transition-colors`}><Pencil className="size-[16px]" /></button>
                   </motion.div>
                 );
               }
               return (
-                <motion.div key={r.id} {...motionProps} whileTap={reduce ? undefined : { scale: 0.975 }} className="mb-3">
+                <motion.div key={r.id} {...motionProps} whileTap={reduce ? undefined : { scale: 0.975 }} className="relative mb-3">
                   <Link to={`/trades/${t.id}`} className={`${FOCUS} block ${SURFACE} p-4`} style={SHADOW}>
                     <div className="flex items-center gap-3">
                       <SymbolLogo symbol={t.asset} size={38} />
@@ -213,12 +217,15 @@ const Trades = () => {
                       </div>
                     )}
                   </Link>
+                  <button type="button" onClick={() => { tap(); setEditing(t); }} aria-label={`Edit ${t.asset}`}
+                    className={`${FOCUS} absolute right-2.5 top-1/2 -translate-y-1/2 size-9 rounded-full grid place-items-center text-muted-foreground hover:bg-secondary active:bg-secondary transition-colors`}><Pencil className="size-[16px]" /></button>
                 </motion.div>
               );
             })}
           </AnimatePresence>
         </div>
       )}
+      {editing && <EditTradeSheet trade={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 };

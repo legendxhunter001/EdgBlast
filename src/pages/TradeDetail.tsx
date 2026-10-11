@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrade, useScreenshots, useStrategies } from '@/hooks/useTrades';
 import { useCountUp } from '@/hooks/useCountUp';
 import { IosSheet } from '@/components/IosSheet';
+import { EditTradeSheet } from '@/components/EditTradeSheet';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
@@ -43,6 +44,7 @@ const TradeDetail = () => {
   const { data: strategies = [] } = useStrategies();
   const shownPnl = useCountUp(trade && trade.pnl !== null ? Number(trade.pnl) : null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const [step, setStep] = useState<StepId>('overview');
   const [fields, setFields] = useState({
@@ -195,6 +197,7 @@ const TradeDetail = () => {
         </Link>
         <div className="flex items-center gap-2">
           <SaveIndicator state={saving} />
+          <button onClick={() => setEditOpen(true)} className="h-9 px-3.5 rounded-full bg-secondary text-[15px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-95 transition">Edit</button>
           <button onClick={() => setConfirmDel(true)} aria-label="Delete trade" className="size-10 rounded-full grid place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" style={{ color: 'hsl(var(--bear))' }}>
             <Trash2 className="size-5" />
           </button>
@@ -259,6 +262,8 @@ const TradeDetail = () => {
           })}
         </div>
       </section>
+
+      {editOpen && <EditTradeSheet trade={trade} onClose={() => setEditOpen(false)} />}
 
       {confirmDel && (
         <IosSheet title="Delete this trade?" onClose={() => setConfirmDel(false)}>
