@@ -3,6 +3,7 @@ import {
   LayoutDashboard, ListOrdered, CalendarDays, BarChart3, NotebookPen, MessageCircle, Compass,
   LineChart, Wrench, Plug, Settings, LogOut, ChevronRight,
 } from 'lucide-react';
+import { CoachIcon } from '@/components/CoachIcon';
 import { IosSheet } from '@/components/IosSheet';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -13,7 +14,7 @@ const GROUPS = [
     { to: '/reviews', label: 'Review', icon: NotebookPen },
   ] },
   { title: 'More', items: [
-    { to: '/ai-coach', label: 'Coach', icon: MessageCircle }, { to: '/journey', label: 'Journey', icon: Compass },
+    { to: '/ai-coach', label: 'Coach', icon: CoachIcon }, { to: '/journey', label: 'Journey', icon: Compass },
     { to: '/mt5', label: 'MT5', icon: LineChart }, { to: '/trading-tools', label: 'Tools', icon: Wrench },
     { to: '/connections', label: 'Connections', icon: Plug },
   ] },

@@ -1,3 +1,4 @@
+import { CoachIcon } from './CoachIcon';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { prefetch } from '@/lib/routes';
@@ -6,28 +7,14 @@ import {
   Compass, LineChart, Wrench, Plug,
 } from 'lucide-react';
 
-/** The Edge Blast mark, drawn to match the other dock icons. */
-const CoachIcon = ({ strokeWidth = 1.9 }: { strokeWidth?: number }) => (
-  <svg viewBox="0 0 32 32" fill="none" aria-hidden>
-    <g stroke="currentColor" strokeWidth={strokeWidth * 0.55} strokeLinecap="round" opacity=".55">
-      <line x1="16" y1="16" x2="16" y2="6" /><line x1="16" y1="16" x2="16" y2="26" /><line x1="16" y1="16" x2="6" y2="16" /><line x1="16" y1="16" x2="26" y2="16" />
-    </g>
-    <g fill="currentColor">
-      <circle cx="16" cy="6" r="2.3" /><circle cx="16" cy="26" r="2.3" /><circle cx="6" cy="16" r="2.3" /><circle cx="26" cy="16" r="2.3" />
-      <circle cx="9" cy="9" r="1.8" opacity=".65" /><circle cx="23" cy="9" r="1.8" opacity=".65" /><circle cx="9" cy="23" r="1.8" opacity=".65" /><circle cx="23" cy="23" r="1.8" opacity=".65" />
-      <circle cx="16" cy="16" r="3.2" />
-    </g>
-  </svg>
-);
-
-/** Every main page lives in the dock. Coach sits in the middle of the first five. Settings is in the menu. */
+/** Every main page lives in the dock. Coach sits after Reviews and before Journey. Settings is in the menu. */
 const tabs: { to: string; label: string; icon: React.ComponentType<{ strokeWidth?: number }> }[] = [
   { to: '/', label: 'Home', icon: LayoutDashboard },
   { to: '/trades', label: 'Trades', icon: ListOrdered },
-  { to: '/ai-coach', label: 'Coach', icon: CoachIcon },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/reviews', label: 'Reviews', icon: NotebookPen },
+  { to: '/ai-coach', label: 'Coach', icon: CoachIcon },
   { to: '/journey', label: 'Journey', icon: Compass },
   { to: '/mt5', label: 'MT5', icon: LineChart },
   { to: '/trading-tools', label: 'Tools', icon: Wrench },

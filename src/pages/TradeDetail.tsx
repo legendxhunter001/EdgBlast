@@ -197,7 +197,7 @@ const TradeDetail = () => {
         </Link>
         <div className="flex items-center gap-2">
           <SaveIndicator state={saving} />
-          <button onClick={() => setEditOpen(true)} className="h-9 px-3.5 rounded-full bg-secondary text-[15px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-95 transition">Edit</button>
+          <button onClick={() => setEditOpen(true)} className="h-10 px-4 rounded-full bg-primary text-primary-foreground text-[16px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95 transition">Edit</button>
           <button onClick={() => setConfirmDel(true)} aria-label="Delete trade" className="size-10 rounded-full grid place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" style={{ color: 'hsl(var(--bear))' }}>
             <Trash2 className="size-5" />
           </button>

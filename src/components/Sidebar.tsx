@@ -1,3 +1,4 @@
+import { CoachIcon } from './CoachIcon';
 import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { prefetch } from '@/lib/routes';
@@ -25,7 +26,7 @@ const items: Entry[] = [
   { to: '/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/reviews', label: 'Reviews', icon: NotebookPen },
-  { to: '/ai-coach', label: 'Coach', icon: MessageCircle },
+  { to: '/ai-coach', label: 'Coach', icon: CoachIcon },
   { divider: 'Journey' },
   { to: '/journey', label: 'Journey', icon: Compass },
   { divider: 'Connections' },

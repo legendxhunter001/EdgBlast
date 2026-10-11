@@ -1,3 +1,4 @@
+import { CoachIcon } from './CoachIcon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -12,7 +13,7 @@ const commands = [
   { to: '/calendar', label: 'Calendar', hint: 'Page', icon: CalendarDays },
   { to: '/analytics', label: 'Analytics', hint: 'Page', icon: BarChart3 },
   { to: '/reviews', label: 'Reviews', hint: 'Page', icon: NotebookPen },
-  { to: '/ai-coach', label: 'Coach', hint: 'Page', icon: MessageCircle },
+  { to: '/ai-coach', label: 'Coach', hint: 'Page', icon: CoachIcon },
   { to: '/journey', label: 'Journey', hint: 'Page', icon: Compass },
   { to: '/connections', label: 'Connections', hint: 'Page', icon: Plug },
   { to: '/mt5', label: 'MT5', hint: 'Page', icon: LineChart },
