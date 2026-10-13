@@ -1327,6 +1327,9 @@ html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-hig
 .wg-bar{ height:4px; border-radius:2px; background:var(--surface-overlay); margin-top:8px; overflow:hidden; }
 .wg-bar > i{ display:block; height:100%; border-radius:2px; background:var(--text-secondary); opacity:.7; }
 .wg-grp-sub{ margin-top:6px; font-size:var(--text-xs); color:var(--text-tertiary); }
+
+.wg-stack + .msg-text{ margin-top:14px; }
+.msg-text + .wg-stack{ margin-top:12px; }
 /* gallery: swipe between pictures, pinch or double-tap to zoom */
 .wg-gal{ position:fixed; inset:0; z-index:9999; background:#000; display:flex; flex-direction:column; animation:wgGalIn .2s ease; }
 @keyframes wgGalIn{ from{ opacity:0 } to{ opacity:1 } }
@@ -1939,6 +1942,7 @@ function stopGeneration(){
   if(window._streamCancel) window._streamCancel();
   const gen = document.getElementById('genIndicator');
   if(gen) gen.remove();
+  if(window._wgFlush){ try{ window._wgFlush(); }catch(e){} }
   document.querySelectorAll('.wg-stack.wg-pending').forEach(function(e){ e.classList.remove('wg-pending'); e.classList.add('wg-in'); });
   if(window._streamingMsg){
     window._streamingMsg.classList.remove('streaming');
@@ -2101,8 +2105,7 @@ function copyCode(btn){
   setTimeout(()=>btn.innerHTML = original, 1400);
 }
 function copyMsgAction(btn){
-  const textEl = btn.closest('.msg-body').querySelector('.msg-text');
-  const text = (textEl.innerText || textEl.textContent).trim();
+  const text = Array.prototype.map.call(btn.closest('.msg-body').querySelectorAll('.msg-text'), function(el){ return (el.innerText || el.textContent).trim(); }).filter(Boolean).join('\n\n');
   navigator.clipboard.writeText(text).then(()=>{
     showToast('success','Copied to clipboard');
   }).catch(()=>{
@@ -2881,6 +2884,66 @@ document.addEventListener('DOMContentLoaded', ()=>{
     return stack.children.length ? stack : null;
   }
 
+
+  /* a reply is text and cards in order: [[card:N]] marks where card N sits in the middle of the reply */
+  function wgSplit(text, widgets){
+    const ws = Array.isArray(widgets) ? widgets : [];
+    if (!ws.length) return [{ type: 'text', v: String(text || '').replace(/\[\[card:\d+\]\]/g, '').trim() }];
+    const out = []; const re = /\[\[card:(\d+)\]\]/g; let last = 0, m, placed = 0;
+    while ((m = re.exec(text)) !== null) {
+      const chunk = text.slice(last, m.index).trim();
+      if (chunk) out.push({ type: 'text', v: chunk });
+      const w = ws[Number(m[1])];
+      if (w) { out.push({ type: 'card', w: w }); placed++; }
+      last = m.index + m[0].length;
+    }
+    const tail = text.slice(last).trim();
+    if (tail) out.push({ type: 'text', v: tail });
+    if (!placed) {
+      // older replies saved without markers: put the cards after the first paragraph
+      const plain = String(text || '').replace(/\[\[card:\d+\]\]/g, '').trim();
+      const i = plain.indexOf('\n\n');
+      const head = i > 0 ? plain.slice(0, i) : plain, rest = i > 0 ? plain.slice(i + 2).trim() : '';
+      const res = [{ type: 'text', v: head }].concat(ws.map(function(w){ return { type: 'card', w: w }; }));
+      if (rest) res.push({ type: 'text', v: rest });
+      return res;
+    }
+    return out;
+  }
+  function wgPlay(msg, firstText, parts, animate){
+    const body = msg.querySelector('.msg-body'), actions = msg.querySelector('.msg-actions');
+    let i = 0, usedFirst = false, stopped = false;
+    const node = function(part){
+      if (part.type === 'card') return wgRender([part.w]);
+      let el;
+      if (!usedFirst) { el = firstText; usedFirst = true; } else { el = document.createElement('div'); el.className = 'msg-text'; body.insertBefore(el, actions); }
+      return el;
+    };
+    const showAll = function(from){
+      for (let k = from; k < parts.length; k++) {
+        const pt = parts[k], el = node(pt);
+        if (!el) continue;
+        if (pt.type === 'card') { el.classList.add('wg-in'); body.insertBefore(el, actions); } else renderRichText(el, pt.v);
+      }
+    };
+    if (!animate) { showAll(0); return; }
+    const next = function(){
+      if (stopped) return;
+      if (i >= parts.length) { window._wgFlush = null; resetSendBtn(); scrollConvToBottom(); return; }
+      const pt = parts[i++], el = node(pt);
+      if (!el) { next(); return; }
+      if (pt.type === 'card') {
+        el.classList.add('wg-pending'); body.insertBefore(el, actions);
+        requestAnimationFrame(function(){ el.classList.remove('wg-pending'); el.classList.add('wg-in'); scrollConvToBottom(); });
+        setTimeout(next, 380);
+      } else {
+        streamWords(el, pt.v, next);
+      }
+    };
+    window._wgFlush = function(){ if (stopped) return; stopped = true; window._wgFlush = null; showAll(i); };
+    next();
+  }
+
   function appendMessage(role, text, animate, widgets){
     var es = document.getElementById('emptyState'); if (es) es.remove();
     const inner = document.getElementById('convInner');
@@ -2899,16 +2962,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
     msg.innerHTML = '<div class="msg-body"><div class="msg-text"></div><div class="msg-actions">' + actionsHtml + '</div></div>';
     inner.appendChild(msg);
     const textEl = msg.querySelector('.msg-text');
-    const wgStack = role === 'ai' ? wgRender(widgets) : null;
-    if (wgStack) msg.querySelector('.msg-body').insertBefore(wgStack, msg.querySelector('.msg-actions'));
-    if (animate && role === 'ai') {
-      if (wgStack) wgStack.classList.add('wg-pending');
-      streamWords(textEl, text, () => {
-        if (wgStack) { wgStack.classList.remove('wg-pending'); wgStack.classList.add('wg-in'); }
-        resetSendBtn(); scrollConvToBottom();
-      });
+    const parts = role === 'ai' ? wgSplit(text, widgets) : null;
+    if (parts && parts.some(function(x){ return x.type === 'card'; })) {
+      wgPlay(msg, textEl, parts, animate);
+    } else if (animate && role === 'ai') {
+      streamWords(textEl, text.replace(/\[\[card:\d+\]\]/g, ''), () => { resetSendBtn(); scrollConvToBottom(); });
     } else {
-      renderRichText(textEl, text);
+      renderRichText(textEl, role === 'ai' ? text.replace(/\[\[card:\d+\]\]/g, '') : text);
     }
     return msg;
   }
