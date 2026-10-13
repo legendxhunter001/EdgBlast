@@ -59,7 +59,7 @@ export default function AICoach() {
         document.body.classList.toggle('ac-typing', !!ev.data.on);
       }
       if (ev.data?.type === 'eb-open-trade' && typeof ev.data.id === 'string' && /^[0-9a-f-]{36}$/i.test(ev.data.id)) {
-        navigate(`/trades/${ev.data.id}`);
+        navigate(`/trades/${ev.data.id}${ev.data.edit ? '?edit=1' : ''}`);
       }
       if (ev.data?.type === 'edgeblast-signout') {
         await supabase.auth.signOut();

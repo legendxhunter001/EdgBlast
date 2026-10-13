@@ -1290,61 +1290,58 @@ html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-hig
   input, textarea, select, .msg-edit-textarea, .composer-textarea{ font-size:16px !important; }
 }
 
-/* ---------- coach widgets: trade cards and stats under a reply ---------- */
-.wg-stack{ display:flex; flex-direction:column; gap:10px; margin-top:12px; max-width:560px; }
+/* ---------- coach widgets: clean cards under a reply ---------- */
+.wg-stack{ display:flex; flex-direction:column; gap:10px; margin-top:12px; width:100%; max-width:440px; }
 .wg-stack.wg-pending{ opacity:0; transform:translateY(6px); }
 .wg-stack.wg-in{ opacity:1; transform:none; transition:opacity .35s ease, transform .35s ease; }
-.wg-card{ background:var(--surface-elevated); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-.wg-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px 10px; }
-.wg-title{ font-size:var(--text-sm); font-weight:600; color:var(--text-primary); letter-spacing:.01em; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.wg-count{ font-size:var(--text-xs); color:var(--text-tertiary); white-space:nowrap; }
-.wg-row{ display:flex; align-items:center; gap:10px; width:100%; padding:10px 14px; background:none; border:0; border-top:1px solid var(--border); text-align:left; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s ease; }
-.wg-row[hidden]{ display:none; }
-.wg-row:active, .wg-row:hover{ background:var(--accent-active-bg); }
-.wg-row-main{ flex:1; min-width:0; }
-.wg-row-top{ display:flex; align-items:center; gap:6px; font-size:var(--text-base); font-weight:600; color:var(--text-primary); }
-.wg-row-sub{ margin-top:2px; font-size:var(--text-xs); color:var(--text-tertiary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.wg-dir{ font-size:var(--text-2xs); font-weight:600; letter-spacing:.04em; text-transform:uppercase; padding:2px 6px; border-radius:6px; background:var(--surface-overlay); border:1px solid var(--border); color:var(--text-secondary); }
+.wg-card{ background:var(--surface); border:1px solid var(--border); border-radius:18px; overflow:hidden; }
+.wg-top{ display:flex; align-items:center; gap:12px; padding:14px; }
+.wg-logo{ width:38px; height:38px; border-radius:11px; background:var(--surface-overlay); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-primary); flex-shrink:0; }
+.wg-logo svg{ width:22px; height:22px; }
+.wg-main{ flex:1; min-width:0; }
+.wg-name{ font-size:15px; font-weight:600; color:var(--text-primary); line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wg-name span{ font-weight:500; color:var(--text-tertiary); margin-left:6px; font-size:var(--text-sm); }
+.wg-sub{ margin-top:2px; font-size:var(--text-sm); color:var(--text-tertiary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wg-num{ text-align:right; font-variant-numeric:tabular-nums; flex-shrink:0; }
-.wg-pnl{ font-size:var(--text-base); font-weight:600; }
+.wg-pnl{ font-size:15px; font-weight:600; }
 .wg-r{ font-size:var(--text-xs); color:var(--text-tertiary); margin-top:2px; }
 .wg-pos{ color:var(--success); } .wg-neg{ color:var(--danger); } .wg-flat{ color:var(--text-secondary); }
-.wg-chev{ width:14px; height:14px; color:var(--text-tertiary); flex-shrink:0; }
-.wg-more{ display:block; width:100%; padding:10px 14px; background:none; border:0; border-top:1px solid var(--border); font:inherit; font-size:var(--text-sm); color:var(--accent); cursor:pointer; text-align:center; }
-.wg-tiles{ display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--border); }
-.wg-tile{ padding:10px 14px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
-.wg-tile:nth-child(3n){ border-right:0; }
-.wg-tile:nth-last-child(-n+3){ border-bottom:0; }
-.wg-tile-l{ font-size:var(--text-2xs); color:var(--text-tertiary); text-transform:uppercase; letter-spacing:.05em; }
-.wg-tile-v{ margin-top:3px; font-size:var(--text-lg); font-weight:600; font-variant-numeric:tabular-nums; color:var(--text-primary); }
-.wg-grp{ padding:10px 14px; border-top:1px solid var(--border); }
+.wg-row{ display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; background:none; border:0; border-top:1px solid var(--border); text-align:left; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s ease; }
+.wg-row:active{ background:var(--surface-overlay); }
+.wg-row[hidden]{ display:none; }
+.wg-more{ display:block; width:100%; padding:12px 14px; background:none; border:0; border-top:1px solid var(--border); font:inherit; font-size:var(--text-base); color:var(--text-secondary); cursor:pointer; text-align:center; }
+.wg-shots{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:0 14px 14px; }
+.wg-shot{ position:relative; padding:0; border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface-overlay); cursor:pointer; aspect-ratio:1/1; -webkit-tap-highlight-color:transparent; }
+.wg-shot img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.wg-shot-more{ position:absolute; inset:0; background:rgba(0,0,0,.55); color:#fff; font-size:18px; font-weight:600; display:flex; align-items:center; justify-content:center; }
+.wg-foot{ display:flex; border-top:1px solid var(--border); }
+.wg-foot button{ flex:1; padding:12px; background:none; border:0; font:inherit; font-size:var(--text-base); font-weight:500; color:var(--text-secondary); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.wg-foot button + button{ border-left:1px solid var(--border); }
+.wg-foot button:active{ background:var(--surface-overlay); }
+.wg-kpis{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 14px 14px; }
+.wg-kpi-l{ font-size:var(--text-xs); color:var(--text-tertiary); }
+.wg-kpi-v{ margin-top:2px; font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.wg-grp{ padding:12px 14px; border-top:1px solid var(--border); }
 .wg-grp-top{ display:flex; justify-content:space-between; gap:10px; font-size:var(--text-base); }
 .wg-grp-name{ font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.wg-bar{ height:4px; border-radius:2px; background:var(--surface-overlay); margin-top:7px; overflow:hidden; }
-.wg-bar > i{ display:block; height:100%; border-radius:2px; background:var(--accent); }
-.wg-grp-sub{ margin-top:5px; font-size:var(--text-xs); color:var(--text-tertiary); }
-.wg-chips{ display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 12px; }
-.wg-chip{ font-size:var(--text-xs); padding:3px 8px; border-radius:999px; background:var(--surface-overlay); border:1px solid var(--border); color:var(--text-secondary); }
-@media (max-width:720px){ .wg-stack{ max-width:100%; } .wg-tile-v{ font-size:var(--text-md); } }
-
-.wg-explain{ border-top:1px solid var(--border); padding:4px 14px 6px; }
-.wg-explain-load{ padding:12px 0; font-size:var(--text-sm); color:var(--text-tertiary); }
-.wg-levels{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:10px 0 8px; }
-.wg-level-l{ font-size:var(--text-2xs); color:var(--text-tertiary); text-transform:uppercase; letter-spacing:.05em; }
-.wg-level-v{ margin-top:2px; font-size:var(--text-base); font-weight:600; font-variant-numeric:tabular-nums; color:var(--text-primary); }
-.wg-sec{ padding:9px 0; border-top:1px solid var(--border); }
-.wg-sec-l{ font-size:var(--text-2xs); font-weight:600; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
-.wg-sec-t{ font-size:var(--text-base); line-height:1.6; color:var(--text-primary); white-space:pre-wrap; word-break:break-word; }
-.wg-sec.wg-mistake .wg-sec-l{ color:var(--danger); } .wg-sec.wg-good .wg-sec-l{ color:var(--success); }
-@media (max-width:720px){ .wg-levels{ grid-template-columns:repeat(2,1fr); } }
-
-.wg-shots-btn{ display:block; width:100%; padding:10px 14px; background:none; border:0; border-top:1px solid var(--border); font:inherit; font-size:var(--text-sm); color:var(--accent); cursor:pointer; text-align:center; }
-.wg-shots{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:10px 14px 14px; border-top:1px solid var(--border); }
-.wg-shot{ margin:0; cursor:zoom-in; }
-.wg-shot img{ display:block; width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px; border:1px solid var(--border); background:var(--surface-overlay); }
-.wg-shot figcaption{ margin-top:4px; font-size:var(--text-xs); color:var(--text-tertiary); text-transform:capitalize; }
-.wg-lightbox{ position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:16px; cursor:zoom-out; }
-.wg-lightbox img{ max-width:100%; max-height:100%; border-radius:8px; }
+.wg-bar{ height:4px; border-radius:2px; background:var(--surface-overlay); margin-top:8px; overflow:hidden; }
+.wg-bar > i{ display:block; height:100%; border-radius:2px; background:var(--text-secondary); opacity:.7; }
+.wg-grp-sub{ margin-top:6px; font-size:var(--text-xs); color:var(--text-tertiary); }
+/* gallery: swipe between pictures, pinch or double-tap to zoom */
+.wg-gal{ position:fixed; inset:0; z-index:9999; background:#000; display:flex; flex-direction:column; animation:wgGalIn .2s ease; }
+@keyframes wgGalIn{ from{ opacity:0 } to{ opacity:1 } }
+.wg-gal-top{ position:absolute; top:0; left:0; right:0; z-index:2; display:flex; align-items:center; gap:12px; padding:calc(env(safe-area-inset-top, 0px) + 10px) 14px 24px; background:linear-gradient(#000a, transparent); color:#fff; pointer-events:none; }
+.wg-gal-x{ pointer-events:auto; width:36px; height:36px; border-radius:50%; border:0; background:rgba(255,255,255,.16); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.wg-gal-x svg{ width:18px; height:18px; }
+.wg-gal-cap{ flex:1; font-size:15px; font-weight:600; text-transform:capitalize; }
+.wg-gal-n{ font-size:var(--text-sm); opacity:.8; font-variant-numeric:tabular-nums; }
+.wg-gal-track{ flex:1; display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.wg-gal-track::-webkit-scrollbar{ display:none; }
+.wg-gal-slide{ flex:0 0 100%; scroll-snap-align:center; scroll-snap-stop:always; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:pan-x; }
+.wg-gal-slide img{ max-width:100%; max-height:100%; object-fit:contain; user-select:none; -webkit-user-drag:none; will-change:transform; }
+.wg-gal-dots{ position:absolute; bottom:calc(env(safe-area-inset-bottom, 0px) + 16px); left:0; right:0; display:flex; justify-content:center; gap:6px; pointer-events:none; }
+.wg-gal-dots i{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.35); transition:background .2s, transform .2s; }
+.wg-gal-dots i.on{ background:#fff; transform:scale(1.25); }
 </style>
 </head>
 <body>
@@ -2708,22 +2705,28 @@ document.addEventListener('DOMContentLoaded', ()=>{
     realRegenerate(msgEl, toRemove, userText);
   };
 
-  /* ---------- widgets: cards built by the server from real trades ---------- */
-  const WG_CHEV = '<svg class="wg-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>';
+  /* ---------- widgets: clean cards built by the server from real trades ---------- */
+  const WG_LOGO = '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="1.05" stroke-linecap="round" opacity=".55"><line x1="16" y1="16" x2="16" y2="6"/><line x1="16" y1="16" x2="16" y2="26"/><line x1="16" y1="16" x2="6" y2="16"/><line x1="16" y1="16" x2="26" y2="16"/></g><g fill="currentColor"><circle cx="16" cy="6" r="2.3"/><circle cx="16" cy="26" r="2.3"/><circle cx="6" cy="16" r="2.3"/><circle cx="26" cy="16" r="2.3"/><circle cx="9" cy="9" r="1.8" opacity=".65"/><circle cx="23" cy="9" r="1.8" opacity=".65"/><circle cx="9" cy="23" r="1.8" opacity=".65"/><circle cx="23" cy="23" r="1.8" opacity=".65"/><circle cx="16" cy="16" r="3.2"/></g></svg>';
+  const WG_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   function wgNum(v, d){ if (v === null || v === undefined || !isFinite(v)) return '\u2014'; return Number(v).toFixed(d === undefined ? 2 : d); }
   function wgSigned(v){ if (v === null || v === undefined || !isFinite(v)) return '\u2014'; const n = Number(v); return (n > 0 ? '+' : n < 0 ? '\u2212' : '') + Math.abs(n).toFixed(2); }
   function wgTone(v){ return v > 0 ? 'wg-pos' : v < 0 ? 'wg-neg' : 'wg-flat'; }
-  function wgDate(s){ if (!s) return ''; const d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); }
-  function wgTradeRow(t){
-    const sub = [wgDate(t.exit_at || t.entry_at), t.planned_rr ? 'planned 1:' + wgNum(t.planned_rr, 1) : '', t.strategy || '', t.mood || ''].filter(Boolean).join(' \u00b7 ');
-    return '<button class="wg-row" data-trade="' + escapeHtml(t.id) + '">'
-      + '<div class="wg-row-main"><div class="wg-row-top">' + escapeHtml(t.asset || '') + '<span class="wg-dir">' + escapeHtml(t.direction || '') + '</span></div>'
-      + '<div class="wg-row-sub">' + escapeHtml(sub) + '</div></div>'
-      + '<div class="wg-num"><div class="wg-pnl ' + wgTone(t.pnl) + '">' + wgSigned(t.pnl) + '</div>'
-      + (t.r !== null && t.r !== undefined ? '<div class="wg-r">' + wgSigned(t.r) + ' R</div>' : '') + '</div>' + WG_CHEV + '</button>';
+  function wgD(s){ const d = new Date(s); return isNaN(d) ? null : d; }
+  function wgWhen(t){
+    const a = wgD(t.entry_at), b = wgD(t.exit_at);
+    const day = (d) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    const hm = (d) => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+    if (a && b) return day(a) === day(b) ? day(a) + ' \u00b7 ' + hm(a) + ' \u2013 ' + hm(b) : day(a) + ' ' + hm(a) + ' \u2013 ' + day(b) + ' ' + hm(b);
+    const d = b || a; return d ? day(d) + ' \u00b7 ' + hm(d) : '';
   }
-
-  const WG_SECTIONS = [['thesis','Why I took it',''],['entry_reasoning','Entry reasoning',''],['exit_reasoning','Exit reasoning',''],['execution_notes','Execution',''],['psychology_review','Psychology',''],['what_went_well','What went well','wg-good'],['mistakes','Mistakes','wg-mistake'],['lessons_learned','Lessons',''],['notes','Notes','']];
+  function wgCap(s){ s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function wgTradeInner(t, withLogo){
+    const sub = [wgWhen(t), t.strategy].filter(Boolean).join(' \u00b7 ');
+    return (withLogo ? '<div class="wg-logo">' + WG_LOGO + '</div>' : '')
+      + '<div class="wg-main"><div class="wg-name">' + escapeHtml(t.asset || '') + '<span>' + escapeHtml(wgCap(t.direction)) + '</span></div><div class="wg-sub">' + escapeHtml(sub) + '</div></div>'
+      + '<div class="wg-num"><div class="wg-pnl ' + wgTone(t.pnl) + '">' + wgSigned(t.pnl) + '</div>' + (t.r !== null && t.r !== undefined ? '<div class="wg-r">' + wgSigned(t.r) + ' R</div>' : '') + '</div>';
+  }
+  function wgOpen(id, edit){ try { parent.postMessage({ type: 'eb-open-trade', id: id, edit: !!edit }, '*'); } catch (_e) {} }
 
   async function wgShotUrl(path){
     const enc = String(path).split('/').map(encodeURIComponent).join('/');
@@ -2734,94 +2737,113 @@ document.addEventListener('DOMContentLoaded', ()=>{
     } catch (_e) {}
     return SUPABASE_URL + '/storage/v1/object/public/trade-screenshots/' + enc;
   }
-  function wgLightbox(src){
-    const o = document.createElement('div');
-    o.className = 'wg-lightbox';
-    o.innerHTML = '<img alt="">';
-    o.querySelector('img').src = src;
-    o.addEventListener('click', () => o.remove());
-    document.body.appendChild(o);
+
+  function wgDist(t){ return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+  function wgZoom(sl, im, st, lock){
+    let d0 = 0, s0 = 1, p = null, last = 0;
+    const apply = () => { im.style.transform = 'translate(' + st.x + 'px,' + st.y + 'px) scale(' + st.s + ')'; };
+    const clamp = () => { const mx = (st.s - 1) * sl.clientWidth / 2, my = (st.s - 1) * sl.clientHeight / 2; st.x = Math.max(-mx, Math.min(mx, st.x)); st.y = Math.max(-my, Math.min(my, st.y)); if (st.s <= 1) { st.x = 0; st.y = 0; } };
+    const toggle = () => { st.s = st.s > 1 ? 1 : 2.5; clamp(); im.style.transition = 'transform .2s'; apply(); lock(st.s > 1); setTimeout(() => { im.style.transition = ''; }, 220); };
+    sl.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) { d0 = wgDist(e.touches); s0 = st.s; lock(true); }
+      else if (e.touches.length === 1) { p = { x: e.touches[0].clientX, y: e.touches[0].clientY }; const now = Date.now(); if (now - last < 280) toggle(); last = now; }
+    }, { passive: true });
+    sl.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) { e.preventDefault(); st.s = Math.max(1, Math.min(4, s0 * wgDist(e.touches) / d0)); clamp(); apply(); }
+      else if (e.touches.length === 1 && st.s > 1 && p) { e.preventDefault(); const t = e.touches[0]; st.x += t.clientX - p.x; st.y += t.clientY - p.y; p = { x: t.clientX, y: t.clientY }; clamp(); apply(); }
+    }, { passive: false });
+    sl.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2 && st.s <= 1.02) { st.s = 1; st.x = 0; st.y = 0; apply(); lock(false); }
+      p = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+    }, { passive: true });
+    sl.addEventListener('dblclick', toggle);
+    return () => { st.s = 1; st.x = 0; st.y = 0; apply(); lock(false); };
   }
-  async function wgOfferShots(card, id){
+  function wgGallery(urls, labels, start){
+    const o = document.createElement('div');
+    o.className = 'wg-gal';
+    o.innerHTML = '<div class="wg-gal-top"><button class="wg-gal-x" aria-label="Close">' + WG_X + '</button><div class="wg-gal-cap"></div><div class="wg-gal-n"></div></div><div class="wg-gal-track"></div><div class="wg-gal-dots"></div>';
+    const track = o.querySelector('.wg-gal-track'), cap = o.querySelector('.wg-gal-cap'), cnt = o.querySelector('.wg-gal-n'), dots = o.querySelector('.wg-gal-dots');
+    const lock = (on) => { track.style.overflowX = on ? 'hidden' : 'auto'; };
+    const resets = [];
+    urls.forEach((u, i) => {
+      const sl = document.createElement('div'); sl.className = 'wg-gal-slide';
+      const im = document.createElement('img'); im.draggable = false; im.alt = ''; im.src = u;
+      sl.appendChild(im); track.appendChild(sl);
+      resets.push(wgZoom(sl, im, { s: 1, x: 0, y: 0 }, lock));
+      const d = document.createElement('i'); dots.appendChild(d);
+    });
+    let cur = -1;
+    const show = (i) => { if (i === cur) return; if (cur >= 0 && resets[cur]) resets[cur](); cur = i; cap.textContent = labels[i] || 'Screenshot'; cnt.textContent = (i + 1) + ' / ' + urls.length; [].forEach.call(dots.children, (d, k) => d.classList.toggle('on', k === i)); };
+    track.addEventListener('scroll', () => show(Math.max(0, Math.min(urls.length - 1, Math.round(track.scrollLeft / track.clientWidth)))), { passive: true });
+    const close = () => { document.removeEventListener('keydown', onKey); o.remove(); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') track.scrollBy({ left: track.clientWidth, behavior: 'smooth' }); else if (e.key === 'ArrowLeft') track.scrollBy({ left: -track.clientWidth, behavior: 'smooth' }); };
+    o.querySelector('.wg-gal-x').addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    if (urls.length < 2) dots.style.display = 'none';
+    document.body.appendChild(o);
+    track.scrollLeft = (start || 0) * track.clientWidth;
+    show(start || 0);
+  }
+
+  async function wgLoadShots(card, id){
     try {
       const res = await fetch(SUPABASE_URL + '/rest/v1/trade_screenshots?trade_id=eq.' + encodeURIComponent(id) + '&select=kind,storage_path&order=created_at.asc', { headers: authHeaders() });
       const shots = await res.json();
       if (!Array.isArray(shots) || !shots.length) return;
-      const btn = document.createElement('button');
-      btn.className = 'wg-shots-btn';
-      btn.textContent = 'View screenshots (' + shots.length + ')';
-      card.appendChild(btn);
-      btn.addEventListener('click', async () => {
-        btn.disabled = true; btn.textContent = 'Loading\u2026';
-        const urls = await Promise.all(shots.map(x => wgShotUrl(x.storage_path)));
-        const grid = document.createElement('div');
-        grid.className = 'wg-shots';
-        shots.forEach((x, i) => {
-          const f = document.createElement('figure');
-          f.className = 'wg-shot';
-          f.innerHTML = '<img loading="lazy" alt=""><figcaption></figcaption>';
-          f.querySelector('img').src = urls[i];
-          f.querySelector('figcaption').textContent = x.kind || 'screenshot';
-          f.addEventListener('click', () => wgLightbox(urls[i]));
-          grid.appendChild(f);
-        });
-        btn.replaceWith(grid);
-        scrollConvToBottom();
+      const urls = await Promise.all(shots.map((x) => wgShotUrl(x.storage_path)));
+      const labels = shots.map((x) => x.kind || 'Screenshot');
+      const strip = document.createElement('div');
+      strip.className = 'wg-shots';
+      const SHOW = 3;
+      shots.slice(0, SHOW).forEach((x, i) => {
+        const b = document.createElement('button');
+        b.className = 'wg-shot'; b.setAttribute('aria-label', 'Open ' + labels[i]);
+        const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = urls[i];
+        b.appendChild(im);
+        if (i === SHOW - 1 && shots.length > SHOW) { const m = document.createElement('div'); m.className = 'wg-shot-more'; m.textContent = '+' + (shots.length - SHOW); b.appendChild(m); }
+        b.addEventListener('click', () => wgGallery(urls, labels, i));
+        strip.appendChild(b);
       });
-    } catch (_e) { /* no button if the list can't be read */ }
+      const foot = card.querySelector('.wg-foot');
+      card.insertBefore(strip, foot);
+      scrollConvToBottom();
+    } catch (_e) { /* no screenshots strip if the list can't be read */ }
   }
-  async function wgLoadExplain(card, id){
-    const box = document.createElement('div');
-    box.className = 'wg-explain';
-    box.innerHTML = '<div class="wg-explain-load">Loading your notes\u2026</div>';
-    card.appendChild(box);
-    try {
-      const cols = 'entry_price,exit_price,stop_loss,take_profit,position_size,confidence_rating,entry_type,' + WG_SECTIONS.map(x => x[0]).join(',');
-      const res = await fetch(SUPABASE_URL + '/rest/v1/trades?id=eq.' + encodeURIComponent(id) + '&select=' + cols, { headers: authHeaders() });
-      const rows = await res.json();
-      const t = Array.isArray(rows) ? rows[0] : null;
-      if (!t) { box.remove(); return; }
-      const lv = [['Entry', t.entry_price], ['Exit', t.exit_price], ['Stop', t.stop_loss], ['Target', t.take_profit], ['Lots', t.position_size], ['Confidence', t.confidence_rating === null || t.confidence_rating === undefined ? null : t.confidence_rating + '/10'], ['Type', t.entry_type]].filter(x => x[1] !== null && x[1] !== undefined && x[1] !== '');
-      const secs = WG_SECTIONS.filter(x => t[x[0]] && String(t[x[0]]).trim());
-      box.innerHTML = (lv.length ? '<div class="wg-levels">' + lv.map(x => '<div><div class="wg-level-l">' + x[0] + '</div><div class="wg-level-v">' + escapeHtml(String(x[1])) + '</div></div>').join('') + '</div>' : '')
-        + (secs.length ? secs.map(x => '<div class="wg-sec ' + x[2] + '"><div class="wg-sec-l">' + x[1] + '</div><div class="wg-sec-t">' + escapeHtml(String(t[x[0]]).trim()) + '</div></div>').join('') : '<div class="wg-sec"><div class="wg-sec-t" style="color:var(--text-tertiary)">No written explanation on this trade yet.</div></div>');
-    } catch (_e) { box.remove(); }
-  }
+
   function wgBuild(w){
     const card = document.createElement('div');
     card.className = 'wg-card';
     if (w.type === 'trade_list' && Array.isArray(w.items)) {
       const SHOW = 5, items = w.items;
-      card.innerHTML = '<div class="wg-head"><div class="wg-title">' + escapeHtml(w.title || 'Trades') + '</div><div class="wg-count">' + (w.total > items.length ? items.length + ' of ' + w.total : items.length + (items.length === 1 ? ' trade' : ' trades')) + '</div></div>'
-        + items.map((t, i) => i < SHOW ? wgTradeRow(t) : wgTradeRow(t).replace('class="wg-row"', 'class="wg-row" hidden')).join('')
+      card.innerHTML = '<div class="wg-top"><div class="wg-logo">' + WG_LOGO + '</div><div class="wg-main"><div class="wg-name">' + escapeHtml(w.title || 'Trades') + '</div><div class="wg-sub">' + (w.total > items.length ? items.length + ' of ' + w.total : items.length + (items.length === 1 ? ' trade' : ' trades')) + '</div></div></div>'
+        + items.map((t, i) => '<button class="wg-row" data-trade="' + escapeHtml(t.id) + '"' + (i >= SHOW ? ' hidden' : '') + '>' + wgTradeInner(t, false) + '</button>').join('')
         + (items.length > SHOW ? '<button class="wg-more">Show ' + (items.length - SHOW) + ' more</button>' : '');
       const more = card.querySelector('.wg-more');
-      if (more) more.addEventListener('click', () => { card.querySelectorAll('.wg-row[hidden]').forEach(r => r.removeAttribute('hidden')); more.remove(); });
+      if (more) more.addEventListener('click', () => { card.querySelectorAll('.wg-row[hidden]').forEach((r) => r.removeAttribute('hidden')); more.remove(); });
+      card.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-trade]'); if (b) wgOpen(b.getAttribute('data-trade'), false); });
     } else if (w.type === 'trade' && w.item) {
       const t = w.item;
-      card.innerHTML = '<div class="wg-head"><div class="wg-title">Trade</div><div class="wg-count">' + escapeHtml(wgDate(t.exit_at || t.entry_at)) + '</div></div>' + wgTradeRow(t)
-        + ((t.strategy || t.mood) ? '<div class="wg-chips" style="padding-top:10px;border-top:1px solid var(--border)">' + [t.strategy, t.mood && 'Mood: ' + t.mood].filter(Boolean).map(c => '<span class="wg-chip">' + escapeHtml(c) + '</span>').join('') + '</div>' : '');
-      wgLoadExplain(card, t.id).then(() => wgOfferShots(card, t.id));
+      card.innerHTML = '<div class="wg-top">' + wgTradeInner(t, true) + '</div><div class="wg-foot"><button data-open>Open trade</button><button data-edit>Edit</button></div>';
+      card.querySelector('[data-open]').addEventListener('click', () => wgOpen(t.id, false));
+      card.querySelector('[data-edit]').addEventListener('click', () => wgOpen(t.id, true));
+      wgLoadShots(card, t.id);
     } else if (w.type === 'stats' && w.summary) {
       const s = w.summary, rows = Array.isArray(w.rows) ? w.rows : [];
-      const tiles = [['Trades', s.count], ['Win rate', s.win_rate === null ? '\u2014' : wgNum(s.win_rate, 0) + '%'], ['Net', wgSigned(s.net)], ['Profit factor', wgNum(s.profit_factor)], ['Expectancy', wgSigned(s.expectancy)], ['Avg win / loss', wgNum(s.avg_win, 1) + ' / ' + wgNum(s.avg_loss === null ? null : Math.abs(s.avg_loss), 1)]];
-      card.innerHTML = '<div class="wg-head"><div class="wg-title">' + escapeHtml(w.title || 'Performance') + '</div></div>'
-        + '<div class="wg-tiles">' + tiles.map(x => '<div class="wg-tile"><div class="wg-tile-l">' + x[0] + '</div><div class="wg-tile-v">' + escapeHtml(String(x[1])) + '</div></div>').join('') + '</div>'
-        + rows.map(r => '<div class="wg-grp"><div class="wg-grp-top"><span class="wg-grp-name">' + escapeHtml(r.label) + '</span><span class="' + wgTone(r.net) + '" style="font-weight:600;font-variant-numeric:tabular-nums">' + wgSigned(r.net) + '</span></div>'
+      const kpi = (l, v, cls) => '<div><div class="wg-kpi-l">' + l + '</div><div class="wg-kpi-v ' + (cls || '') + '">' + escapeHtml(String(v)) + '</div></div>';
+      card.innerHTML = '<div class="wg-top"><div class="wg-logo">' + WG_LOGO + '</div><div class="wg-main"><div class="wg-name">' + escapeHtml(w.title || 'Performance') + '</div><div class="wg-sub">' + s.count + (s.count === 1 ? ' trade' : ' trades') + '</div></div></div>'
+        + '<div class="wg-kpis">' + kpi('Win rate', s.win_rate === null ? '\u2014' : wgNum(s.win_rate, 0) + '%') + kpi('Net', wgSigned(s.net), wgTone(s.net)) + kpi('Profit factor', wgNum(s.profit_factor)) + '</div>'
+        + rows.map((r) => '<div class="wg-grp"><div class="wg-grp-top"><span class="wg-grp-name">' + escapeHtml(r.label) + '</span><span class="' + wgTone(r.net) + '" style="font-weight:600;font-variant-numeric:tabular-nums">' + wgSigned(r.net) + '</span></div>'
           + '<div class="wg-bar"><i style="width:' + Math.max(2, Math.min(100, Math.round(r.win_rate || 0))) + '%"></i></div>'
           + '<div class="wg-grp-sub">' + r.count + (r.count === 1 ? ' trade' : ' trades') + ' \u00b7 ' + wgNum(r.win_rate, 0) + '% win' + (r.count < 5 ? ' \u00b7 small sample' : '') + '</div></div>').join('');
     } else { return null; }
-    card.addEventListener('click', (e) => {
-      const b = e.target.closest && e.target.closest('[data-trade]');
-      if (b) { try { parent.postMessage({ type: 'eb-open-trade', id: b.getAttribute('data-trade') }, '*'); } catch (_e) {} }
-    });
     return card;
   }
   function wgRender(widgets){
     if (!Array.isArray(widgets) || !widgets.length) return null;
     const stack = document.createElement('div');
     stack.className = 'wg-stack';
-    widgets.forEach(w => { const c = wgBuild(w); if (c) stack.appendChild(c); });
+    widgets.forEach((w) => { const c = wgBuild(w); if (c) stack.appendChild(c); });
     return stack.children.length ? stack : null;
   }
 

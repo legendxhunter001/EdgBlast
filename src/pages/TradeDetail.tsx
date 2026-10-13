@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTrade, useScreenshots, useStrategies } from '@/hooks/useTrades';
 import { useCountUp } from '@/hooks/useCountUp';
 import { IosSheet } from '@/components/IosSheet';
@@ -45,6 +45,13 @@ const TradeDetail = () => {
   const shownPnl = useCountUp(trade && trade.pnl !== null ? Number(trade.pnl) : null);
   const [confirmDel, setConfirmDel] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (trade && searchParams.get('edit') === '1') {
+      setEditOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [trade]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [step, setStep] = useState<StepId>('overview');
   const [fields, setFields] = useState({
