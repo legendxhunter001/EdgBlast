@@ -1337,6 +1337,14 @@ html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-hig
 .wg-sec-t{ font-size:var(--text-base); line-height:1.6; color:var(--text-primary); white-space:pre-wrap; word-break:break-word; }
 .wg-sec.wg-mistake .wg-sec-l{ color:var(--danger); } .wg-sec.wg-good .wg-sec-l{ color:var(--success); }
 @media (max-width:720px){ .wg-levels{ grid-template-columns:repeat(2,1fr); } }
+
+.wg-shots-btn{ display:block; width:100%; padding:10px 14px; background:none; border:0; border-top:1px solid var(--border); font:inherit; font-size:var(--text-sm); color:var(--accent); cursor:pointer; text-align:center; }
+.wg-shots{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:10px 14px 14px; border-top:1px solid var(--border); }
+.wg-shot{ margin:0; cursor:zoom-in; }
+.wg-shot img{ display:block; width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px; border:1px solid var(--border); background:var(--surface-overlay); }
+.wg-shot figcaption{ margin-top:4px; font-size:var(--text-xs); color:var(--text-tertiary); text-transform:capitalize; }
+.wg-lightbox{ position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; padding:16px; cursor:zoom-out; }
+.wg-lightbox img{ max-width:100%; max-height:100%; border-radius:8px; }
 </style>
 </head>
 <body>
@@ -2716,6 +2724,52 @@ document.addEventListener('DOMContentLoaded', ()=>{
   }
 
   const WG_SECTIONS = [['thesis','Why I took it',''],['entry_reasoning','Entry reasoning',''],['exit_reasoning','Exit reasoning',''],['execution_notes','Execution',''],['psychology_review','Psychology',''],['what_went_well','What went well','wg-good'],['mistakes','Mistakes','wg-mistake'],['lessons_learned','Lessons',''],['notes','Notes','']];
+
+  async function wgShotUrl(path){
+    const enc = String(path).split('/').map(encodeURIComponent).join('/');
+    try {
+      const r = await fetch(SUPABASE_URL + '/storage/v1/object/sign/trade-screenshots/' + enc, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ expiresIn: 3600 }) });
+      const j = await r.json();
+      if (r.ok && j && j.signedURL) return SUPABASE_URL + '/storage/v1' + j.signedURL;
+    } catch (_e) {}
+    return SUPABASE_URL + '/storage/v1/object/public/trade-screenshots/' + enc;
+  }
+  function wgLightbox(src){
+    const o = document.createElement('div');
+    o.className = 'wg-lightbox';
+    o.innerHTML = '<img alt="">';
+    o.querySelector('img').src = src;
+    o.addEventListener('click', () => o.remove());
+    document.body.appendChild(o);
+  }
+  async function wgOfferShots(card, id){
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/trade_screenshots?trade_id=eq.' + encodeURIComponent(id) + '&select=kind,storage_path&order=created_at.asc', { headers: authHeaders() });
+      const shots = await res.json();
+      if (!Array.isArray(shots) || !shots.length) return;
+      const btn = document.createElement('button');
+      btn.className = 'wg-shots-btn';
+      btn.textContent = 'View screenshots (' + shots.length + ')';
+      card.appendChild(btn);
+      btn.addEventListener('click', async () => {
+        btn.disabled = true; btn.textContent = 'Loading\u2026';
+        const urls = await Promise.all(shots.map(x => wgShotUrl(x.storage_path)));
+        const grid = document.createElement('div');
+        grid.className = 'wg-shots';
+        shots.forEach((x, i) => {
+          const f = document.createElement('figure');
+          f.className = 'wg-shot';
+          f.innerHTML = '<img loading="lazy" alt=""><figcaption></figcaption>';
+          f.querySelector('img').src = urls[i];
+          f.querySelector('figcaption').textContent = x.kind || 'screenshot';
+          f.addEventListener('click', () => wgLightbox(urls[i]));
+          grid.appendChild(f);
+        });
+        btn.replaceWith(grid);
+        scrollConvToBottom();
+      });
+    } catch (_e) { /* no button if the list can't be read */ }
+  }
   async function wgLoadExplain(card, id){
     const box = document.createElement('div');
     box.className = 'wg-explain';
@@ -2747,7 +2801,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
       const t = w.item;
       card.innerHTML = '<div class="wg-head"><div class="wg-title">Trade</div><div class="wg-count">' + escapeHtml(wgDate(t.exit_at || t.entry_at)) + '</div></div>' + wgTradeRow(t)
         + ((t.strategy || t.mood) ? '<div class="wg-chips" style="padding-top:10px;border-top:1px solid var(--border)">' + [t.strategy, t.mood && 'Mood: ' + t.mood].filter(Boolean).map(c => '<span class="wg-chip">' + escapeHtml(c) + '</span>').join('') + '</div>' : '');
-      wgLoadExplain(card, t.id);
+      wgLoadExplain(card, t.id).then(() => wgOfferShots(card, t.id));
     } else if (w.type === 'stats' && w.summary) {
       const s = w.summary, rows = Array.isArray(w.rows) ? w.rows : [];
       const tiles = [['Trades', s.count], ['Win rate', s.win_rate === null ? '\u2014' : wgNum(s.win_rate, 0) + '%'], ['Net', wgSigned(s.net)], ['Profit factor', wgNum(s.profit_factor)], ['Expectancy', wgSigned(s.expectancy)], ['Avg win / loss', wgNum(s.avg_win, 1) + ' / ' + wgNum(s.avg_loss === null ? null : Math.abs(s.avg_loss), 1)]];
