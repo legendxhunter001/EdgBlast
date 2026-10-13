@@ -1289,6 +1289,43 @@ html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-hig
 @media (max-width: 720px){
   input, textarea, select, .msg-edit-textarea, .composer-textarea{ font-size:16px !important; }
 }
+
+/* ---------- coach widgets: trade cards and stats under a reply ---------- */
+.wg-stack{ display:flex; flex-direction:column; gap:10px; margin-top:12px; max-width:560px; }
+.wg-stack.wg-pending{ opacity:0; transform:translateY(6px); }
+.wg-stack.wg-in{ opacity:1; transform:none; transition:opacity .35s ease, transform .35s ease; }
+.wg-card{ background:var(--surface-elevated); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+.wg-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px 10px; }
+.wg-title{ font-size:var(--text-sm); font-weight:600; color:var(--text-primary); letter-spacing:.01em; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wg-count{ font-size:var(--text-xs); color:var(--text-tertiary); white-space:nowrap; }
+.wg-row{ display:flex; align-items:center; gap:10px; width:100%; padding:10px 14px; background:none; border:0; border-top:1px solid var(--border); text-align:left; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s ease; }
+.wg-row[hidden]{ display:none; }
+.wg-row:active, .wg-row:hover{ background:var(--accent-active-bg); }
+.wg-row-main{ flex:1; min-width:0; }
+.wg-row-top{ display:flex; align-items:center; gap:6px; font-size:var(--text-base); font-weight:600; color:var(--text-primary); }
+.wg-row-sub{ margin-top:2px; font-size:var(--text-xs); color:var(--text-tertiary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wg-dir{ font-size:var(--text-2xs); font-weight:600; letter-spacing:.04em; text-transform:uppercase; padding:2px 6px; border-radius:6px; background:var(--surface-overlay); border:1px solid var(--border); color:var(--text-secondary); }
+.wg-num{ text-align:right; font-variant-numeric:tabular-nums; flex-shrink:0; }
+.wg-pnl{ font-size:var(--text-base); font-weight:600; }
+.wg-r{ font-size:var(--text-xs); color:var(--text-tertiary); margin-top:2px; }
+.wg-pos{ color:var(--success); } .wg-neg{ color:var(--danger); } .wg-flat{ color:var(--text-secondary); }
+.wg-chev{ width:14px; height:14px; color:var(--text-tertiary); flex-shrink:0; }
+.wg-more{ display:block; width:100%; padding:10px 14px; background:none; border:0; border-top:1px solid var(--border); font:inherit; font-size:var(--text-sm); color:var(--accent); cursor:pointer; text-align:center; }
+.wg-tiles{ display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--border); }
+.wg-tile{ padding:10px 14px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
+.wg-tile:nth-child(3n){ border-right:0; }
+.wg-tile:nth-last-child(-n+3){ border-bottom:0; }
+.wg-tile-l{ font-size:var(--text-2xs); color:var(--text-tertiary); text-transform:uppercase; letter-spacing:.05em; }
+.wg-tile-v{ margin-top:3px; font-size:var(--text-lg); font-weight:600; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.wg-grp{ padding:10px 14px; border-top:1px solid var(--border); }
+.wg-grp-top{ display:flex; justify-content:space-between; gap:10px; font-size:var(--text-base); }
+.wg-grp-name{ font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wg-bar{ height:4px; border-radius:2px; background:var(--surface-overlay); margin-top:7px; overflow:hidden; }
+.wg-bar > i{ display:block; height:100%; border-radius:2px; background:var(--accent); }
+.wg-grp-sub{ margin-top:5px; font-size:var(--text-xs); color:var(--text-tertiary); }
+.wg-chips{ display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 12px; }
+.wg-chip{ font-size:var(--text-xs); padding:3px 8px; border-radius:999px; background:var(--surface-overlay); border:1px solid var(--border); color:var(--text-secondary); }
+@media (max-width:720px){ .wg-stack{ max-width:100%; } .wg-tile-v{ font-size:var(--text-md); } }
 </style>
 </head>
 <body>
@@ -1886,6 +1923,7 @@ function stopGeneration(){
   if(window._streamCancel) window._streamCancel();
   const gen = document.getElementById('genIndicator');
   if(gen) gen.remove();
+  document.querySelectorAll('.wg-stack.wg-pending').forEach(function(e){ e.classList.remove('wg-pending'); e.classList.add('wg-in'); });
   if(window._streamingMsg){
     window._streamingMsg.classList.remove('streaming');
     window._streamingMsg = null;
@@ -2498,11 +2536,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const inner = document.getElementById('convInner');
     inner.innerHTML = '';
     try {
-      const res = await fetch(SUPABASE_URL + '/rest/v1/ai_chat_messages?select=role,content&conversation_id=eq.' + convId + '&order=created_at.asc', { headers: authHeaders() });
+      const res = await fetch(SUPABASE_URL + '/rest/v1/ai_chat_messages?select=role,content,widgets&conversation_id=eq.' + convId + '&order=created_at.asc', { headers: authHeaders() });
       const msgs = await res.json();
       if (!Array.isArray(msgs)) return;
       if (!msgs.length) { showEmptyState(); return; }
-      msgs.forEach(m => appendMessage(m.role === 'user' ? 'user' : 'ai', m.content, false));
+      msgs.forEach(m => appendMessage(m.role === 'user' ? 'user' : 'ai', m.content, false, m.widgets));
       scrollConvToBottom(true);
     } catch (e) { /* leave the transcript empty for this conversation */ }
   }
@@ -2625,7 +2663,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         resetSendBtn();
         return;
       }
-      appendMessage('ai', data.reply, true);
+      appendMessage('ai', data.reply, true, data.widgets);
     } catch (e) {
       const existingGen = document.getElementById('genIndicator');
       if (existingGen) existingGen.remove();
@@ -2651,7 +2689,58 @@ document.addEventListener('DOMContentLoaded', ()=>{
     realRegenerate(msgEl, toRemove, userText);
   };
 
-  function appendMessage(role, text, animate){
+  /* ---------- widgets: cards built by the server from real trades ---------- */
+  const WG_CHEV = '<svg class="wg-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>';
+  function wgNum(v, d){ if (v === null || v === undefined || !isFinite(v)) return '\u2014'; return Number(v).toFixed(d === undefined ? 2 : d); }
+  function wgSigned(v){ if (v === null || v === undefined || !isFinite(v)) return '\u2014'; const n = Number(v); return (n > 0 ? '+' : n < 0 ? '\u2212' : '') + Math.abs(n).toFixed(2); }
+  function wgTone(v){ return v > 0 ? 'wg-pos' : v < 0 ? 'wg-neg' : 'wg-flat'; }
+  function wgDate(s){ if (!s) return ''; const d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); }
+  function wgTradeRow(t){
+    const sub = [wgDate(t.exit_at || t.entry_at), t.planned_rr ? 'planned 1:' + wgNum(t.planned_rr, 1) : '', t.strategy || '', t.mood || ''].filter(Boolean).join(' \u00b7 ');
+    return '<button class="wg-row" data-trade="' + escapeHtml(t.id) + '">'
+      + '<div class="wg-row-main"><div class="wg-row-top">' + escapeHtml(t.asset || '') + '<span class="wg-dir">' + escapeHtml(t.direction || '') + '</span></div>'
+      + '<div class="wg-row-sub">' + escapeHtml(sub) + '</div></div>'
+      + '<div class="wg-num"><div class="wg-pnl ' + wgTone(t.pnl) + '">' + wgSigned(t.pnl) + '</div>'
+      + (t.r !== null && t.r !== undefined ? '<div class="wg-r">' + wgSigned(t.r) + ' R</div>' : '') + '</div>' + WG_CHEV + '</button>';
+  }
+  function wgBuild(w){
+    const card = document.createElement('div');
+    card.className = 'wg-card';
+    if (w.type === 'trade_list' && Array.isArray(w.items)) {
+      const SHOW = 5, items = w.items;
+      card.innerHTML = '<div class="wg-head"><div class="wg-title">' + escapeHtml(w.title || 'Trades') + '</div><div class="wg-count">' + (w.total > items.length ? items.length + ' of ' + w.total : items.length + (items.length === 1 ? ' trade' : ' trades')) + '</div></div>'
+        + items.map((t, i) => i < SHOW ? wgTradeRow(t) : wgTradeRow(t).replace('class="wg-row"', 'class="wg-row" hidden')).join('')
+        + (items.length > SHOW ? '<button class="wg-more">Show ' + (items.length - SHOW) + ' more</button>' : '');
+      const more = card.querySelector('.wg-more');
+      if (more) more.addEventListener('click', () => { card.querySelectorAll('.wg-row[hidden]').forEach(r => r.removeAttribute('hidden')); more.remove(); });
+    } else if (w.type === 'trade' && w.item) {
+      const t = w.item;
+      card.innerHTML = '<div class="wg-head"><div class="wg-title">Trade</div><div class="wg-count">' + escapeHtml(wgDate(t.exit_at || t.entry_at)) + '</div></div>' + wgTradeRow(t)
+        + ((t.strategy || t.mood) ? '<div class="wg-chips" style="padding-top:10px;border-top:1px solid var(--border)">' + [t.strategy, t.mood && 'Mood: ' + t.mood].filter(Boolean).map(c => '<span class="wg-chip">' + escapeHtml(c) + '</span>').join('') + '</div>' : '');
+    } else if (w.type === 'stats' && w.summary) {
+      const s = w.summary, rows = Array.isArray(w.rows) ? w.rows : [];
+      const tiles = [['Trades', s.count], ['Win rate', s.win_rate === null ? '\u2014' : wgNum(s.win_rate, 0) + '%'], ['Net', wgSigned(s.net)], ['Profit factor', wgNum(s.profit_factor)], ['Expectancy', wgSigned(s.expectancy)], ['Avg win / loss', wgNum(s.avg_win, 1) + ' / ' + wgNum(s.avg_loss === null ? null : Math.abs(s.avg_loss), 1)]];
+      card.innerHTML = '<div class="wg-head"><div class="wg-title">' + escapeHtml(w.title || 'Performance') + '</div></div>'
+        + '<div class="wg-tiles">' + tiles.map(x => '<div class="wg-tile"><div class="wg-tile-l">' + x[0] + '</div><div class="wg-tile-v">' + escapeHtml(String(x[1])) + '</div></div>').join('') + '</div>'
+        + rows.map(r => '<div class="wg-grp"><div class="wg-grp-top"><span class="wg-grp-name">' + escapeHtml(r.label) + '</span><span class="' + wgTone(r.net) + '" style="font-weight:600;font-variant-numeric:tabular-nums">' + wgSigned(r.net) + '</span></div>'
+          + '<div class="wg-bar"><i style="width:' + Math.max(2, Math.min(100, Math.round(r.win_rate || 0))) + '%"></i></div>'
+          + '<div class="wg-grp-sub">' + r.count + (r.count === 1 ? ' trade' : ' trades') + ' \u00b7 ' + wgNum(r.win_rate, 0) + '% win' + (r.count < 5 ? ' \u00b7 small sample' : '') + '</div></div>').join('');
+    } else { return null; }
+    card.addEventListener('click', (e) => {
+      const b = e.target.closest && e.target.closest('[data-trade]');
+      if (b) { try { parent.postMessage({ type: 'eb-open-trade', id: b.getAttribute('data-trade') }, '*'); } catch (_e) {} }
+    });
+    return card;
+  }
+  function wgRender(widgets){
+    if (!Array.isArray(widgets) || !widgets.length) return null;
+    const stack = document.createElement('div');
+    stack.className = 'wg-stack';
+    widgets.forEach(w => { const c = wgBuild(w); if (c) stack.appendChild(c); });
+    return stack.children.length ? stack : null;
+  }
+
+  function appendMessage(role, text, animate, widgets){
     var es = document.getElementById('emptyState'); if (es) es.remove();
     const inner = document.getElementById('convInner');
     const msg = document.createElement('div');
@@ -2669,8 +2758,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
     msg.innerHTML = '<div class="msg-body"><div class="msg-text"></div><div class="msg-actions">' + actionsHtml + '</div></div>';
     inner.appendChild(msg);
     const textEl = msg.querySelector('.msg-text');
+    const wgStack = role === 'ai' ? wgRender(widgets) : null;
+    if (wgStack) msg.querySelector('.msg-body').insertBefore(wgStack, msg.querySelector('.msg-actions'));
     if (animate && role === 'ai') {
-      streamWords(textEl, text, () => { resetSendBtn(); scrollConvToBottom(); });
+      if (wgStack) wgStack.classList.add('wg-pending');
+      streamWords(textEl, text, () => {
+        if (wgStack) { wgStack.classList.remove('wg-pending'); wgStack.classList.add('wg-in'); }
+        resetSendBtn(); scrollConvToBottom();
+      });
     } else {
       renderRichText(textEl, text);
     }
@@ -2773,7 +2868,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         currentConversationId = data.conversation_id;
         loadRecentConversations();
       }
-      appendMessage('ai', data.reply, true);
+      appendMessage('ai', data.reply, true, data.widgets);
     } catch (e) {
       const existingGen = document.getElementById('genIndicator');
       if (existingGen) existingGen.remove();
