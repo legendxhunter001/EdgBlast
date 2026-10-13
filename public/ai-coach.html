@@ -1296,12 +1296,12 @@ html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-hig
 .wg-stack.wg-in{ opacity:1; transform:none; transition:opacity .35s ease, transform .35s ease; }
 .wg-card{ background:var(--surface); border:1px solid var(--border); border-radius:18px; overflow:hidden; }
 .wg-top{ display:flex; align-items:center; gap:12px; padding:14px; }
-.wg-logo{ width:38px; height:38px; border-radius:11px; background:var(--surface-overlay); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-primary); flex-shrink:0; }
-.wg-logo svg{ width:22px; height:22px; }
+.wg-logo{ width:38px; height:38px; border-radius:12px; background:#000; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+.wg-logo svg{ width:27px; height:27px; display:block; }
+.wg-sym{ display:flex; align-items:center; justify-content:center; flex-shrink:0; min-width:38px; }
 .wg-main{ flex:1; min-width:0; }
-.wg-name{ font-size:15px; font-weight:600; color:var(--text-primary); line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.wg-name span{ font-weight:500; color:var(--text-tertiary); margin-left:6px; font-size:var(--text-sm); }
-.wg-sub{ margin-top:2px; font-size:var(--text-sm); color:var(--text-tertiary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wg-name{ font-size:17px; font-weight:600; color:var(--text-primary); line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wg-sub{ margin-top:2px; font-size:12.5px; color:var(--text-tertiary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wg-num{ text-align:right; font-variant-numeric:tabular-nums; flex-shrink:0; }
 .wg-pnl{ font-size:15px; font-weight:600; }
 .wg-r{ font-size:var(--text-xs); color:var(--text-tertiary); margin-top:2px; }
@@ -2706,7 +2706,41 @@ document.addEventListener('DOMContentLoaded', ()=>{
   };
 
   /* ---------- widgets: clean cards built by the server from real trades ---------- */
-  const WG_LOGO = '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="1.05" stroke-linecap="round" opacity=".55"><line x1="16" y1="16" x2="16" y2="6"/><line x1="16" y1="16" x2="16" y2="26"/><line x1="16" y1="16" x2="6" y2="16"/><line x1="16" y1="16" x2="26" y2="16"/></g><g fill="currentColor"><circle cx="16" cy="6" r="2.3"/><circle cx="16" cy="26" r="2.3"/><circle cx="6" cy="16" r="2.3"/><circle cx="26" cy="16" r="2.3"/><circle cx="9" cy="9" r="1.8" opacity=".65"/><circle cx="23" cy="9" r="1.8" opacity=".65"/><circle cx="9" cy="23" r="1.8" opacity=".65"/><circle cx="23" cy="23" r="1.8" opacity=".65"/><circle cx="16" cy="16" r="3.2"/></g></svg>';
+  const WG_LOGO = '<svg viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="wgLg" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0%" stop-color="hsl(186 22% 62%)"/><stop offset="100%" stop-color="hsl(186 22% 48%)"/></linearGradient></defs><rect x="132" y="96" width="54" height="320" rx="10" fill="url(#wgLg)"/><polygon points="132,96 391,125 132,154" fill="url(#wgLg)"/><polygon points="132,227 351,256 132,285" fill="url(#wgLg)"/><polygon points="132,358 316,387 132,416" fill="url(#wgLg)"/></svg>';
+  const WG_TV = 'https://s3-symbol-logo.tradingview.com';
+  const WG_COUNTRY = { USD:'US', EUR:'EU', GBP:'GB', JPY:'JP', AUD:'AU', NZD:'NZ', CAD:'CA', CHF:'CH', CNH:'CN', CNY:'CN', HKD:'HK', SGD:'SG', SEK:'SE', NOK:'NO', DKK:'DK', ZAR:'ZA', MXN:'MX', TRY:'TR', PLN:'PL', HUF:'HU', CZK:'CZ', ILS:'IL', INR:'IN', KRW:'KR' };
+  const WG_CRYPTO = { BTC:'XTVCBTC', ETH:'XTVCETH', BNB:'XTVCBNB', SOL:'XTVCSOL', XRP:'XTVCXRP', ADA:'XTVCADA', DOGE:'XTVCDOGE', AVAX:'XTVCAVAX', DOT:'XTVCDOT', LINK:'XTVCLINK', LTC:'XTVCLTC' };
+  const WG_STOCKS = { AAPL:'apple.svg', MSFT:'microsoft.svg', NVDA:'nvidia.svg', GOOGL:'alphabet.svg', GOOG:'alphabet.svg', AMZN:'amazon.svg', META:'meta.svg', TSLA:'tesla.svg', AMD:'advanced-micro-devices.svg', NFLX:'netflix.svg', JPM:'jpmorgan-chase.svg', V:'visa.svg', MA:'mastercard.svg', WMT:'walmart.svg', DIS:'disney.svg', XOM:'exxon-mobil.svg', BA:'boeing.svg' };
+  const WG_INDICES = [['NAS100','indices/nasdaq-100.svg'],['US100','indices/nasdaq-100.svg'],['NQ','indices/nasdaq-100.svg'],['SPX500','indices/s-and-p-500.svg'],['US500','indices/s-and-p-500.svg'],['SPX','indices/s-and-p-500.svg'],['ES','indices/s-and-p-500.svg'],['US30','indices/dow-30.svg'],['DJI','indices/dow-30.svg'],['GER40','indices/dax.svg'],['GER30','indices/dax.svg'],['DE30','indices/dax.svg'],['UK100','indices/ftse-100.svg'],['JPN225','indices/nikkei-225.svg'],['NI225','indices/nikkei-225.svg'],['HSI','indices/hang-seng.svg'],['DXY','indices/u-s-dollar-index.svg'],['VIX','indices/volatility-s-and-p-500.svg'],['CL','crude-oil.svg'],['USOIL','crude-oil.svg'],['UKOIL','crude-oil.svg'],['NG','natural-gas.svg']];
+  function wgSymUrls(raw){
+    const c = String(raw || '').split(':').pop().replace('/', '').toUpperCase().trim();
+    if (/^XAU/.test(c)) return [WG_TV + '/metal/gold.svg'];
+    if (/^XAG/.test(c)) return [WG_TV + '/metal/silver.svg'];
+    for (const x of WG_INDICES) if (c.indexOf(x[0]) === 0) return [WG_TV + '/' + x[1]];
+    for (const k in WG_CRYPTO) if (c.indexOf(k) === 0) return [WG_TV + '/crypto/' + WG_CRYPTO[k] + '.svg'];
+    if (WG_STOCKS[c]) return [WG_TV + '/' + WG_STOCKS[c]];
+    if (c.length === 6) { const b = WG_COUNTRY[c.slice(0, 3)], q = WG_COUNTRY[c.slice(3, 6)]; if (b && q) return [WG_TV + '/country/' + b + '.svg', WG_TV + '/country/' + q + '.svg']; if (b) return [WG_TV + '/country/' + b + '.svg']; if (q) return [WG_TV + '/country/' + q + '.svg']; }
+    return [];
+  }
+  function wgGlyph(raw){ const c = String(raw || '').split(':').pop().replace('/', '').toUpperCase(); if (/^XAU/.test(c)) return 'Au'; if (/^XAG/.test(c)) return 'Ag'; if (/^(BTC|ETH|XRP|LTC|SOL|DOGE|ADA|BNB)/.test(c)) return c.slice(0, 3); if (/OIL|WTI|BRENT/.test(c)) return 'Oil'; return 'FX'; }
+  window.wgImgFail = function(img){
+    const w = img.closest('[data-sym]'); if (!w) return;
+    if (img.getAttribute('data-role') === 'badge') { img.remove(); return; }
+    const size = Number(w.getAttribute('data-size')) || 32, g = document.createElement('span');
+    g.setAttribute('style', 'display:inline-grid;place-items:center;border-radius:50%;background:var(--surface-overlay);color:var(--text-tertiary);font-weight:600;line-height:1;width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * 0.4) + 'px');
+    g.textContent = w.getAttribute('data-glyph') || 'FX';
+    w.replaceWith(g);
+  };
+  function wgSymbolLogo(symbol, size){
+    const urls = wgSymUrls(symbol), glyph = escapeHtml(wgGlyph(symbol));
+    const circ = 'position:absolute;width:' + size + 'px;height:' + size + 'px;border-radius:50%;border:1.5px solid var(--surface);box-shadow:0 2px 6px rgba(0,0,0,.35);background:#1e222d;object-fit:cover;';
+    if (!urls.length) return '<span data-sym data-size="' + size + '" data-glyph="' + glyph + '" style="display:inline-grid;place-items:center;border-radius:50%;background:var(--surface-overlay);color:var(--text-tertiary);font-weight:600;line-height:1;width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * 0.4) + 'px">' + glyph + '</span>';
+    if (urls.length === 2) {
+      const w = Math.round(size * 54 / 32), h = Math.round(size * 48 / 32), off = Math.round(size * 16 / 32);
+      return '<span data-sym data-size="' + size + '" data-glyph="' + glyph + '" style="position:relative;display:inline-block;flex-shrink:0;width:' + w + 'px;height:' + h + 'px"><img alt="" src="' + urls[0] + '" onerror="wgImgFail(this)" style="' + circ + 'left:0;top:' + off + 'px;z-index:2"><img alt="" data-role="badge" src="' + urls[1] + '" onerror="wgImgFail(this)" style="' + circ + 'left:' + off + 'px;top:0;z-index:1"></span>';
+    }
+    return '<span data-sym data-size="' + size + '" data-glyph="' + glyph + '" style="display:inline-block;flex-shrink:0;width:' + size + 'px;height:' + size + 'px"><img alt="" src="' + urls[0] + '" onerror="wgImgFail(this)" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:contain;display:block"></span>';
+  }
   const WG_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   function wgNum(v, d){ if (v === null || v === undefined || !isFinite(v)) return '\u2014'; return Number(v).toFixed(d === undefined ? 2 : d); }
   function wgSigned(v){ if (v === null || v === undefined || !isFinite(v)) return '\u2014'; const n = Number(v); return (n > 0 ? '+' : n < 0 ? '\u2212' : '') + Math.abs(n).toFixed(2); }
@@ -2720,11 +2754,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const d = b || a; return d ? day(d) + ' \u00b7 ' + hm(d) : '';
   }
   function wgCap(s){ s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
-  function wgTradeInner(t, withLogo){
-    const sub = [wgWhen(t), t.strategy].filter(Boolean).join(' \u00b7 ');
-    return (withLogo ? '<div class="wg-logo">' + WG_LOGO + '</div>' : '')
-      + '<div class="wg-main"><div class="wg-name">' + escapeHtml(t.asset || '') + '<span>' + escapeHtml(wgCap(t.direction)) + '</span></div><div class="wg-sub">' + escapeHtml(sub) + '</div></div>'
-      + '<div class="wg-num"><div class="wg-pnl ' + wgTone(t.pnl) + '">' + wgSigned(t.pnl) + '</div>' + (t.r !== null && t.r !== undefined ? '<div class="wg-r">' + wgSigned(t.r) + ' R</div>' : '') + '</div>';
+  function wgTradeInner(t, size){
+    const sub = [wgCap(t.direction), wgWhen(t), t.strategy].filter(Boolean).join(' \u00b7 ');
+    return '<span class="wg-sym">' + wgSymbolLogo(t.asset, size) + '</span>'
+      + '<div class="wg-main"><div class="wg-name">' + escapeHtml(t.asset || '') + '</div><div class="wg-sub">' + escapeHtml(sub) + '</div></div>'
+      + '<div class="wg-num"><div class="wg-pnl ' + wgTone(t.pnl) + '">' + wgSigned(t.pnl) + '</div>' + (t.r !== null && t.r !== undefined ? '<div class="wg-r">' + wgNum(t.r, 1) + 'R</div>' : '') + '</div>';
   }
   function wgOpen(id, edit){ try { parent.postMessage({ type: 'eb-open-trade', id: id, edit: !!edit }, '*'); } catch (_e) {} }
 
@@ -2817,14 +2851,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if (w.type === 'trade_list' && Array.isArray(w.items)) {
       const SHOW = 5, items = w.items;
       card.innerHTML = '<div class="wg-top"><div class="wg-logo">' + WG_LOGO + '</div><div class="wg-main"><div class="wg-name">' + escapeHtml(w.title || 'Trades') + '</div><div class="wg-sub">' + (w.total > items.length ? items.length + ' of ' + w.total : items.length + (items.length === 1 ? ' trade' : ' trades')) + '</div></div></div>'
-        + items.map((t, i) => '<button class="wg-row" data-trade="' + escapeHtml(t.id) + '"' + (i >= SHOW ? ' hidden' : '') + '>' + wgTradeInner(t, false) + '</button>').join('')
+        + items.map((t, i) => '<button class="wg-row" data-trade="' + escapeHtml(t.id) + '"' + (i >= SHOW ? ' hidden' : '') + '>' + wgTradeInner(t, 26) + '</button>').join('')
         + (items.length > SHOW ? '<button class="wg-more">Show ' + (items.length - SHOW) + ' more</button>' : '');
       const more = card.querySelector('.wg-more');
       if (more) more.addEventListener('click', () => { card.querySelectorAll('.wg-row[hidden]').forEach((r) => r.removeAttribute('hidden')); more.remove(); });
       card.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-trade]'); if (b) wgOpen(b.getAttribute('data-trade'), false); });
     } else if (w.type === 'trade' && w.item) {
       const t = w.item;
-      card.innerHTML = '<div class="wg-top">' + wgTradeInner(t, true) + '</div><div class="wg-foot"><button data-open>Open trade</button><button data-edit>Edit</button></div>';
+      card.innerHTML = '<div class="wg-top">' + wgTradeInner(t, 34) + '</div><div class="wg-foot"><button data-open>Open trade</button><button data-edit>Edit</button></div>';
       card.querySelector('[data-open]').addEventListener('click', () => wgOpen(t.id, false));
       card.querySelector('[data-edit]').addEventListener('click', () => wgOpen(t.id, true));
       wgLoadShots(card, t.id);
