@@ -1290,46 +1290,68 @@ html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-hig
   input, textarea, select, .msg-edit-textarea, .composer-textarea{ font-size:16px !important; }
 }
 
-/* ---------- coach widgets: clean cards under a reply ---------- */
-.wg-stack{ display:flex; flex-direction:column; gap:10px; margin-top:12px; width:100%; max-width:440px; }
-.wg-stack.wg-pending{ opacity:0; transform:translateY(6px); }
-.wg-stack.wg-in{ opacity:1; transform:none; transition:opacity .35s ease, transform .35s ease; }
-.wg-card{ background:var(--surface); border:1px solid var(--border); border-radius:18px; overflow:hidden; }
-.wg-top{ display:flex; align-items:center; gap:12px; padding:14px; }
-.wg-logo{ width:38px; height:38px; border-radius:12px; background:#000; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
-.wg-logo svg{ width:27px; height:27px; display:block; }
-.wg-sym{ display:flex; align-items:center; justify-content:center; flex-shrink:0; min-width:38px; }
-.wg-main{ flex:1; min-width:0; }
-.wg-name{ font-size:17px; font-weight:600; color:var(--text-primary); line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.wg-sub{ margin-top:2px; font-size:12.5px; color:var(--text-tertiary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.wg-num{ text-align:right; font-variant-numeric:tabular-nums; flex-shrink:0; }
-.wg-pnl{ font-size:15px; font-weight:600; }
-.wg-r{ font-size:var(--text-xs); color:var(--text-tertiary); margin-top:2px; }
-.wg-pos{ color:var(--success); } .wg-neg{ color:var(--danger); } .wg-flat{ color:var(--text-secondary); }
-.wg-row{ display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; background:none; border:0; border-top:1px solid var(--border); text-align:left; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s ease; }
-.wg-row:active{ background:var(--surface-overlay); }
-.wg-row[hidden]{ display:none; }
-.wg-more{ display:block; width:100%; padding:12px 14px; background:none; border:0; border-top:1px solid var(--border); font:inherit; font-size:var(--text-base); color:var(--text-secondary); cursor:pointer; text-align:center; }
-.wg-shots{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:0 14px 14px; }
-.wg-shot{ position:relative; padding:0; border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface-overlay); cursor:pointer; aspect-ratio:1/1; -webkit-tap-highlight-color:transparent; }
-.wg-shot img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
-.wg-shot-more{ position:absolute; inset:0; background:rgba(0,0,0,.55); color:#fff; font-size:18px; font-weight:600; display:flex; align-items:center; justify-content:center; }
-.wg-foot{ display:flex; border-top:1px solid var(--border); }
-.wg-foot button{ flex:1; padding:12px; background:none; border:0; font:inherit; font-size:var(--text-base); font-weight:500; color:var(--text-secondary); cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.wg-foot button + button{ border-left:1px solid var(--border); }
-.wg-foot button:active{ background:var(--surface-overlay); }
-.wg-kpis{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 14px 14px; }
-.wg-kpi-l{ font-size:var(--text-xs); color:var(--text-tertiary); }
-.wg-kpi-v{ margin-top:2px; font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--text-primary); }
-.wg-grp{ padding:12px 14px; border-top:1px solid var(--border); }
-.wg-grp-top{ display:flex; justify-content:space-between; gap:10px; font-size:var(--text-base); }
-.wg-grp-name{ font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.wg-bar{ height:4px; border-radius:2px; background:var(--surface-overlay); margin-top:8px; overflow:hidden; }
-.wg-bar > i{ display:block; height:100%; border-radius:2px; background:var(--text-secondary); opacity:.7; }
-.wg-grp-sub{ margin-top:6px; font-size:var(--text-xs); color:var(--text-tertiary); }
-
+/* ---------- coach widgets: depth + the app's own colors (MT5 blue wins, red losses, teal brand) ---------- */
+.wg-stack{
+  --wg-win:#5AA9EB; --wg-win-bg:rgba(90,169,235,.15); --wg-win-ring:rgba(90,169,235,.30);
+  --wg-loss:#E0766E; --wg-loss-bg:rgba(224,118,110,.15); --wg-loss-ring:rgba(224,118,110,.30);
+  --wg-line:rgba(128,128,128,.17); --wg-sunken:rgba(128,128,128,.09);
+  --wg-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 14px 30px -16px rgba(0,0,0,.7), 0 2px 6px -2px rgba(0,0,0,.35);
+  display:flex; flex-direction:column; gap:12px; margin-top:12px; width:100%; max-width:440px;
+}
+[data-theme="light"] .wg-stack{
+  --wg-win:#2B7FC9; --wg-win-bg:rgba(43,127,201,.10); --wg-win-ring:rgba(43,127,201,.26);
+  --wg-loss:#BC4B45; --wg-loss-bg:rgba(188,75,69,.09); --wg-loss-ring:rgba(188,75,69,.24);
+  --wg-line:rgba(20,30,40,.09); --wg-sunken:rgba(20,30,40,.045);
+  --wg-shadow:0 1px 2px rgba(20,30,40,.05), 0 14px 28px -16px rgba(20,30,40,.20);
+}
+.wg-stack.wg-pending{ opacity:0; transform:translateY(8px) scale(.985); }
+.wg-stack.wg-in{ opacity:1; transform:none; transition:opacity .4s ease, transform .4s cubic-bezier(.2,.8,.2,1); }
 .wg-stack + .msg-text{ margin-top:14px; }
 .msg-text + .wg-stack{ margin-top:12px; }
+.wg-card{ position:relative; overflow:hidden; border-radius:20px; border:1px solid var(--border); background-color:var(--surface);
+  background-image:radial-gradient(120% 90% at 0% 0%, var(--wg-tint, transparent) 0, transparent 60%), linear-gradient(180deg, rgba(255,255,255,.04), transparent 45%);
+  box-shadow:var(--wg-shadow); }
+.wg-card.wg-win{ --wg-tint:var(--wg-win-bg); }
+.wg-card.wg-loss{ --wg-tint:var(--wg-loss-bg); }
+.wg-top{ display:flex; align-items:center; gap:12px; padding:15px 15px 14px; }
+.wg-logo{ width:40px; height:40px; border-radius:13px; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;
+  background:linear-gradient(145deg,#232323,#000); border:1px solid rgba(255,255,255,.09); box-shadow:0 1px 0 rgba(255,255,255,.14) inset, 0 6px 12px -6px rgba(0,0,0,.6); }
+.wg-logo svg{ width:28px; height:28px; display:block; }
+.wg-sym{ display:flex; align-items:center; justify-content:center; flex-shrink:0; min-width:40px; }
+.wg-main{ flex:1; min-width:0; }
+.wg-name{ font-size:17px; font-weight:600; letter-spacing:-.01em; color:var(--text-primary); line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wg-sub{ margin-top:3px; font-size:12.5px; color:var(--text-tertiary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wg-num{ text-align:right; font-variant-numeric:tabular-nums; flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.wg-pill{ display:inline-block; padding:4px 11px; border-radius:999px; font-size:14px; font-weight:600; letter-spacing:-.005em; background:var(--wg-sunken); box-shadow:inset 0 0 0 1px var(--wg-line); }
+.wg-pill.wg-pos{ background:var(--wg-win-bg); box-shadow:inset 0 0 0 1px var(--wg-win-ring); }
+.wg-pill.wg-neg{ background:var(--wg-loss-bg); box-shadow:inset 0 0 0 1px var(--wg-loss-ring); }
+.wg-r{ font-size:var(--text-xs); color:var(--text-tertiary); }
+.wg-pos{ color:var(--wg-win); } .wg-neg{ color:var(--wg-loss); } .wg-flat{ color:var(--text-secondary); }
+.wg-row{ display:flex; align-items:center; gap:12px; width:100%; padding:12px 15px; background:none; border:0; box-shadow:inset 0 1px 0 var(--wg-line); text-align:left; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s ease; }
+.wg-row:active{ background:var(--wg-sunken); }
+.wg-row[hidden]{ display:none; }
+.wg-more{ display:block; width:100%; padding:13px 15px; background:none; border:0; box-shadow:inset 0 1px 0 var(--wg-line); font:inherit; font-size:var(--text-base); font-weight:500; color:var(--accent); cursor:pointer; text-align:center; }
+.wg-shots{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 15px 15px; }
+.wg-shot{ position:relative; padding:0; border:0; border-radius:14px; overflow:hidden; background:var(--wg-sunken); cursor:pointer; aspect-ratio:1/1; -webkit-tap-highlight-color:transparent; box-shadow:0 0 0 1px var(--wg-line), 0 8px 16px -10px rgba(0,0,0,.6); transition:transform .15s ease; }
+.wg-shot:active{ transform:scale(.97); }
+.wg-shot img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.wg-shot-l{ position:absolute; left:6px; bottom:6px; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:500; text-transform:capitalize; color:#fff; background:rgba(0,0,0,.5); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+.wg-shot-more{ position:absolute; inset:0; background:rgba(0,0,0,.55); color:#fff; font-size:18px; font-weight:600; display:flex; align-items:center; justify-content:center; }
+.wg-foot{ display:flex; background:var(--wg-sunken); box-shadow:inset 0 1px 0 var(--wg-line); }
+.wg-foot button{ flex:1; padding:13px 12px; background:none; border:0; font:inherit; font-size:var(--text-base); font-weight:500; color:var(--text-secondary); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.wg-foot button[data-open]{ color:var(--accent); font-weight:600; }
+.wg-foot button + button{ box-shadow:inset 1px 0 0 var(--wg-line); }
+.wg-foot button:active{ background:var(--wg-sunken); }
+.wg-kpis{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 15px 15px; }
+.wg-kpi{ background:var(--wg-sunken); border-radius:14px; padding:10px 12px; box-shadow:inset 0 0 0 1px var(--wg-line); }
+.wg-kpi-l{ font-size:var(--text-xs); color:var(--text-tertiary); }
+.wg-kpi-v{ margin-top:3px; font-size:19px; font-weight:600; letter-spacing:-.01em; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.wg-grp{ padding:13px 15px; box-shadow:inset 0 1px 0 var(--wg-line); }
+.wg-grp-top{ display:flex; justify-content:space-between; gap:10px; font-size:var(--text-base); }
+.wg-grp-name{ font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wg-bar{ height:5px; border-radius:3px; background:var(--wg-sunken); margin-top:9px; overflow:hidden; }
+.wg-bar > i{ display:block; height:100%; border-radius:3px; background:linear-gradient(90deg, var(--accent), var(--wg-win)); }
+.wg-grp-sub{ margin-top:6px; font-size:var(--text-xs); color:var(--text-tertiary); }
 /* gallery: swipe between pictures, pinch or double-tap to zoom */
 .wg-gal{ position:fixed; inset:0; z-index:9999; background:#000; display:flex; flex-direction:column; animation:wgGalIn .2s ease; }
 @keyframes wgGalIn{ from{ opacity:0 } to{ opacity:1 } }
@@ -2761,7 +2783,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const sub = [wgCap(t.direction), wgWhen(t), t.strategy].filter(Boolean).join(' \u00b7 ');
     return '<span class="wg-sym">' + wgSymbolLogo(t.asset, size) + '</span>'
       + '<div class="wg-main"><div class="wg-name">' + escapeHtml(t.asset || '') + '</div><div class="wg-sub">' + escapeHtml(sub) + '</div></div>'
-      + '<div class="wg-num"><div class="wg-pnl ' + wgTone(t.pnl) + '">' + wgSigned(t.pnl) + '</div>' + (t.r !== null && t.r !== undefined ? '<div class="wg-r">' + wgNum(t.r, 1) + 'R</div>' : '') + '</div>';
+      + '<div class="wg-num"><div class="wg-pill ' + wgTone(t.pnl) + '">' + wgSigned(t.pnl) + '</div>' + (t.r !== null && t.r !== undefined ? '<div class="wg-r">' + wgNum(t.r, 1) + 'R</div>' : '') + '</div>';
   }
   function wgOpen(id, edit){ try { parent.postMessage({ type: 'eb-open-trade', id: id, edit: !!edit }, '*'); } catch (_e) {} }
 
@@ -2838,6 +2860,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         b.className = 'wg-shot'; b.setAttribute('aria-label', 'Open ' + labels[i]);
         const im = document.createElement('img'); im.loading = 'lazy'; im.alt = ''; im.src = urls[i];
         b.appendChild(im);
+        if (!(i === SHOW - 1 && shots.length > SHOW)) { const l = document.createElement('span'); l.className = 'wg-shot-l'; l.textContent = labels[i]; b.appendChild(l); }
         if (i === SHOW - 1 && shots.length > SHOW) { const m = document.createElement('div'); m.className = 'wg-shot-more'; m.textContent = '+' + (shots.length - SHOW); b.appendChild(m); }
         b.addEventListener('click', () => wgGallery(urls, labels, i));
         strip.appendChild(b);
@@ -2861,13 +2884,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
       card.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-trade]'); if (b) wgOpen(b.getAttribute('data-trade'), false); });
     } else if (w.type === 'trade' && w.item) {
       const t = w.item;
+      card.classList.add(t.pnl > 0 ? 'wg-win' : t.pnl < 0 ? 'wg-loss' : 'wg-even');
       card.innerHTML = '<div class="wg-top">' + wgTradeInner(t, 34) + '</div><div class="wg-foot"><button data-open>Open trade</button><button data-edit>Edit</button></div>';
       card.querySelector('[data-open]').addEventListener('click', () => wgOpen(t.id, false));
       card.querySelector('[data-edit]').addEventListener('click', () => wgOpen(t.id, true));
       wgLoadShots(card, t.id);
     } else if (w.type === 'stats' && w.summary) {
       const s = w.summary, rows = Array.isArray(w.rows) ? w.rows : [];
-      const kpi = (l, v, cls) => '<div><div class="wg-kpi-l">' + l + '</div><div class="wg-kpi-v ' + (cls || '') + '">' + escapeHtml(String(v)) + '</div></div>';
+      const kpi = (l, v, cls) => '<div class="wg-kpi"><div class="wg-kpi-l">' + l + '</div><div class="wg-kpi-v ' + (cls || '') + '">' + escapeHtml(String(v)) + '</div></div>';
       card.innerHTML = '<div class="wg-top"><div class="wg-logo">' + WG_LOGO + '</div><div class="wg-main"><div class="wg-name">' + escapeHtml(w.title || 'Performance') + '</div><div class="wg-sub">' + s.count + (s.count === 1 ? ' trade' : ' trades') + '</div></div></div>'
         + '<div class="wg-kpis">' + kpi('Win rate', s.win_rate === null ? '\u2014' : wgNum(s.win_rate, 0) + '%') + kpi('Net', wgSigned(s.net), wgTone(s.net)) + kpi('Profit factor', wgNum(s.profit_factor)) + '</div>'
         + rows.map((r) => '<div class="wg-grp"><div class="wg-grp-top"><span class="wg-grp-name">' + escapeHtml(r.label) + '</span><span class="' + wgTone(r.net) + '" style="font-weight:600;font-variant-numeric:tabular-nums">' + wgSigned(r.net) + '</span></div>'
