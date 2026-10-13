@@ -1326,6 +1326,17 @@ html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-hig
 .wg-chips{ display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 12px; }
 .wg-chip{ font-size:var(--text-xs); padding:3px 8px; border-radius:999px; background:var(--surface-overlay); border:1px solid var(--border); color:var(--text-secondary); }
 @media (max-width:720px){ .wg-stack{ max-width:100%; } .wg-tile-v{ font-size:var(--text-md); } }
+
+.wg-explain{ border-top:1px solid var(--border); padding:4px 14px 6px; }
+.wg-explain-load{ padding:12px 0; font-size:var(--text-sm); color:var(--text-tertiary); }
+.wg-levels{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:10px 0 8px; }
+.wg-level-l{ font-size:var(--text-2xs); color:var(--text-tertiary); text-transform:uppercase; letter-spacing:.05em; }
+.wg-level-v{ margin-top:2px; font-size:var(--text-base); font-weight:600; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+.wg-sec{ padding:9px 0; border-top:1px solid var(--border); }
+.wg-sec-l{ font-size:var(--text-2xs); font-weight:600; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+.wg-sec-t{ font-size:var(--text-base); line-height:1.6; color:var(--text-primary); white-space:pre-wrap; word-break:break-word; }
+.wg-sec.wg-mistake .wg-sec-l{ color:var(--danger); } .wg-sec.wg-good .wg-sec-l{ color:var(--success); }
+@media (max-width:720px){ .wg-levels{ grid-template-columns:repeat(2,1fr); } }
 </style>
 </head>
 <body>
@@ -2703,6 +2714,25 @@ document.addEventListener('DOMContentLoaded', ()=>{
       + '<div class="wg-num"><div class="wg-pnl ' + wgTone(t.pnl) + '">' + wgSigned(t.pnl) + '</div>'
       + (t.r !== null && t.r !== undefined ? '<div class="wg-r">' + wgSigned(t.r) + ' R</div>' : '') + '</div>' + WG_CHEV + '</button>';
   }
+
+  const WG_SECTIONS = [['thesis','Why I took it',''],['entry_reasoning','Entry reasoning',''],['exit_reasoning','Exit reasoning',''],['execution_notes','Execution',''],['psychology_review','Psychology',''],['what_went_well','What went well','wg-good'],['mistakes','Mistakes','wg-mistake'],['lessons_learned','Lessons',''],['notes','Notes','']];
+  async function wgLoadExplain(card, id){
+    const box = document.createElement('div');
+    box.className = 'wg-explain';
+    box.innerHTML = '<div class="wg-explain-load">Loading your notes\u2026</div>';
+    card.appendChild(box);
+    try {
+      const cols = 'entry_price,exit_price,stop_loss,take_profit,position_size,confidence_rating,entry_type,' + WG_SECTIONS.map(x => x[0]).join(',');
+      const res = await fetch(SUPABASE_URL + '/rest/v1/trades?id=eq.' + encodeURIComponent(id) + '&select=' + cols, { headers: authHeaders() });
+      const rows = await res.json();
+      const t = Array.isArray(rows) ? rows[0] : null;
+      if (!t) { box.remove(); return; }
+      const lv = [['Entry', t.entry_price], ['Exit', t.exit_price], ['Stop', t.stop_loss], ['Target', t.take_profit], ['Lots', t.position_size], ['Confidence', t.confidence_rating === null || t.confidence_rating === undefined ? null : t.confidence_rating + '/10'], ['Type', t.entry_type]].filter(x => x[1] !== null && x[1] !== undefined && x[1] !== '');
+      const secs = WG_SECTIONS.filter(x => t[x[0]] && String(t[x[0]]).trim());
+      box.innerHTML = (lv.length ? '<div class="wg-levels">' + lv.map(x => '<div><div class="wg-level-l">' + x[0] + '</div><div class="wg-level-v">' + escapeHtml(String(x[1])) + '</div></div>').join('') + '</div>' : '')
+        + (secs.length ? secs.map(x => '<div class="wg-sec ' + x[2] + '"><div class="wg-sec-l">' + x[1] + '</div><div class="wg-sec-t">' + escapeHtml(String(t[x[0]]).trim()) + '</div></div>').join('') : '<div class="wg-sec"><div class="wg-sec-t" style="color:var(--text-tertiary)">No written explanation on this trade yet.</div></div>');
+    } catch (_e) { box.remove(); }
+  }
   function wgBuild(w){
     const card = document.createElement('div');
     card.className = 'wg-card';
@@ -2717,6 +2747,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
       const t = w.item;
       card.innerHTML = '<div class="wg-head"><div class="wg-title">Trade</div><div class="wg-count">' + escapeHtml(wgDate(t.exit_at || t.entry_at)) + '</div></div>' + wgTradeRow(t)
         + ((t.strategy || t.mood) ? '<div class="wg-chips" style="padding-top:10px;border-top:1px solid var(--border)">' + [t.strategy, t.mood && 'Mood: ' + t.mood].filter(Boolean).map(c => '<span class="wg-chip">' + escapeHtml(c) + '</span>').join('') + '</div>' : '');
+      wgLoadExplain(card, t.id);
     } else if (w.type === 'stats' && w.summary) {
       const s = w.summary, rows = Array.isArray(w.rows) ? w.rows : [];
       const tiles = [['Trades', s.count], ['Win rate', s.win_rate === null ? '\u2014' : wgNum(s.win_rate, 0) + '%'], ['Net', wgSigned(s.net)], ['Profit factor', wgNum(s.profit_factor)], ['Expectancy', wgSigned(s.expectancy)], ['Avg win / loss', wgNum(s.avg_win, 1) + ' / ' + wgNum(s.avg_loss === null ? null : Math.abs(s.avg_loss), 1)]];
