@@ -1297,6 +1297,7 @@ html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-hig
   --wg-glass:rgba(44,44,46,.66); --wg-edge:rgba(255,255,255,.10);
   --wg-line:rgba(255,255,255,.10); --wg-fill:rgba(120,120,128,.20);
   --wg-shadow:0 10px 32px rgba(0,0,0,.30);
+  --wg-frame-win:rgba(90,169,235,.60); --wg-frame-loss:rgba(224,118,110,.60); --wg-frame-brand:rgba(112,170,176,.50);
   display:flex; flex-direction:column; gap:12px; margin-top:12px; width:100%; max-width:440px;
 }
 [data-theme="light"] .wg-stack{
@@ -1305,13 +1306,17 @@ html, body{ overscroll-behavior:none; touch-action:manipulation; -webkit-tap-hig
   --wg-glass:rgba(255,255,255,.68); --wg-edge:rgba(0,0,0,.07);
   --wg-line:rgba(60,60,67,.14); --wg-fill:rgba(120,120,128,.12);
   --wg-shadow:0 10px 30px rgba(20,30,40,.10);
+  --wg-frame-win:rgba(31,120,200,.50); --wg-frame-loss:rgba(192,69,62,.48); --wg-frame-brand:rgba(80,130,136,.45);
 }
 .wg-stack.wg-pending{ opacity:0; transform:translateY(8px) scale(.985); }
 .wg-stack.wg-in{ opacity:1; transform:none; transition:opacity .4s ease, transform .4s cubic-bezier(.2,.8,.2,1); }
 .wg-stack + .msg-text{ margin-top:14px; }
 .msg-text + .wg-stack{ margin-top:12px; }
-.wg-card{ position:relative; overflow:hidden; border-radius:22px; border:1px solid var(--wg-edge); box-shadow:var(--wg-shadow);
+.wg-card{ position:relative; overflow:hidden; border-radius:22px; border:1px solid var(--wg-frame, var(--wg-frame-brand)); box-shadow:var(--wg-shadow);
   background:var(--wg-glass); -webkit-backdrop-filter:blur(28px) saturate(180%); backdrop-filter:blur(28px) saturate(180%); }
+
+.wg-card.wg-win{ --wg-frame:var(--wg-frame-win); }
+.wg-card.wg-loss{ --wg-frame:var(--wg-frame-loss); }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .wg-card{ background:var(--surface-elevated); } }
 .wg-top{ display:flex; align-items:center; gap:12px; padding:15px; }
 .wg-logo{ width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; background:#000; border:1px solid rgba(255,255,255,.08); }
@@ -2894,6 +2899,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     } else if (w.type === 'stats' && w.summary) {
       const s = w.summary, rows = Array.isArray(w.rows) ? w.rows : [];
       const kpi = (l, v, cls) => '<div class="wg-kpi"><div class="wg-kpi-l">' + l + '</div><div class="wg-kpi-v ' + (cls || '') + '">' + escapeHtml(String(v)) + '</div></div>';
+      if (s.net > 0) card.classList.add('wg-win'); else if (s.net < 0) card.classList.add('wg-loss');
       card.innerHTML = '<div class="wg-top"><div class="wg-logo">' + WG_LOGO + '</div><div class="wg-main"><div class="wg-name">' + escapeHtml(w.title || 'Performance') + '</div><div class="wg-sub">' + s.count + (s.count === 1 ? ' trade' : ' trades') + '</div></div></div>'
         + '<div class="wg-kpis">' + kpi('Win rate', s.win_rate === null ? '\u2014' : wgNum(s.win_rate, 0) + '%') + kpi('Net', wgSigned(s.net), wgTone(s.net)) + kpi('Profit factor', wgNum(s.profit_factor)) + '</div>'
         + rows.map((r) => '<div class="wg-grp"><div class="wg-grp-top"><span class="wg-grp-name">' + escapeHtml(r.label) + '</span><span class="' + wgTone(r.net) + '" style="font-weight:600;font-variant-numeric:tabular-nums">' + wgSigned(r.net) + '</span></div>'
