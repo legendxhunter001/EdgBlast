@@ -1,1 +1,1 @@
-YOUR-SITE-ADDRESS
+https://edgeblast.vercel.app
