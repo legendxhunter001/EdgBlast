@@ -41,7 +41,17 @@ jobs:
         run: sed -i "s/__HOST__/$HOST/g" android/app/src/main/res/values/strings.xml
 
       - name: Build the app
-        run: gradle -p android assembleRelease -PappHost="$HOST" -PappVersionCode="${{ github.run_number }}" --no-daemon
+        run: |
+          set +e
+          gradle -p android assembleRelease -PappHost="$HOST" -PappVersionCode="${{ github.run_number }}" --no-daemon --stacktrace > build.log 2>&1
+          CODE=$?
+          if [ $CODE -ne 0 ]; then
+            MSG=$(grep -v '^\s*$' build.log | grep -E "What went wrong|error:|Error|FAILED|Could not|not found|Execution failed|Caused by|Failed" -A2 | head -40 | sed 's/%/%25/g' | tr '\n' '~')
+            echo "::error title=Gradle failed::${MSG}"
+            TAIL=$(tail -25 build.log | sed 's/%/%25/g' | tr '\n' '~')
+            echo "::error title=Gradle tail::${TAIL}"
+            exit $CODE
+          fi
 
       - name: Put the app on the site
         run: |
