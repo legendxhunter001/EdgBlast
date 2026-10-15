@@ -1,4 +1,5 @@
 import { StrictMode, useEffect, useState } from 'react'
+import './lib/install'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './styles/ios-mobile.css'

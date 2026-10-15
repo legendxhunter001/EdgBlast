@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Logo } from '@/components/Logo';
 import { GoogleIcon } from '@/components/GoogleIcon';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { GetAndroidApp } from '@/components/GetAndroidApp';
 import { toast } from 'sonner';
 import { TrendingUp, BarChart3, Calendar as CalendarIcon, ShieldCheck } from 'lucide-react';
 
@@ -232,6 +233,8 @@ const Auth = () => {
               </TabsContent>
             </Tabs>
           </div>
+
+          <GetAndroidApp />
 
           <p className="text-center text-xs text-muted-foreground mt-6 px-4">
             By continuing you agree to journal responsibly. Edge Blast is a journal, not financial advice.

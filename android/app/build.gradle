@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application'
+}
+
+def hostName = project.findProperty('appHost') ?: 'example.com'
+def ks = new Properties()
+file('../keystore.properties').withInputStream { ks.load(it) }
+
+android {
+    namespace 'app.edgeblast.twa'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'app.edgeblast.twa'
+        minSdk 23
+        targetSdk 34
+        versionCode (project.findProperty('appVersionCode') ?: '1').toInteger()
+        versionName '1.0'
+        manifestPlaceholders = [hostName: hostName, defaultUrl: "https://${hostName}/"]
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('../edgeblast.keystore')
+            storePassword ks['storePassword']
+            keyAlias ks['keyAlias']
+            keyPassword ks['keyPassword']
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

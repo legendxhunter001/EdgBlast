@@ -10,6 +10,7 @@ import { AppLayout } from "./components/AppLayout";
 import { AccountScopeProvider } from "./contexts/AccountScopeContext";
 import { BrandLoading } from "./components/BrandLoading";
 import { AnimatedOutlet } from "./components/PageTransition";
+import { PushPrompt } from "./components/PushPrompt";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -41,7 +42,7 @@ const ShellLayout = () => {
   const { pathname } = useLocation();
   if (loading) return <BrandLoading />;
   if (!session) return pathname === "/" ? <Landing /> : <Navigate to="/auth" replace />;
-  return <AccountScopeProvider><AppLayout><AnimatedOutlet /></AppLayout></AccountScopeProvider>;
+  return <AccountScopeProvider><AppLayout><AnimatedOutlet /></AppLayout><PushPrompt /></AccountScopeProvider>;
 };
 
 const App = () => (

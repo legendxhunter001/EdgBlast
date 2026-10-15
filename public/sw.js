@@ -6,7 +6,7 @@
 // there's no staleness risk there. Supabase (API/auth/storage) is never
 // cached — trade data must always be fresh.
 
-const CACHE_VERSION = 'edge-blast-v3';
+const CACHE_VERSION = 'edge-blast-v4';
 const SHELL_URL = '/';
 
 self.addEventListener('install', (event) => {
@@ -69,6 +69,37 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => cached);
       return cached || fetchPromise;
+    }),
+  );
+});
+
+// Push: a notification created on the server shows up here even when the app is closed.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (_e) { data = { body: event.data ? event.data.text() : '' }; }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Edge Blast', {
+      body: data.body || '',
+      icon: '/icon-192.png',
+      tag: data.tag || undefined,
+      renotify: !!data.tag,
+      data: { url: data.url || '/notifications' },
+    }),
+  );
+});
+
+// Tapping it opens the app on the right page (reusing a window that is already open).
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if (new URL(c.url).origin === self.location.origin && 'focus' in c) {
+          return (c.navigate ? c.navigate(target) : Promise.resolve()).then(() => c.focus()).catch(() => c.focus());
+        }
+      }
+      return self.clients.openWindow(target);
     }),
   );
 });
