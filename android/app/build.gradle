@@ -2,9 +2,13 @@ plugins {
     id 'com.android.application'
 }
 
-def hostName = project.findProperty('appHost') ?: 'example.com'
+def hostName = (project.findProperty('appHost') ?: 'example.com').toString()
+def vCode = Integer.parseInt((project.findProperty('appVersionCode') ?: '1').toString())
 def ks = new Properties()
-file('../keystore.properties').withInputStream { ks.load(it) }
+rootProject.file('keystore.properties').withInputStream { ks.load(it) }
+def storePw = ks.getProperty('storePassword')
+def keyAl = ks.getProperty('keyAlias')
+def keyPw = ks.getProperty('keyPassword')
 
 android {
     namespace 'app.edgeblast.twa'
@@ -14,17 +18,17 @@ android {
         applicationId 'app.edgeblast.twa'
         minSdk 23
         targetSdk 34
-        versionCode (project.findProperty('appVersionCode') ?: '1').toInteger()
+        versionCode vCode
         versionName '1.0'
         manifestPlaceholders = [hostName: hostName, defaultUrl: "https://${hostName}/"]
     }
 
     signingConfigs {
         release {
-            storeFile file('../edgeblast.keystore')
-            storePassword ks['storePassword']
-            keyAlias ks['keyAlias']
-            keyPassword ks['keyPassword']
+            storeFile rootProject.file('edgeblast.keystore')
+            storePassword storePw
+            keyAlias keyAl
+            keyPassword keyPw
         }
     }
 
