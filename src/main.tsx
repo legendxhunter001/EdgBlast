@@ -1,5 +1,6 @@
 import { StrictMode, useEffect, useState } from 'react'
 import './lib/install'
+import { initNative, isNative } from './lib/native'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './styles/ios-mobile.css'
@@ -92,7 +93,9 @@ createRoot(document.getElementById('root')!).render(
 
 // Register the service worker — production only, so local dev always gets
 // fresh code with no stale caching to fight against.
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+void initNative()
+
+if ('serviceWorker' in navigator && import.meta.env.PROD && !isNative()) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {
       // Non-fatal — the app works fine without offline support.

@@ -3,6 +3,7 @@ import { Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { enablePush, getPushState, sendTestPush } from '@/lib/push';
+import { isNative, startNativeAlerts } from '@/lib/native';
 
 const DISMISS_KEY = 'eb-push-dismissed';
 const WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -13,8 +14,17 @@ export const PushPrompt = () => {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // inside the Android app, new notifications also show as phone notifications
   useEffect(() => {
-    if (!session) return;
+    if (!session || !isNative()) return;
+    let stop = () => {};
+    let gone = false;
+    void startNativeAlerts(session.user.id).then((s) => { if (gone) s(); else stop = s; });
+    return () => { gone = true; stop(); };
+  }, [session]);
+
+  useEffect(() => {
+    if (!session || isNative()) return;
     const last = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
     if (Date.now() - last < WEEK) return;
     let alive = true;

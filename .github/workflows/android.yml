@@ -9,42 +9,46 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-24.04
+    env:
+      VITE_SUPABASE_URL: https://xhdedxuuieavkaxhxyyl.supabase.co
+      VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhoZGVkeHV1aWVhdmtheGh4eXlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjQ3MzIsImV4cCI6MjEwMTY0MDczMn0.ITDE1b_PYOXEO4J-ESJWg8vVsu2PZ_JTlluM_14AAcc
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read the site address
-        run: |
-          URL=$(tr -d ' \r\n' < android/app-url.txt)
-          HOST=${URL#https://}
-          HOST=${HOST%%/*}
-          if [ -z "$HOST" ] || [ "$HOST" = "YOUR-SITE-ADDRESS" ]; then
-            echo "Put your live site address in android/app-url.txt (for example https://yourapp.vercel.app)"; exit 1
-          fi
-          echo "HOST=$HOST" >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
 
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Accept the Android licenses
+      - name: Build the web app that goes inside the Android app
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          ls "$ANDROID_HOME" || true
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          npm ci
+          npm run build
 
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+      - name: Create the Android project
+        run: |
+          npx cap add android
+          VERSION_CODE="${{ github.run_number }}" python3 scripts/android-setup.py
+          npx cap sync android
 
-      - name: Fill in the site address
-        run: sed -i "s/__HOST__/$HOST/g" android/app/src/main/res/values/strings.xml
+      - name: Accept the Android licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       - name: Build the app
         run: |
           set +e
-          gradle -p android assembleRelease -PappHost="$HOST" -PappVersionCode="${{ github.run_number }}" --no-daemon --stacktrace > build.log 2>&1
+          export KS_FILE="$GITHUB_WORKSPACE/signing/edgeblast.keystore"
+          export KS_PASS=$(grep '^storePassword=' signing/keystore.properties | cut -d= -f2)
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace > ../build.log 2>&1
           CODE=$?
+          cd ..
           if [ $CODE -ne 0 ]; then
             MSG=$(grep -v '^\s*$' build.log | grep -E "What went wrong|error:|Error|FAILED|Could not|not found|Execution failed|Caused by|Failed" -A2 | head -40 | sed 's/%/%25/g' | tr '\n' '~')
             echo "::error title=Gradle failed::${MSG}"
@@ -55,19 +59,10 @@ jobs:
 
       - name: Put the app on the site
         run: |
-          mkdir -p public/downloads public/.well-known
+          mkdir -p public/downloads
           cp android/app/build/outputs/apk/release/app-release.apk public/downloads/edge-blast.apk
-          PW=$(grep '^storePassword=' android/keystore.properties | cut -d= -f2)
-          FP=$(keytool -list -v -keystore android/edgeblast.keystore -alias edgeblast -storepass "$PW" | grep 'SHA256:' | head -1 | awk '{print $2}')
-          printf '[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"android_app","package_name":"app.edgeblast.twa","sha256_cert_fingerprints":["%s"]}}]\n' "$FP" > public/.well-known/assetlinks.json
           git config user.name "edge-blast-build"
           git config user.email "build@users.noreply.github.com"
-          git add public/downloads/edge-blast.apk public/.well-known/assetlinks.json
+          git add public/downloads/edge-blast.apk
           git diff --cached --quiet || git commit -m "Android app build ${{ github.run_number }} [skip ci]"
-          git checkout -- android/app/src/main/res/values/strings.xml
           git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: edge-blast-apk
-          path: android/app/build/outputs/apk/release/app-release.apk

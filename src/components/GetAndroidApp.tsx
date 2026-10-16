@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Download, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
-import { useInstallPrompt } from '@/lib/install';
+import { isNative } from '@/lib/native';
 import { isStandalone } from '@/lib/push';
 
 const APK_URL = '/downloads/edge-blast.apk';
 
-/** "Edge Blast for Android" card for the sign-in page: install the app and, once it is built, download the APK. */
+/** "Edge Blast for Android" card for the sign-in page; it appears once the APK is on the site. */
 export const GetAndroidApp = () => {
-  const { canInstall, install } = useInstallPrompt();
   const [apk, setApk] = useState(false);
   const installed = isStandalone();
 
@@ -19,8 +18,7 @@ export const GetAndroidApp = () => {
       .catch(() => setApk(false));
   }, []);
 
-  if (installed) return null;
-  if (!apk && !canInstall) return null;
+  if (installed || isNative() || !apk) return null;
 
   return (
     <div className="mt-4 rounded-2xl border border-border bg-card p-4">
@@ -43,14 +41,6 @@ export const GetAndroidApp = () => {
           >
             <Download className="size-4" /> Download the app
           </a>
-        )}
-        {canInstall && (
-          <button
-            onClick={() => { void install(); }}
-            className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] border border-border text-[15px] font-semibold"
-          >
-            Install from browser
-          </button>
         )}
       </div>
     </div>

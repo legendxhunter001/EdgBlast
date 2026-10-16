@@ -11,6 +11,7 @@ import { Logo } from '@/components/Logo';
 import { GoogleIcon } from '@/components/GoogleIcon';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { GetAndroidApp } from '@/components/GetAndroidApp';
+import { isNative, NATIVE_REDIRECT } from '@/lib/native';
 import { toast } from 'sonner';
 import { TrendingUp, BarChart3, Calendar as CalendarIcon, ShieldCheck } from 'lucide-react';
 
@@ -57,7 +58,7 @@ const Auth = () => {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin + nextPath,
+        emailRedirectTo: isNative() ? NATIVE_REDIRECT : window.location.origin + nextPath,
         data: { display_name: name },
       },
     });
@@ -74,6 +75,21 @@ const Auth = () => {
   const handleGoogle = async () => {
     setGoogleLoading(true);
     applyRemember();
+    if (isNative()) {
+      // inside the app Google opens in the phone's browser, then hands the person back through app.edgeblast.app://auth
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: NATIVE_REDIRECT, skipBrowserRedirect: true },
+      });
+      if (oauthError || !data?.url) {
+        toast.error('Could not sign in with Google');
+      } else {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: data.url });
+      }
+      setGoogleLoading(false);
+      return;
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + nextPath },
@@ -88,7 +104,7 @@ const Auth = () => {
   const handleForgot = async () => {
     if (!email) return toast.error('Enter your email above first');
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: isNative() ? NATIVE_REDIRECT : `${window.location.origin}/reset-password`,
     });
     if (error) return toast.error(error.message);
     toast.success('Reset link sent. Check your inbox.');
