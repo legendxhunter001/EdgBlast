@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom';
 
 /** iOS-style bottom sheet: drag handle to dismiss, Escape closes, page scroll locked. */
-export const IosSheet = ({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) => {
+export const IosSheet = ({ title, onClose, children, z }: { title: string; onClose: () => void; children: ReactNode; z?: number }) => {
   const [dragY, setDragY] = useState(0);
   const start = useRef<number | null>(null);
   const close = useCallback(() => onClose(), [onClose]);
@@ -16,7 +16,7 @@ export const IosSheet = ({ title, onClose, children }: { title: string; onClose:
   }, [close]);
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={close}>
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm" style={z ? { zIndex: z } : undefined} onClick={close}>
       <div role="dialog" aria-modal="true" aria-label={title}
         className="relative w-full max-w-md bg-background rounded-t-[28px] md:rounded-[28px] px-5 max-h-[92%] overflow-auto"
         style={{

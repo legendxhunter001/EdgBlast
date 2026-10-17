@@ -10,10 +10,13 @@ import { functionErrorMessage } from '@/lib/functionError';
 import { toast } from 'sonner';
 import {
   MousePointer2, TrendingUp, Minus, Save, Trash2,
-  ChevronDown, Palette, Maximize2, X, Star, List, RefreshCw, LineChart,
+  ChevronDown, Palette, Maximize2, X, Star, List, RefreshCw, LineChart, Camera, Bookmark,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
+import { captureChart, type ChartSnapshot, type SnapshotDraft } from '@/lib/chartSnapshots';
+import { SaveViewSheet } from '@/components/chart/SaveViewSheet';
+import { SavedViewsSheet } from '@/components/chart/SavedViewsSheet';
 
 type MT5Position = {
   connection_id: string; connection_label: string; symbol: string; type: string;
@@ -328,6 +331,8 @@ export default function MT5() {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const drawingsRef = useRef<Drawing[]>([]);
+  const candlesRef = useRef<{ time: number; open: number; high: number; low: number; close: number }[]>([]);
+  const restoreRangeRef = useRef<{ from: number; to: number } | null>(null);
 
   const [symbol, setSymbol] = useState('EURUSD');
   const [customSymbol, setCustomSymbol] = useState('');
@@ -346,6 +351,8 @@ export default function MT5() {
   const [symbolOpen, setSymbolOpen] = useState(false);
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [watchlistOpen, setWatchlistOpen] = useState(false);
+  const [saveDraft, setSaveDraft] = useState<SnapshotDraft | null>(null);
+  const [savedOpen, setSavedOpen] = useState(false);
 
   useEffect(() => { drawingsRef.current = drawings; }, [drawings]);
 
@@ -485,7 +492,15 @@ export default function MT5() {
         return;
       }
       seriesRef.current?.setData(data.candles);
-      chartRef.current?.timeScale().fitContent();
+      candlesRef.current = data.candles;
+      const restore = restoreRangeRef.current;
+      restoreRangeRef.current = null;
+      if (restore) {
+        try { chartRef.current?.timeScale().setVisibleRange({ from: restore.from as Time, to: restore.to as Time }); }
+        catch { chartRef.current?.timeScale().fitContent(); }
+      } else {
+        chartRef.current?.timeScale().fitContent();
+      }
     })();
     return () => { cancelled = true; };
   }, [symbol, customSymbol, timeframe]);
@@ -619,6 +634,41 @@ export default function MT5() {
 
   const activeSymbol = (customSymbol.trim() || symbol).toUpperCase();
 
+  // Snapshot: keep only what is on the screen right now (picture, visible candles, drawings)
+  const openSaveView = () => {
+    const chart = chartRef.current;
+    if (!chart || loading || error) { toast.info('Wait for the chart to load first'); return; }
+    const range = chart.timeScale().getVisibleRange();
+    if (!range) { toast.info('Nothing on the chart to save yet'); return; }
+    const from = Number(range.from);
+    const to = Number(range.to);
+    const bg = containerRef.current?.parentElement ? getComputedStyle(containerRef.current.parentElement).backgroundColor : '';
+    try {
+      setSaveDraft({
+        canvas: captureChart(chart, canvasRef.current, bg && bg !== 'rgba(0, 0, 0, 0)' ? bg : (isDark ? '#0D0D0F' : '#FFFFFF')),
+        symbol: activeSymbol, timeframe, from, to,
+        candles: candlesRef.current.filter((c) => c.time >= from && c.time <= to).slice(-600),
+        drawings: drawings.map((d) => ({ drawing_type: d.drawing_type, points: d.points, color: d.color })),
+      });
+    } catch {
+      toast.error('Could not capture the chart');
+    }
+  };
+
+  const openSavedOnChart = (snap: ChartSnapshot) => {
+    setSavedOpen(false);
+    const same = snap.symbol === activeSymbol && snap.timeframe === timeframe;
+    if (snap.visible_from && snap.visible_to) {
+      if (same) {
+        try { chartRef.current?.timeScale().setVisibleRange({ from: snap.visible_from as Time, to: snap.visible_to as Time }); } catch { /* range no longer loaded */ }
+      } else {
+        restoreRangeRef.current = { from: snap.visible_from, to: snap.visible_to };
+      }
+    }
+    if (SYMBOLS.includes(snap.symbol)) { setSymbol(snap.symbol); setCustomSymbol(''); } else { setCustomSymbol(snap.symbol); }
+    setTimeframe(snap.timeframe);
+  };
+
   const ChartToolbar = () => (
     <div className="flex flex-wrap items-center gap-2">
       {/* Symbol picker */}
@@ -708,6 +758,16 @@ export default function MT5() {
       <button onClick={saveSetup} disabled={saving}
         className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1.5 disabled:opacity-60">
         <Save className="size-3.5" /> {saving ? 'Saving…' : 'Save'}
+      </button>
+      <button onClick={openSaveView}
+        className="h-8 px-3 rounded-lg border border-primary/40 bg-primary/10 text-primary text-xs font-medium flex items-center gap-1.5 transition-colors"
+        title="Save what is on the screen">
+        <Camera className="size-3.5" /> <span className="hidden sm:inline">Snapshot</span>
+      </button>
+      <button onClick={() => setSavedOpen(true)}
+        className="h-8 px-3 rounded-lg border border-border text-xs text-muted-foreground flex items-center gap-1.5 transition-colors"
+        title="Saved views">
+        <Bookmark className="size-3.5" /> <span className="hidden sm:inline">Saved</span>
       </button>
       <button onClick={clearAll}
         className="h-8 px-3 rounded-lg border border-border text-xs text-muted-foreground hover:text-bear hover:border-bear/50 flex items-center gap-1.5 transition-colors">
@@ -828,6 +888,9 @@ export default function MT5() {
           </div>
         )}
       </div>
+
+      {saveDraft && <SaveViewSheet draft={saveDraft} onClose={() => setSaveDraft(null)} onSaved={() => setSaveDraft(null)} />}
+      {savedOpen && <SavedViewsSheet onClose={() => setSavedOpen(false)} onOpenOnChart={openSavedOnChart} />}
 
       {focusMode && (
         <div className="fixed inset-0 z-[250] bg-background flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
