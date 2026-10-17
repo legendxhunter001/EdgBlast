@@ -219,10 +219,25 @@ const PhoneAlertsRow = () => {
   );
 };
 
+const DELAY_OPTIONS: [string, string][] = [
+  ['', 'Plan default'], ['15', '15 minutes'], ['30', '30 minutes'], ['60', '1 hour'], ['120', '2 hours'], ['180', '3 hours'],
+  ['240', '4 hours'], ['360', '6 hours'], ['480', '8 hours'], ['720', '12 hours'], ['1080', '18 hours'], ['1440', '1 day'], ['2880', '2 days'],
+];
+const WEEKDAY_OPTIONS: [number, string][] = [[1, 'Monday'], [2, 'Tuesday'], [3, 'Wednesday'], [4, 'Thursday'], [5, 'Friday'], [6, 'Saturday'], [7, 'Sunday']];
+const hhmm = (v: unknown, fallback: string) => (typeof v === 'string' && v.length >= 5 ? v.slice(0, 5) : fallback);
+const inQuiet = (t: string, start: string, end: string) => (start === end ? false : start < end ? t >= start && t < end : t >= start || t < end);
+const FIELD = 'h-9 rounded-[10px] border border-border bg-card px-2.5 text-[14px]';
+
+const TimeField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
+  <input type="time" aria-label={label} value={value} onChange={(e) => e.target.value && onChange(e.target.value)} className={FIELD} />
+);
+
 const NotificationsSection = () => {
   const s = useSection<Record<string, any>>('notification_settings', {
     trade_synced: true, mt5_status: true, rule_violation: true, goal_progress: true, journal_reminder: true,
-    journal_days: [], journal_hour: 19, // weekly review and coach summary are left alone until they exist
+    journal_days: [], journal_time: '19:00', trade_nudge: true, trade_delay_min: null, day_wrap: true,
+    week_wrap: true, week_day: 5, week_time: '17:00', quiet_start: '21:00', quiet_end: '08:00',
+    // weekly review and coach summary are left alone until they exist
   }, 'user_id');
   const days: number[] = Array.isArray(s.value.journal_days) ? s.value.journal_days.map(Number) : [];
   const toggleDay = (n: number) => s.set({ journal_days: days.includes(n) ? days.filter((x) => x !== n) : [...days, n].sort() });
@@ -245,28 +260,86 @@ const NotificationsSection = () => {
         </div>
       ))}
       {s.value.journal_reminder && (
-        <div className="py-3.5 border-t border-border">
-          <div className="text-[15px]">Reminder days</div>
-          <div className="text-[12.5px] text-muted-foreground">
-            {days.length === 0 ? 'None picked: reminders follow your trading plan. Logging by hand? Pick your days.' : 'One reminder on these days if you have not written yet.'}
+        <div className="border-t border-border">
+          <div className="pt-4 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">Journal reminder timing</div>
+
+          <div className="py-3.5 border-b border-border">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0"><div className="text-[15px]">After a trade closes</div><div className="text-[12.5px] text-muted-foreground">One nudge for each trade you have not written about.</div></div>
+              <Switch label="After a trade closes" on={!!s.value.trade_nudge} onChange={(v) => s.set({ trade_nudge: v })} />
+            </div>
+            {s.value.trade_nudge && (
+              <label className="mt-2.5 flex items-center gap-3 text-[14px]">
+                Wait
+                <select value={s.value.trade_delay_min == null ? '' : String(s.value.trade_delay_min)} onChange={(e) => s.set({ trade_delay_min: e.target.value === '' ? null : Number(e.target.value) })} className={FIELD}>
+                  {DELAY_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+                <span className="text-muted-foreground">after it closes</span>
+              </label>
+            )}
           </div>
-          <div className="mt-2.5 flex flex-wrap gap-2">
-            {DAY_CHIPS.map(([n, label]) => (
-              <button key={n} type="button" aria-pressed={days.includes(n)} onClick={() => { tap(); toggleDay(n); }}
-                className={`${FOCUS} h-9 px-3.5 rounded-full border text-[13.5px] font-medium active:scale-[.97] transition ${days.includes(n) ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'}`}>
-                {label}
-              </button>
-            ))}
+
+          <div className="py-3.5 border-b border-border">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-[15px]">Daily reminder time</div>
+                <div className="text-[12.5px] text-muted-foreground">{days.length ? 'When you get the reminder on your chosen days.' : 'End-of-day wrap-up for short-term plans.'}</div>
+              </div>
+              <TimeField label="Daily reminder time" value={hhmm(s.value.journal_time, '19:00')} onChange={(v) => s.set({ journal_time: v })} />
+            </div>
+            {!days.length && (
+              <div className="mt-2.5 flex items-center justify-between gap-4">
+                <div className="text-[12.5px] text-muted-foreground">Send the end-of-day wrap-up</div>
+                <Switch label="Day wrap-up" on={!!s.value.day_wrap} onChange={(v) => s.set({ day_wrap: v })} />
+              </div>
+            )}
           </div>
-          {days.length > 0 && (
-            <label className="mt-3 flex items-center gap-3 text-[14px]">
-              Remind me at
-              <select value={Number(s.value.journal_hour ?? 19)} onChange={(e) => s.set({ journal_hour: Number(e.target.value) })}
-                className="h-9 rounded-[10px] border border-border bg-card px-2.5 text-[14px]">
-                {REMINDER_HOURS.map((h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
-              </select>
-            </label>
+
+          <div className="py-3.5 border-b border-border">
+            <div className="text-[15px]">Reminder days</div>
+            <div className="text-[12.5px] text-muted-foreground">
+              {days.length === 0 ? 'None picked: reminders follow your trading plan. Logging by hand? Pick your days.' : 'One reminder on these days if you have not written yet.'}
+            </div>
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              {DAY_CHIPS.map(([n, label]) => (
+                <button key={n} type="button" aria-pressed={days.includes(n)} onClick={() => { tap(); toggleDay(n); }}
+                  className={`${FOCUS} h-9 px-3.5 rounded-full border text-[13.5px] font-medium active:scale-[.97] transition ${days.includes(n) ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {!days.length && (
+            <div className="py-3.5 border-b border-border">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0"><div className="text-[15px]">Weekly wrap-up</div><div className="text-[12.5px] text-muted-foreground">For swing plans: one nudge at the end of your week.</div></div>
+                <Switch label="Weekly wrap-up" on={!!s.value.week_wrap} onChange={(v) => s.set({ week_wrap: v })} />
+              </div>
+              {s.value.week_wrap && (
+                <div className="mt-2.5 flex flex-wrap items-center gap-3 text-[14px]">
+                  On
+                  <select value={Number(s.value.week_day ?? 5)} onChange={(e) => s.set({ week_day: Number(e.target.value) })} className={FIELD}>
+                    {WEEKDAY_OPTIONS.map(([n, l]) => <option key={n} value={n}>{l}</option>)}
+                  </select>
+                  at
+                  <TimeField label="Weekly wrap-up time" value={hhmm(s.value.week_time, '17:00')} onChange={(v) => s.set({ week_time: v })} />
+                </div>
+              )}
+            </div>
           )}
+
+          <div className="py-3.5">
+            <div className="text-[15px]">Quiet hours</div>
+            <div className="text-[12.5px] text-muted-foreground">No journal reminders in this window.</div>
+            <div className="mt-2.5 flex flex-wrap items-center gap-3 text-[14px]">
+              From <TimeField label="Quiet hours start" value={hhmm(s.value.quiet_start, '21:00')} onChange={(v) => s.set({ quiet_start: v })} />
+              to <TimeField label="Quiet hours end" value={hhmm(s.value.quiet_end, '08:00')} onChange={(v) => s.set({ quiet_end: v })} />
+            </div>
+            {inQuiet(hhmm(s.value.journal_time, '19:00'), hhmm(s.value.quiet_start, '21:00'), hhmm(s.value.quiet_end, '08:00')) && (
+              <div className="mt-2 text-[12.5px] text-destructive">Your daily reminder time falls inside quiet hours, so it will not be sent.</div>
+            )}
+          </div>
         </div>
       )}
       <SaveBar saving={s.saving} saved={s.saved} onSave={s.save} />
