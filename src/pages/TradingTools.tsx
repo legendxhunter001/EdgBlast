@@ -570,7 +570,7 @@ export default function TradingTools() {
       gridColor: chartTheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
       // Mobile gets a lighter, app-like toolbar (like TradingView's mobile app);
       // desktop gets the fuller toolset (like TradingView's desktop app).
-      hide_side_toolbar: isMobile,
+      hide_side_toolbar: false, // drawing tools on phones too
       hide_top_toolbar: false,
       details: !isMobile,
       hotlist: false,

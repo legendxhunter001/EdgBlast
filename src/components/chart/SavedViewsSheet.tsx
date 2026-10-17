@@ -114,7 +114,9 @@ export const SavedViewsSheet = ({ onClose, onOpenOnChart }: { onClose: () => voi
                   <button key={s.id} onClick={() => { setOpenId(s.id); setConfirmDelete(false); }}
                     className="overflow-hidden rounded-[20px] border border-border bg-card/70 text-left shadow-sm transition active:scale-[.98]">
                     <div className="relative aspect-[16/10] bg-secondary/40">
-                      {s.image_path && urls[s.image_path] && <img src={urls[s.image_path]} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />}
+                      {s.image_path && urls[s.image_path]
+                        ? <img src={urls[s.image_path]} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                        : <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/60"><Bookmark className="size-7" /></div>}
                       <div className="absolute left-2 top-2 flex gap-1.5"><Pill dark>{s.symbol}</Pill><Pill dark>{TF_LABEL[s.timeframe] ?? s.timeframe}</Pill></div>
                     </div>
                     <div className="p-3">
@@ -137,12 +139,12 @@ export const SavedViewsSheet = ({ onClose, onOpenOnChart }: { onClose: () => voi
               <button onClick={() => setZoom(true)} className="block w-full overflow-hidden rounded-[22px] border border-border bg-secondary/40 shadow-sm" aria-label="View full size">
                 {current.image_path && urls[current.image_path]
                   ? <img src={urls[current.image_path]} alt={current.title} className="w-full" />
-                  : <div className="aspect-[16/10]" />}
+                  : <div className="flex aspect-[16/10] items-center justify-center text-muted-foreground"><Bookmark className="size-8" /></div>}
               </button>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Pill>{current.symbol}</Pill><Pill>{TF_LABEL[current.timeframe] ?? current.timeframe}</Pill>
-                <Pill>{current.candle_count} candles</Pill>
-                <Pill>{current.drawings.length} {current.drawings.length === 1 ? 'drawing' : 'drawings'}</Pill>
+                {current.candle_count > 0 && <Pill>{current.candle_count} candles</Pill>}
+                {current.drawings.length > 0 && <Pill>{current.drawings.length} {current.drawings.length === 1 ? 'drawing' : 'drawings'}</Pill>}
               </div>
               <input defaultValue={current.title} maxLength={80} aria-label="Title"
                 onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== current.title) void patch(current, { title: v }); }}
