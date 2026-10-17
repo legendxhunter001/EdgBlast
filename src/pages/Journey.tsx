@@ -3,9 +3,10 @@ import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { JournalReminderSheet } from "@/components/JournalReminderSheet";
 import {
   Image as ImageIcon, Images, X, Search, Loader2, Upload,
-  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus, ChevronLeft, ChevronRight, BookOpen, Palette, LayoutGrid, FileText, FilePlus, ImagePlus, Heading1, Heading2, Bold, Italic, List, ListOrdered, ListChecks, Quote, Minus, Code, Clock,
+  Check, Trash2, FolderInput, ZoomOut, ZoomIn, Folder, FolderPlus, ChevronLeft, ChevronRight, BookOpen, Palette, LayoutGrid, FileText, FilePlus, ImagePlus, Heading1, Heading2, Bold, Italic, List, ListOrdered, ListChecks, Quote, Minus, Code, Clock, Bell,
 } from "lucide-react";
 
 type Entry = {
@@ -294,6 +295,7 @@ export default function Journey() {
   const [folders, setFolders] = useState<{ name: string; color: string }[]>([]);
   const [activeFolder, setActiveFolder] = useState<string>("all");
   const [folderSheet, setFolderSheet] = useState(false);
+  const [reminderSheet, setReminderSheet] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [folderColor, setFolderColor] = useState("#6A55F1");
   const [assignAfter, setAssignAfter] = useState(false);
@@ -1190,6 +1192,9 @@ export default function Journey() {
               <div className="list-head-top">
                 <span>Notes</span>
                 <div style={{ display: "flex", gap: ".4rem" }}>
+                  <button className="btn icon-btn" onClick={() => setReminderSheet(true)} title="Journal reminders" aria-label="Journal reminders">
+                    <Bell size={14} />
+                  </button>
                   <button className="btn icon-btn" onClick={openGallery} title="View all photos" aria-label="View all photos">
                     <Images size={14} />
                   </button>
@@ -1394,6 +1399,8 @@ export default function Journey() {
           </div>
         </div>
       </div>
+
+      {reminderSheet && <JournalReminderSheet onClose={() => setReminderSheet(false)} />}
 
       {folderSheet && (
         <div className="album-modal fixed-modal" onClick={() => setFolderSheet(false)}>
