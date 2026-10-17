@@ -8,6 +8,8 @@ import { Check, ChevronRight, FileUp, ImageDown } from 'lucide-react';
 import ImportCsvDialog from '@/components/ImportCsvDialog';
 import ImportScreenshotsDialog from '@/components/ImportScreenshotsDialog';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { disablePush, enablePush, getPushState, sendTestPush, type PushState } from '@/lib/push';
+import { isNative } from '@/lib/native';
 
 const SURFACE = 'bg-card border border-border rounded-[24px]';
 const SHADOW = { boxShadow: 'var(--ios-sh, 0 1px 2px rgba(0,0,0,.05))' } as const;
@@ -146,25 +148,127 @@ const RulesSection = () => {
   );
 };
 
-const NOTIFS: { key: string; title: string; desc: string }[] = [
-  { key: 'trade_synced', title: 'Trade synced', desc: 'When a new trade lands from MT5.' },
-  { key: 'rule_violation', title: 'Rule broken', desc: 'When a trade breaks one of your rules.' },
-  { key: 'weekly_report', title: 'Weekly report', desc: 'Your week in numbers, every Sunday.' },
-  { key: 'ai_coaching_summary', title: 'Coach summary', desc: 'Regular notes from your coach.' },
+const NOTIFS: { key: string; title: string; desc: string; soon?: boolean }[] = [
+  { key: 'trade_synced', title: 'Trades from MT5', desc: 'When a trade lands or closes from your MT5 account.' },
+  { key: 'mt5_status', title: 'MT5 connection', desc: 'When your account connects, disconnects or fails to sync.' },
+  { key: 'rule_violation', title: 'Rules and locks', desc: 'When a trade is blocked, a rule is broken or trading is locked.' },
+  { key: 'goal_progress', title: 'Goals', desc: 'When you reach a goal milestone.' },
+  { key: 'journal_reminder', title: 'Journal reminders', desc: 'A nudge to write up your trades, on your plan or your own days.' },
+  { key: 'weekly_report', title: 'Weekly review', desc: 'Your week in numbers.', soon: true },
+  { key: 'ai_coaching_summary', title: 'Coach summary', desc: 'Regular notes from your coach.', soon: true },
 ];
 
-const NotificationsSection = () => {
-  const s = useSection<Record<string, boolean>>('notification_settings', {
-    trade_synced: true, rule_violation: true, weekly_report: true, ai_coaching_summary: false,
-  }, 'user_id');
+const DAY_CHIPS: [number, string][] = [[1, 'Mon'], [2, 'Tue'], [3, 'Wed'], [4, 'Thu'], [5, 'Fri'], [6, 'Sat'], [7, 'Sun']];
+const REMINDER_HOURS = [12, 14, 16, 18, 19, 20];
+
+/** Alerts on this phone, even with the app closed (browser and installed web app). Inside the Android app they show while it is open. */
+const PhoneAlertsRow = () => {
+  const { user } = useAuth();
+  const [state, setState] = useState<PushState | 'app'>('off');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (isNative()) { setState('app'); return; }
+    void getPushState().then(setState);
+  }, []);
+
+  const toggle = async (on: boolean) => {
+    if (!user) return;
+    setBusy(true);
+    try {
+      if (on) {
+        const next = await enablePush(user.id);
+        setState(next);
+        if (next === 'on') { toast.success('Alerts are on for this phone'); void sendTestPush(); }
+        else if (next === 'blocked') toast.error('Notifications are blocked. Allow them in your browser settings for this site.');
+      } else {
+        await disablePush();
+        setState('off');
+      }
+    } catch {
+      toast.error('Could not change phone alerts');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const desc =
+    state === 'app' ? 'Inside the app, alerts appear as phone notifications while it is open.'
+    : state === 'needs-install' ? 'On iPhone, add Edge Blast to your Home Screen first, then turn this on.'
+    : state === 'unsupported' ? 'This browser cannot show phone alerts.'
+    : state === 'blocked' ? 'Blocked in your browser settings. Allow notifications for this site, then try again.'
+    : 'Get alerts on this phone, even when the app is closed.';
+  const usable = state === 'on' || state === 'off';
+
   return (
-    <Section title="Notifications">
+    <div className="py-3.5 border-t border-border first:border-t-0">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0"><div className="text-[15px]">Phone alerts</div><div className="text-[12.5px] text-muted-foreground">{desc}</div></div>
+        {state !== 'app' && (
+          <div className={busy || !usable ? 'opacity-50 pointer-events-none' : ''}>
+            <Switch label="Phone alerts" on={state === 'on'} onChange={toggle} />
+          </div>
+        )}
+      </div>
+      {state === 'on' && (
+        <button type="button" onClick={() => { void sendTestPush(); toast('Test alert sent'); }} className={`${FOCUS} mt-2.5 h-9 px-4 rounded-full border border-border text-[13.5px] font-medium active:scale-[.97] transition`}>
+          Send a test alert
+        </button>
+      )}
+    </div>
+  );
+};
+
+const NotificationsSection = () => {
+  const s = useSection<Record<string, any>>('notification_settings', {
+    trade_synced: true, mt5_status: true, rule_violation: true, goal_progress: true, journal_reminder: true,
+    journal_days: [], journal_hour: 19, // weekly review and coach summary are left alone until they exist
+  }, 'user_id');
+  const days: number[] = Array.isArray(s.value.journal_days) ? s.value.journal_days.map(Number) : [];
+  const toggleDay = (n: number) => s.set({ journal_days: days.includes(n) ? days.filter((x) => x !== n) : [...days, n].sort() });
+
+  return (
+    <Section title="Notifications" note="Everything you turn on also appears in the bell inbox.">
+      <PhoneAlertsRow />
       {NOTIFS.map((n) => (
-        <div key={n.key} className="flex items-center justify-between gap-4 py-3 border-t border-border first:border-t-0">
-          <div className="min-w-0"><div className="text-[15px]">{n.title}</div><div className="text-[12.5px] text-muted-foreground">{n.desc}</div></div>
-          <Switch label={n.title} on={!!s.value[n.key]} onChange={(v) => s.set({ [n.key]: v })} />
+        <div key={n.key} className="flex items-center justify-between gap-4 py-3.5 border-t border-border">
+          <div className="min-w-0">
+            <div className="text-[15px] flex items-center gap-2">
+              {n.title}
+              {n.soon && <span className="text-[11px] font-medium text-muted-foreground border border-border rounded-full px-2 py-0.5">Soon</span>}
+            </div>
+            <div className="text-[12.5px] text-muted-foreground">{n.desc}</div>
+          </div>
+          <div className={n.soon ? 'opacity-40 pointer-events-none' : ''}>
+            <Switch label={n.title} on={!n.soon && !!s.value[n.key]} onChange={(v) => s.set({ [n.key]: v })} />
+          </div>
         </div>
       ))}
+      {s.value.journal_reminder && (
+        <div className="py-3.5 border-t border-border">
+          <div className="text-[15px]">Reminder days</div>
+          <div className="text-[12.5px] text-muted-foreground">
+            {days.length === 0 ? 'None picked: reminders follow your trading plan. Logging by hand? Pick your days.' : 'One reminder on these days if you have not written yet.'}
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {DAY_CHIPS.map(([n, label]) => (
+              <button key={n} type="button" aria-pressed={days.includes(n)} onClick={() => { tap(); toggleDay(n); }}
+                className={`${FOCUS} h-9 px-3.5 rounded-full border text-[13.5px] font-medium active:scale-[.97] transition ${days.includes(n) ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {days.length > 0 && (
+            <label className="mt-3 flex items-center gap-3 text-[14px]">
+              Remind me at
+              <select value={Number(s.value.journal_hour ?? 19)} onChange={(e) => s.set({ journal_hour: Number(e.target.value) })}
+                className="h-9 rounded-[10px] border border-border bg-card px-2.5 text-[14px]">
+                {REMINDER_HOURS.map((h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
       <SaveBar saving={s.saving} saved={s.saved} onSave={s.save} />
     </Section>
   );
