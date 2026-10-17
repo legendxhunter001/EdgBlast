@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   createChart, ColorType, CrosshairMode,
-  IChartApi, ISeriesApi, CandlestickSeries, IPriceLine, Time,
+  IChartApi, ISeriesApi, CandlestickSeries, IPriceLine, Time, LogicalRange,
 } from 'lightweight-charts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -333,6 +333,9 @@ export default function MT5() {
   const drawingsRef = useRef<Drawing[]>([]);
   const candlesRef = useRef<{ time: number; open: number; high: number; low: number; close: number }[]>([]);
   const restoreRangeRef = useRef<{ from: number; to: number } | null>(null);
+  const hasMoreRef = useRef(false);
+  const loadingOlderRef = useRef(false);
+  const seriesKeyRef = useRef('');
 
   const [symbol, setSymbol] = useState('EURUSD');
   const [customSymbol, setCustomSymbol] = useState('');
@@ -353,6 +356,7 @@ export default function MT5() {
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [saveDraft, setSaveDraft] = useState<SnapshotDraft | null>(null);
   const [savedOpen, setSavedOpen] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   useEffect(() => { drawingsRef.current = drawings; }, [drawings]);
 
@@ -441,6 +445,42 @@ export default function MT5() {
     }
   }, [drawings, pendingPoint, mousePos, tool, selectedColor, isDark]);
 
+  // Full history: when the view gets near the oldest candle, load the 1000 before it (the chart keeps your place)
+  type Candle = { time: number; open: number; high: number; low: number; close: number };
+  const fetchOlder = useCallback(async (): Promise<boolean> => {
+    const series = seriesRef.current;
+    const first = candlesRef.current[0];
+    if (!series || !first || !hasMoreRef.current || loadingOlderRef.current) return false;
+    const key = seriesKeyRef.current;
+    const [sym, tf] = key.split('|');
+    loadingOlderRef.current = true;
+    setLoadingOlder(true);
+    try {
+      const { data } = await supabase.functions.invoke('get-candles', { body: { symbol: sym, timeframe: tf, limit: 1000, before: first.time } });
+      if (seriesKeyRef.current !== key) return false; // another pair or timeframe was opened meanwhile
+      const older: Candle[] = data?.success ? data.candles : [];
+      if (!older.length) { hasMoreRef.current = false; return false; }
+      hasMoreRef.current = !!data.hasMore;
+      const merged = [...older, ...candlesRef.current];
+      candlesRef.current = merged;
+      series.setData(merged as never);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      loadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
+  }, []);
+
+  // keep loading older candles until the chart reaches back to `from` (used when opening a saved view)
+  const ensureCovers = useCallback(async (from: number) => {
+    let guard = 0;
+    while (hasMoreRef.current && candlesRef.current.length && candlesRef.current[0].time > from && guard++ < 15) {
+      if (!(await fetchOlder())) break;
+    }
+  }, [fetchOlder]);
+
   // Build chart once
   useEffect(() => {
     if (!containerRef.current) return;
@@ -464,6 +504,12 @@ export default function MT5() {
     });
     chartRef.current = chart;
     seriesRef.current = series;
+    const onRange = (range: LogicalRange | null) => {
+      if (!range) return;
+      const info = series.barsInLogicalRange(range);
+      if (info && info.barsBefore < 60) void fetchOlder();
+    };
+    chart.timeScale().subscribeVisibleLogicalRangeChange(onRange);
     const redraw = () => requestAnimationFrame(drawOverlay);
     chart.timeScale().subscribeVisibleTimeRangeChange(redraw);
     chart.subscribeCrosshairMove(redraw);
@@ -482,8 +528,11 @@ export default function MT5() {
     setLoading(true); setError('');
     (async () => {
       const sym = (customSymbol.trim() || symbol).toUpperCase();
+      seriesKeyRef.current = `${sym}|${timeframe}`;
+      candlesRef.current = [];
+      hasMoreRef.current = false;
       const { data, error: fnErr } = await supabase.functions.invoke('get-candles', {
-        body: { symbol: sym, timeframe, limit: 500 },
+        body: { symbol: sym, timeframe, limit: 1000 },
       });
       if (cancelled) return;
       setLoading(false);
@@ -493,9 +542,12 @@ export default function MT5() {
       }
       seriesRef.current?.setData(data.candles);
       candlesRef.current = data.candles;
+      hasMoreRef.current = !!data.hasMore;
       const restore = restoreRangeRef.current;
       restoreRangeRef.current = null;
       if (restore) {
+        await ensureCovers(restore.from);
+        if (cancelled) return;
         try { chartRef.current?.timeScale().setVisibleRange({ from: restore.from as Time, to: restore.to as Time }); }
         catch { chartRef.current?.timeScale().fitContent(); }
       } else {
@@ -655,12 +707,13 @@ export default function MT5() {
     }
   };
 
-  const openSavedOnChart = (snap: ChartSnapshot) => {
+  const openSavedOnChart = async (snap: ChartSnapshot) => {
     setSavedOpen(false);
     const same = snap.symbol === activeSymbol && snap.timeframe === timeframe;
     if (snap.visible_from && snap.visible_to) {
       if (same) {
-        try { chartRef.current?.timeScale().setVisibleRange({ from: snap.visible_from as Time, to: snap.visible_to as Time }); } catch { /* range no longer loaded */ }
+        await ensureCovers(snap.visible_from);
+        try { chartRef.current?.timeScale().setVisibleRange({ from: snap.visible_from as Time, to: snap.visible_to as Time }); } catch { /* range not available */ }
       } else {
         restoreRangeRef.current = { from: snap.visible_from, to: snap.visible_to };
       }
@@ -798,6 +851,9 @@ export default function MT5() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       />
+      {loadingOlder && !loading && (
+        <div className="absolute left-3 top-3 z-10 rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-muted-foreground backdrop-blur">Loading earlier candles…</div>
+      )}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
           <div className="text-sm text-muted-foreground">Loading candles…</div>
